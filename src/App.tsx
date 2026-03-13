@@ -22,13 +22,13 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", icon: <LayoutDashboard size={18} />, label: "ダッシュボード" },
-  { id: "gamemode", icon: <Gamepad2 size={18} />, label: "ゲームモード" },
-  { id: "windows", icon: <Monitor size={18} />, label: "Windows設定" },
-  { id: "storage", icon: <HardDrive size={18} />, label: "ストレージ" },
-  { id: "network", icon: <Wifi size={18} />, label: "ネットワーク" },
-  { id: "profiles", icon: <BookMarked size={18} />, label: "プロファイル" },
-  { id: "games", icon: <Library size={18} />, label: "My Games" },
-  { id: "settings", icon: <SettingsIcon size={18} />, label: "設定" },
+  { id: "games",     icon: <Library size={18} />,         label: "My Games" },
+  { id: "gamemode",  icon: <Gamepad2 size={18} />,        label: "ゲームモード" },
+  { id: "windows",   icon: <Monitor size={18} />,         label: "Windows設定" },
+  { id: "storage",   icon: <HardDrive size={18} />,       label: "ストレージ" },
+  { id: "network",   icon: <Wifi size={18} />,            label: "ネットワーク" },
+  { id: "profiles",  icon: <BookMarked size={18} />,      label: "プロファイル", phase: "詳細" },
+  { id: "settings",  icon: <SettingsIcon size={18} />,    label: "設定" },
 ];
 
 function PageContent({ page }: { page: ActivePage }) {

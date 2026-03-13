@@ -1,4 +1,4 @@
-import { Loader2, Pencil, Play, Tag, Zap } from "lucide-react";
+import { Loader2, Play, Tag, Zap } from "lucide-react";
 import type { GameProfile } from "@/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -12,7 +12,6 @@ export function detectLauncher(exePath: string): "steam" | "epic" | "battlenet" 
 }
 
 function shortPath(exePath: string): string {
-  // Show only last 2 path segments to keep the card compact
   const parts = exePath.replace(/\\/g, "/").split("/");
   return parts.length > 2 ? `…/${parts.slice(-2).join("/")}` : exePath;
 }
@@ -24,19 +23,18 @@ const LAUNCHER_LABELS: Record<string, string> = {
   custom: "カスタム",
 };
 
-const MODE_CONFIG: Record<string, { label: string; className: string }> = {
-  competitive: {
-    label: "Competitive",
-    className: "bg-red-500/10 text-red-400 border-red-500/30",
-  },
-  balanced: {
-    label: "Balanced",
-    className: "bg-green-500/10 text-green-400 border-green-500/30",
-  },
-  quality: {
-    label: "Quality",
-    className: "bg-purple-500/10 text-purple-400 border-purple-500/30",
-  },
+// ── Mode config ───────────────────────────────────────────────────────────────
+
+const MODE_OPTIONS = [
+  { value: "competitive", label: "Competitive" },
+  { value: "balanced",    label: "Balanced" },
+  { value: "quality",     label: "Quality" },
+] as const;
+
+const MODE_BADGE_CLASS: Record<string, string> = {
+  competitive: "bg-red-500/10 text-red-400 border-red-500/30",
+  balanced:    "bg-green-500/10 text-green-400 border-green-500/30",
+  quality:     "bg-purple-500/10 text-purple-400 border-purple-500/30",
 };
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -46,14 +44,20 @@ interface GameCardProps {
   isActive: boolean;
   launching: boolean;
   onLaunchOptimize: () => void;
-  onEdit: () => void;
+  onModeChange: (mode: "competitive" | "balanced" | "quality") => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function GameCard({ profile, isActive, launching, onLaunchOptimize, onEdit }: GameCardProps) {
-  const launcher = profile.launcher ?? (profile.exe_path ? detectLauncher(profile.exe_path) : "custom");
-  const modeConfig = profile.recommended_mode ? MODE_CONFIG[profile.recommended_mode] : null;
+export function GameCard({
+  profile,
+  isActive,
+  launching,
+  onLaunchOptimize,
+  onModeChange,
+}: GameCardProps) {
+  const launcher =
+    profile.launcher ?? (profile.exe_path ? detectLauncher(profile.exe_path) : "custom");
 
   return (
     <div
@@ -64,61 +68,60 @@ export function GameCard({ profile, isActive, launching, onLaunchOptimize, onEdi
       }`}
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold text-sm leading-tight truncate">{profile.name}</p>
-            {isActive && (
-              <span className="inline-flex items-center gap-1 text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-full px-2 py-0.5 shrink-0">
-                <Zap size={9} />
-                適用中
-              </span>
-            )}
-            {/* Recommended mode badge */}
-            {modeConfig ? (
-              <span
-                className={`inline-flex items-center text-[10px] border rounded-full px-2 py-0.5 shrink-0 font-medium ${modeConfig.className}`}
-                title={profile.recommended_reason}
-              >
-                {modeConfig.label}
-              </span>
-            ) : (
-              <span className="inline-flex items-center text-[10px] bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 rounded-full px-2 py-0.5 shrink-0">
-                AI未設定
-              </span>
-            )}
-            {/* Launcher badge */}
-            <span className="inline-flex items-center text-[10px] bg-secondary border border-border rounded-full px-2 py-0.5 shrink-0 text-muted-foreground">
-              {LAUNCHER_LABELS[launcher] ?? launcher}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold text-sm leading-tight truncate">{profile.name}</p>
+          {isActive && (
+            <span className="inline-flex items-center gap-1 text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-full px-2 py-0.5 shrink-0">
+              <Zap size={9} />
+              適用中
             </span>
-          </div>
-
-          {/* exe path */}
-          {profile.exe_path && (
-            <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">
-              {shortPath(profile.exe_path)}
-            </p>
           )}
+          <span className="inline-flex items-center text-[10px] bg-secondary border border-border rounded-full px-2 py-0.5 shrink-0 text-muted-foreground">
+            {LAUNCHER_LABELS[launcher] ?? launcher}
+          </span>
         </div>
-
-        {/* Edit button */}
-        <button
-          type="button"
-          onClick={onEdit}
-          className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          title="プロファイルを編集"
-          aria-label="プロファイルを編集"
-        >
-          <Pencil size={14} />
-        </button>
+        {profile.exe_path && (
+          <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">
+            {shortPath(profile.exe_path)}
+          </p>
+        )}
       </div>
 
-      {/* Recommended reason */}
-      {profile.recommended_reason && (
-        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-          {profile.recommended_reason}
-        </p>
-      )}
+      {/* Mode selector */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground shrink-0">モード</span>
+        <select
+          aria-label="最適化モードを選択"
+          value={profile.recommended_mode ?? ""}
+          onChange={(e) => {
+            const v = e.target.value as "competitive" | "balanced" | "quality";
+            if (v) onModeChange(v);
+          }}
+          className={`flex-1 appearance-none bg-secondary border rounded-md px-2.5 py-1.5 text-xs font-medium outline-none focus:border-primary/60 transition-colors cursor-pointer ${
+            profile.recommended_mode
+              ? `${MODE_BADGE_CLASS[profile.recommended_mode]} border`
+              : "border-amber-500/30 text-amber-400 bg-amber-500/10"
+          }`}
+        >
+          {!profile.recommended_mode && (
+            <option value="" disabled>AI未設定</option>
+          )}
+          {MODE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value} className="bg-card text-foreground">
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        {profile.recommended_reason && (
+          <span
+            className="text-xs text-muted-foreground truncate max-w-[100px] cursor-help"
+            title={profile.recommended_reason}
+          >
+            {profile.recommended_reason}
+          </span>
+        )}
+      </div>
 
       {/* Tags */}
       {profile.tags.length > 0 && (

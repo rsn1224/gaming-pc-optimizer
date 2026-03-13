@@ -73,7 +73,7 @@ pub fn load_profiles() -> Vec<GameProfile> {
     serde_json::from_str::<Vec<GameProfile>>(&raw).unwrap_or_default()
 }
 
-fn save_profiles(profiles: &[GameProfile]) -> Result<(), String> {
+pub(crate) fn save_profiles(profiles: &[GameProfile]) -> Result<(), String> {
     let path = profiles_path();
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)

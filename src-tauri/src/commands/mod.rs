@@ -1,8 +1,10 @@
+pub mod ai;
 pub mod network;
 pub mod power;
 pub mod process;
 pub mod profiles;
 pub mod storage;
 pub mod system_info;
+pub mod steam;
 pub mod watcher;
 pub mod windows_settings;

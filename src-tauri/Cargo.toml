@@ -22,6 +22,7 @@ sysinfo = "0.33"
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 winreg = "0.55"
 uuid = { version = "1", features = ["v4"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 
 [profile.release]
 panic = "abort"

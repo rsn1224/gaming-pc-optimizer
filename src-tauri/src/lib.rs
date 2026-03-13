@@ -1,7 +1,7 @@
 mod commands;
 
 use commands::{
-    network, power, process, profiles, storage, system_info, watcher, windows_settings,
+    ai, network, power, process, profiles, steam, storage, system_info, watcher, windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -165,6 +165,13 @@ pub fn run() {
             profiles::apply_profile,
             profiles::export_profiles_context,
             profiles::launch_game,
+            // Steam
+            steam::discover_steam_games,
+            steam::discover_and_create_steam_drafts,
+            // AI
+            ai::get_ai_api_key,
+            ai::set_ai_api_key,
+            ai::generate_ai_recommendations,
             // Watcher / tray commands
             watcher::get_auto_start,
             watcher::set_auto_start,

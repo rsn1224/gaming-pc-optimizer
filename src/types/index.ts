@@ -79,6 +79,13 @@ export interface PingResult {
 
 export type DnsPreset = "google" | "cloudflare" | "opendns" | "dhcp";
 
+export interface DiscoveredGame {
+  app_id: string;
+  name: string;
+  install_dir: string;
+  exe_path: string | null;
+}
+
 export interface GameProfile {
   id: string;
   name: string;

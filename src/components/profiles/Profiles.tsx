@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap, FilePlus } from "lucide-react";
+import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap, FilePlus, Sparkles } from "lucide-react";
 import { useAppStore } from "@/stores/useAppStore";
 import type { GameProfile } from "@/types";
 
@@ -471,6 +471,8 @@ export function Profiles() {
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [applyLog, setApplyLog] = useState<{ id: string; log: string; ok: boolean } | null>(null);
   const [quickDraft, setQuickDraft] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiLog, setAiLog] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const reload = async () => {
     try {
@@ -531,6 +533,21 @@ export function Profiles() {
     setModal(null);
   };
 
+  const handleAiGenerate = async () => {
+    setAiGenerating(true);
+    setAiLog(null);
+    try {
+      const updated = await invoke<GameProfile[]>("generate_ai_recommendations");
+      setProfiles(updated);
+      const filled = updated.filter((p) => p.recommended_mode).length;
+      setAiLog({ msg: `${filled} 件のプロファイルにAI推薦を適用しました`, ok: true });
+    } catch (e) {
+      setAiLog({ msg: String(e), ok: false });
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   return (
     <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
       {/* Header */}
@@ -545,6 +562,16 @@ export function Profiles() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleAiGenerate}
+            disabled={aiGenerating}
+            title="ドラフトプロファイルの設定をAIで自動補完"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm font-medium hover:bg-purple-500/20 disabled:opacity-50 transition-colors"
+          >
+            {aiGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            AI推薦を生成
+          </button>
           <button
             type="button"
             onClick={() => setQuickDraft(true)}
@@ -574,6 +601,18 @@ export function Profiles() {
               <X size={14} />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* AI log */}
+      {aiLog && (
+        <div className={`rounded-lg border px-4 py-3 text-sm flex items-start justify-between gap-2 ${
+          aiLog.ok ? "bg-purple-500/10 border-purple-500/30 text-purple-300" : "bg-red-500/10 border-red-500/30 text-red-400"
+        }`}>
+          <span>{aiLog.msg}</span>
+          <button type="button" onClick={() => setAiLog(null)} aria-label="閉じる" className="shrink-0 hover:opacity-70">
+            <X size={14} />
+          </button>
         </div>
       )}
 

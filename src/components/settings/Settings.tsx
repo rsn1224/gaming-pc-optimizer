@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings2, Sun, Moon, Trash2, Power, Cpu } from "lucide-react";
+import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check } from "lucide-react";
 import { useAppStore, type Theme } from "@/stores/useAppStore";
 import { Toggle } from "@/components/ui/toggle";
 
@@ -30,12 +30,26 @@ export function Settings() {
   } = useAppStore();
 
   const [autoStart, setAutoStartLocal] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [apiKeySaved, setApiKeySaved] = useState(false);
 
   // Load initial values from Rust
   useEffect(() => {
     invoke<boolean>("get_auto_start").then(setAutoStartLocal).catch(() => {});
     invoke<boolean>("get_auto_optimize").then(setAutoOptimize).catch(() => {});
+    invoke<string>("get_ai_api_key").then(setApiKey).catch(() => {});
   }, [setAutoOptimize]);
+
+  const handleSaveApiKey = async () => {
+    try {
+      await invoke("set_ai_api_key", { key: apiKey });
+      setApiKeySaved(true);
+      setTimeout(() => setApiKeySaved(false), 2000);
+    } catch (e) {
+      alert("API キーの保存に失敗しました: " + e);
+    }
+  };
 
   const handleAutoStart = async (enabled: boolean) => {
     try {
@@ -140,6 +154,49 @@ export function Settings() {
               <span className="text-xs font-medium">{t === "dark" ? "ダーク" : "ライト"}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* AI API Key */}
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <Bot size={16} className="text-muted-foreground" />
+          <span className="text-sm font-semibold">AI プロファイル生成</span>
+        </div>
+        <div className="p-4 flex flex-col gap-3">
+          <p className="text-xs text-muted-foreground">
+            Anthropic API キーを登録すると、プロファイルページの「AI推薦を生成」ボタンでドラフトプロファイルの設定を自動補完できます。
+          </p>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type={apiKeyVisible ? "text" : "password"}
+                className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-primary/60 font-mono pr-10"
+                placeholder="sk-ant-..."
+                value={apiKey}
+                onChange={(e) => { setApiKey(e.target.value); setApiKeySaved(false); }}
+              />
+              <button
+                type="button"
+                onClick={() => setApiKeyVisible((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={apiKeyVisible ? "非表示" : "表示"}
+              >
+                {apiKeyVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveApiKey}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                apiKeySaved
+                  ? "bg-green-500/10 text-green-400 border border-green-500/30"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              }`}
+            >
+              {apiKeySaved ? <><Check size={14} /> 保存済み</> : "保存"}
+            </button>
+          </div>
         </div>
       </div>
 

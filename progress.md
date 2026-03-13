@@ -51,6 +51,93 @@
 6. ~~Phase 5: ゲームプロファイル機能~~ ✅ (2026-03-14 完了)
 7. ~~Phase 6: 常駐型（システムトレイ・自動最適化）~~ ✅ (2026-03-14 完了)
 8. ~~Phase 7: AI プロファイルコンテキストエクスポート~~ ✅ (2026-03-14 完了)
+9. ~~Phase 8: My Games ライブラリ & プロファイル推薦 UI~~ ✅ (2026-03-14 完了)
+10. ~~Phase 9: シームレス AI 推薦生成（Claude API 統合）~~ ✅ (2026-03-14 完了)
+11. ~~Phase 10: Steam 自動スキャン & My Games メイン UI 化~~ ✅ (2026-03-14 完了)
+
+### Phase 10 実装内容 (2026-03-14) — Steam 自動スキャン & My Games メイン UI 化
+
+**Rustバックエンド** `src-tauri/src/commands/steam.rs` 新規
+
+- `find_steam_root()`: HKLM/HKCU レジストリ → デフォルトパスのフォールバックで Steam を検出
+- `library_steamapps_dirs()`: `libraryfolders.vdf` を解析して全ライブラリパスを収集
+- `find_main_exe()`: installdir 内の .exe をスキャン、ヘルパー系を除外し最大サイズのものを返す
+- `discover_steam_games()` Tauri コマンド: `appmanifest_*.acf` を全走査、StateFlags=4（完全インストール）のみ抽出
+- `discover_and_create_steam_drafts()` Tauri コマンド: 未登録ゲームのドラフト GameProfile を自動作成・保存、全プロファイルを返す
+
+**フロントエンド**
+
+- `src/components/games/GameCard.tsx` 全面改訂:
+  - モードバッジ → `<select>` ドロップダウンに変更（Competitive/Balanced/Quality）
+  - 選択時に親の `onModeChange` を呼び出し（編集ボタン削除）
+- `src/components/games/GamesLibrary.tsx` 全面改訂:
+  - `MODE_PRESETS` マップ: モード → kill_bloatware/power_plan/windows_preset/... のプリセット
+  - `handleSteamScan()`: スキャン → ドラフト作成 → APIキーあれば自動 AI チューニングまで一気に実行
+  - `handleModeChange()`: モード選択時にプリセットをマージして `save_profile`
+  - 「Steamスキャン」「AIチューニング」ボタン（未設定プロファイルがある時のみ AIチューニングボタン表示）
+  - 空状態にも「Steamライブラリをスキャン」ボタンを配置
+- `src/App.tsx`: ナビ順変更 — My Games が 2 番目、プロファイルが「詳細」バッジ付きで下位
+- `src/types/index.ts`: `DiscoveredGame` 型追加
+
+#### モードプリセット
+
+| モード | kill_bloatware | power_plan | windows_preset | network_mode | dns_preset |
+| --- | --- | --- | --- | --- | --- |
+| competitive | true | ultimate | gaming | gaming | cloudflare |
+| balanced | false | high_performance | gaming | none | none |
+| quality | false | none | none | none | none |
+
+### Phase 9 実装内容 (2026-03-14) — シームレス AI 推薦生成（Claude API 統合）
+
+**Rustバックエンド** `src-tauri/src/commands/ai.rs` 新規
+
+- `get_ai_api_key()` / `set_ai_api_key(key)`: `%APPDATA%\gaming-pc-optimizer\config.json` に保存
+- `generate_ai_recommendations()`: Claude Haiku API 呼び出し → ドラフトプロファイルに推薦設定をマージ保存 → 全プロファイルを返す
+- `reqwest = { version = "0.12", features = ["json", "rustls-tls"] }` を Cargo.toml に追加
+
+**フロントエンド**
+
+- `src/components/settings/Settings.tsx`: API キー入力欄（パスワード表示/非表示トグル + 保存済みフィードバック）追加
+- `src/components/profiles/Profiles.tsx`: 「AI推薦を生成」ボタン（紫）+ AI ログ表示追加
+
+### Phase 8 実装内容 (2026-03-14) — My Games ライブラリ & プロファイル推薦 UI
+
+**Rustバックエンド** `src-tauri/src/commands/profiles.rs`
+
+- `GameProfile` に 3 フィールド追加: `recommended_mode: Option<String>`, `recommended_reason: Option<String>`, `launcher: Option<String>`（`#[serde(default, skip_serializing_if = "Option::is_none")]` で後方互換）
+- `launch_game(exe_path)` コマンド: exeの親ディレクトリを `current_dir` に設定して spawn、`Result<(), String>` でエラーをフロントに返す
+- `export_profiles_context()` の CPU 二重フェッチ修正 → 単一 `System` インスタンスで統合
+- `lib.rs` に `launch_game` 登録
+
+**フロントエンド**
+
+- `src/components/games/GameCard.tsx` 新規:
+  - `detectLauncher()` ヒューリスティック（steam/epic/battlenet/custom）
+  - `shortPath()` パス短縮（末尾2セグメント）
+  - `MODE_CONFIG` → Competitive(赤)/Balanced(緑)/Quality(紫) バッジ
+  - `recommended_mode` 未設定時のアンバー「AI未設定」バッジ
+  - 「最適化して起動」ボタン（launching 中は Loader2 + 無効化）
+- `src/components/games/GameFilters.tsx` 新規:
+  - 検索フィールド（X クリアボタン付き）
+  - タグチップ + モードチップ（Competitive/Balanced/Quality）
+  - `hasAnyMode` prop で未設定プロファイルのみの場合はモードフィルター非表示
+  - 「クリア」ボタン（いずれかフィルター適用時）
+- `src/components/games/GamesLibrary.tsx` 新規:
+  - `invoke("list_profiles")` でプロファイル読み込み
+  - `useMemo` で `allTags`・`hasAnyMode` 算出
+  - `launchLog` 5秒後自動クリア（`useEffect`）
+  - `handleLaunchOptimize`: `apply_profile` → `launch_game`（exe_path あり時）
+  - 編集ボタン: `setEditingProfileId(p.id)` + `setActivePage("profiles")` でプロファイル画面へ遷移
+  - 空状態: 未登録 → プロファイルページへのリンク、フィルター一致なし → メッセージ
+- `src/stores/useAppStore.ts`: `editingProfileId`・`setEditingProfileId` 追加
+- `src/components/profiles/Profiles.tsx`: `editingProfileId` を監視し、My Games から遷移時に自動でモーダルを開く `useEffect` 追加
+- `src/types/index.ts`: `GameProfile` に optional 3 フィールド追加、`ActivePage` に `"games"` 追加、`ProfilesContext`/`ProfilesContextProfile` 型追加
+- `src/App.tsx`: My Games タブ（Library アイコン）追加、`GamesLibrary` コンポーネントルーティング追加
+- `tauri.conf.json`: `"withGlobalTauri": true` 追加（DevTools で `window.__TAURI__` 有効化）
+
+#### AI プロファイル生成プロンプトテンプレート
+
+- `export_profiles_context()` の出力を Claude に貼り付けることで、ドラフトプロファイルの `recommended_mode`・`recommended_reason`・最適化設定を自動生成するプロンプトテンプレートを整備
 
 ### Phase 7 実装内容 (2026-03-14) — AI プロファイルコンテキストエクスポート
 
