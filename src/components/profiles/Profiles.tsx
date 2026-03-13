@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2 } from "lucide-react";
+import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap } from "lucide-react";
+import { useAppStore } from "@/stores/useAppStore";
 import type { GameProfile } from "@/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -87,7 +88,7 @@ function ProfileModal({ initial, onSave, onClose }: ModalProps) {
           <h2 className="font-semibold text-base">
             {isNew ? "プロファイルを作成" : "プロファイルを編集"}
           </h2>
-          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={onClose} aria-label="閉じる" className="text-muted-foreground hover:text-foreground">
             <X size={18} />
           </button>
         </div>
@@ -140,7 +141,7 @@ function ProfileModal({ initial, onSave, onClose }: ModalProps) {
                 {form.tags.map((t) => (
                   <span key={t} className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
                     {t}
-                    <button type="button" onClick={() => removeTag(t)} className="hover:text-red-400">
+                    <button type="button" onClick={() => removeTag(t)} aria-label={`タグ「${t}」を削除`} className="hover:text-red-400">
                       <X size={10} />
                     </button>
                   </span>
@@ -157,6 +158,7 @@ function ProfileModal({ initial, onSave, onClose }: ModalProps) {
             <button
               type="button"
               onClick={() => set("kill_bloatware", !form.kill_bloatware)}
+              aria-label={`ブロートウェア停止: ${form.kill_bloatware ? "有効" : "無効"}`}
               className={`w-10 h-5 rounded-full transition-colors ${form.kill_bloatware ? "bg-primary" : "bg-muted"}`}
             >
               <span className={`block w-4 h-4 rounded-full bg-white shadow mx-0.5 transition-transform ${form.kill_bloatware ? "translate-x-5" : ""}`} />
@@ -165,8 +167,9 @@ function ProfileModal({ initial, onSave, onClose }: ModalProps) {
 
           {/* Power plan */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">電源プラン</label>
+            <label htmlFor="sel-power" className="text-xs font-medium text-muted-foreground">電源プラン</label>
             <select
+              id="sel-power"
               className="bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-primary/60"
               value={form.power_plan}
               onChange={(e) => set("power_plan", e.target.value as GameProfile["power_plan"])}
@@ -179,8 +182,9 @@ function ProfileModal({ initial, onSave, onClose }: ModalProps) {
 
           {/* Windows preset */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">Windows設定プリセット</label>
+            <label htmlFor="sel-windows" className="text-xs font-medium text-muted-foreground">Windows設定プリセット</label>
             <select
+              id="sel-windows"
               className="bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-primary/60"
               value={form.windows_preset}
               onChange={(e) => set("windows_preset", e.target.value as GameProfile["windows_preset"])}
@@ -193,8 +197,9 @@ function ProfileModal({ initial, onSave, onClose }: ModalProps) {
 
           {/* Storage mode */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">ストレージクリーン</label>
+            <label htmlFor="sel-storage" className="text-xs font-medium text-muted-foreground">ストレージクリーン</label>
             <select
+              id="sel-storage"
               className="bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-primary/60"
               value={form.storage_mode}
               onChange={(e) => set("storage_mode", e.target.value as GameProfile["storage_mode"])}
@@ -211,6 +216,7 @@ function ProfileModal({ initial, onSave, onClose }: ModalProps) {
             <button
               type="button"
               onClick={() => set("network_mode", form.network_mode === "gaming" ? "none" : "gaming")}
+              aria-label={`ネットワーク最適化: ${form.network_mode === "gaming" ? "有効" : "無効"}`}
               className={`w-10 h-5 rounded-full transition-colors ${form.network_mode === "gaming" ? "bg-primary" : "bg-muted"}`}
             >
               <span className={`block w-4 h-4 rounded-full bg-white shadow mx-0.5 transition-transform ${form.network_mode === "gaming" ? "translate-x-5" : ""}`} />
@@ -219,8 +225,9 @@ function ProfileModal({ initial, onSave, onClose }: ModalProps) {
 
           {/* DNS */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">DNS プリセット</label>
+            <label htmlFor="sel-dns" className="text-xs font-medium text-muted-foreground">DNS プリセット</label>
             <select
+              id="sel-dns"
               className="bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-primary/60"
               value={form.dns_preset}
               onChange={(e) => set("dns_preset", e.target.value as GameProfile["dns_preset"])}
@@ -268,9 +275,10 @@ interface CardProps {
   onDelete: () => void;
   onApply: () => void;
   applying: boolean;
+  isActive: boolean;
 }
 
-function ProfileCard({ profile, onEdit, onDelete, onApply, applying }: CardProps) {
+function ProfileCard({ profile, onEdit, onDelete, onApply, applying, isActive }: CardProps) {
   const badges: string[] = [];
   if (profile.kill_bloatware) badges.push("ブロートウェア停止");
   if (profile.power_plan !== "none") badges.push(POWER_LABELS[profile.power_plan]);
@@ -280,10 +288,18 @@ function ProfileCard({ profile, onEdit, onDelete, onApply, applying }: CardProps
   if (profile.dns_preset !== "none") badges.push("DNS:" + profile.dns_preset);
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-3 hover:border-primary/30 transition-colors">
+    <div className={`bg-card border rounded-lg p-4 flex flex-col gap-3 transition-colors ${isActive ? "border-cyan-500/50 shadow-[0_0_0_1px] shadow-cyan-500/20" : "border-border hover:border-primary/30"}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm leading-tight truncate">{profile.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-sm leading-tight truncate">{profile.name}</p>
+            {isActive && (
+              <span className="inline-flex items-center gap-1 text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-full px-2 py-0.5 shrink-0">
+                <Zap size={9} />
+                適用中
+              </span>
+            )}
+          </div>
           {profile.exe_path && (
             <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">{profile.exe_path}</p>
           )}
@@ -347,6 +363,7 @@ function ProfileCard({ profile, onEdit, onDelete, onApply, applying }: CardProps
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function Profiles() {
+  const { activeProfileId } = useAppStore();
   const [profiles, setProfiles] = useState<GameProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<Partial<GameProfile> | null>(null);
@@ -430,7 +447,7 @@ export function Profiles() {
         <div className={`rounded-lg border p-4 text-sm ${applyLog.ok ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
           <div className="flex justify-between items-start gap-2">
             <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed">{applyLog.log}</pre>
-            <button type="button" onClick={() => setApplyLog(null)} className="shrink-0 hover:opacity-70">
+            <button type="button" onClick={() => setApplyLog(null)} aria-label="閉じる" className="shrink-0 hover:opacity-70">
               <X size={14} />
             </button>
           </div>
@@ -466,6 +483,7 @@ export function Profiles() {
               onDelete={() => handleDelete(p.id)}
               onApply={() => handleApply(p.id)}
               applying={applyingId === p.id}
+              isActive={activeProfileId === p.id}
             />
           ))}
         </div>

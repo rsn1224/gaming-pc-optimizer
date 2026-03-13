@@ -49,7 +49,7 @@ fn profiles_path() -> PathBuf {
         .join("profiles.json")
 }
 
-fn load_profiles() -> Vec<GameProfile> {
+pub fn load_profiles() -> Vec<GameProfile> {
     let path = profiles_path();
     if !path.exists() {
         return Vec::new();
@@ -104,14 +104,22 @@ pub fn delete_profile(id: String) -> Result<(), String> {
 
 // ── apply_profile ────────────────────────────────────────────────────────────
 
-#[tauri::command]
-pub async fn apply_profile(id: String) -> Result<String, String> {
+/// Internal version callable from watcher task (not a Tauri command).
+pub async fn apply_profile_internal(id: &str) -> Result<String, String> {
     let profiles = load_profiles();
     let profile = profiles
         .into_iter()
         .find(|p| p.id == id)
         .ok_or_else(|| format!("ID '{}' のプロファイルが見つかりません", id))?;
+    apply_profile_with(profile).await
+}
 
+#[tauri::command]
+pub async fn apply_profile(id: String) -> Result<String, String> {
+    apply_profile_internal(&id).await
+}
+
+async fn apply_profile_with(profile: GameProfile) -> Result<String, String> {
     let mut log: Vec<String> = Vec::new();
 
     // Step 1: ブロートウェア停止
@@ -126,16 +134,21 @@ pub async fn apply_profile(id: String) -> Result<String, String> {
         }
     }
 
-    // Step 2: 電源プラン
+    // Step 2: 電源プラン（変更前に現在のプランをバックアップ）
     match profile.power_plan.as_str() {
         "ultimate" => {
+            if let Some(guid) = super::power::get_current_power_guid() {
+                super::power::save_power_backup(&guid);
+            }
             super::power::set_ultimate_performance()
                 .await
                 .map_err(|e| format!("[電源プランエラー] {}", e))?;
             log.push("[電源] Ultimate Performance に切替".to_string());
         }
         "high_performance" => {
-            // GUIDで高パフォーマンスプランを直接指定
+            if let Some(guid) = super::power::get_current_power_guid() {
+                super::power::save_power_backup(&guid);
+            }
             let out = std::process::Command::new("powercfg")
                 .args(["/setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"])
                 .output()
@@ -184,10 +197,7 @@ pub async fn apply_profile(id: String) -> Result<String, String> {
     };
     if !storage_ids.is_empty() {
         let r = super::storage::clean_storage(storage_ids);
-        log.push(format!(
-            "[ストレージ] {:.1} MB クリーン",
-            r.freed_mb
-        ));
+        log.push(format!("[ストレージ] {:.1} MB クリーン", r.freed_mb));
     }
 
     // Step 5: ネットワーク最適化
@@ -199,7 +209,6 @@ pub async fn apply_profile(id: String) -> Result<String, String> {
 
     // Step 6: DNS
     if profile.dns_preset != "none" {
-        // 最初のアダプターに適用
         let adapters = super::network::get_network_adapters();
         if let Some(adapter) = adapters.into_iter().next() {
             super::network::set_adapter_dns(adapter.name.clone(), profile.dns_preset.clone())

@@ -54,8 +54,14 @@ interface AppState {
   // Settings
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  disabledProcesses: string[];  // process names excluded from kill
+  disabledProcesses: string[];
   setDisabledProcesses: (names: string[]) => void;
+
+  // Watcher / tray state
+  activeProfileId: string | null;
+  setActiveProfileId: (id: string | null) => void;
+  autoOptimize: boolean;
+  setAutoOptimize: (enabled: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -93,4 +99,9 @@ export const useAppStore = create<AppState>((set) => ({
     localStorage.setItem("disabledProcesses", JSON.stringify(names));
     set({ disabledProcesses: names });
   },
+
+  activeProfileId: null,
+  setActiveProfileId: (id) => set({ activeProfileId: id }),
+  autoOptimize: false,
+  setAutoOptimize: (enabled) => set({ autoOptimize: enabled }),
 }));

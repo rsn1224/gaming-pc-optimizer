@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
@@ -47,7 +49,28 @@ function PageContent({ page }: { page: ActivePage }) {
 }
 
 export default function App() {
-  const { activePage, setActivePage, gameModeActive } = useAppStore();
+  const {
+    activePage,
+    setActivePage,
+    gameModeActive,
+    activeProfileId,
+    setActiveProfileId,
+    setAutoOptimize,
+  } = useAppStore();
+
+  // Listen for Rust-side events (watcher applies/restores, tray toggle)
+  useEffect(() => {
+    const u1 = listen<string | null>("active_profile_changed", (e) =>
+      setActiveProfileId(e.payload ?? null)
+    );
+    const u2 = listen<boolean>("auto_optimize_changed", (e) =>
+      setAutoOptimize(e.payload)
+    );
+    return () => {
+      u1.then((fn) => fn());
+      u2.then((fn) => fn());
+    };
+  }, [setActiveProfileId, setAutoOptimize]);
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -90,6 +113,9 @@ export default function App() {
                 {item.id === "gamemode" && gameModeActive && (
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                 )}
+                {item.id === "profiles" && activeProfileId && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                )}
               </button>
             );
           })}
@@ -97,7 +123,7 @@ export default function App() {
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-border">
-          <p className="text-[10px] text-muted-foreground">v0.1.0 · Phase 1 MVP</p>
+          <p className="text-[10px] text-muted-foreground">v0.2.0 · 常駐対応</p>
         </div>
       </aside>
 

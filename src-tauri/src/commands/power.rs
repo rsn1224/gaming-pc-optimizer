@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::process::Command;
 
 /// Extract the active power scheme GUID from `powercfg /getactivescheme` output.
@@ -151,5 +152,68 @@ pub async fn restore_power_plan(previous_guid: String) -> Result<(), String> {
             "電源プランの復元に失敗しました: {}",
             String::from_utf8_lossy(&out.stderr)
         ))
+    }
+}
+
+// ── Power backup helpers ──────────────────────────────────────────────────────
+
+fn power_backup_path() -> PathBuf {
+    let appdata = std::env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
+    PathBuf::from(appdata)
+        .join("gaming-pc-optimizer")
+        .join("power_backup.json")
+}
+
+/// Get the currently active power plan GUID.
+pub fn get_current_power_guid() -> Option<String> {
+    let out = Command::new("powercfg")
+        .args(["/getactivescheme"])
+        .output()
+        .ok()?;
+    parse_active_guid(&String::from_utf8_lossy(&out.stdout))
+}
+
+/// Save the given GUID as the "pre-optimization" power plan (only if no backup exists).
+pub fn save_power_backup(prev_guid: &str) {
+    let path = power_backup_path();
+    if path.exists() {
+        return; // don't overwrite existing backup
+    }
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
+    let json = serde_json::json!({ "prev_guid": prev_guid });
+    std::fs::write(&path, json.to_string()).ok();
+}
+
+/// Read the backup GUID, returns None if no backup exists.
+pub fn read_power_backup() -> Option<String> {
+    let raw = std::fs::read_to_string(power_backup_path()).ok()?;
+    let val: serde_json::Value = serde_json::from_str(&raw).ok()?;
+    val["prev_guid"].as_str().map(String::from)
+}
+
+/// Delete the power backup file after a successful restore.
+pub fn clear_power_backup() {
+    std::fs::remove_file(power_backup_path()).ok();
+}
+
+/// Sync version of restore_power_plan for use in non-async contexts (watcher, tray).
+pub fn restore_power_plan_internal(guid: &str) -> Result<(), String> {
+    let guid = guid.trim();
+    let valid = guid.len() == 36
+        && guid.chars().filter(|&c| c == '-').count() == 4
+        && guid.chars().all(|c| c.is_ascii_hexdigit() || c == '-');
+    if !valid {
+        return Err(format!("無効な GUID 形式: {}", guid));
+    }
+    let out = Command::new("powercfg")
+        .args(["/setactive", guid])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if out.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&out.stderr).to_string())
     }
 }
