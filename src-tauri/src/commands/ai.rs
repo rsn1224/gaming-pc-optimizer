@@ -276,6 +276,104 @@ pub async fn get_ai_update_priorities() -> Result<Vec<AiUpdatePriority>, String>
         .map_err(|e| format!("AIレスポンスの解析失敗: {}", e))
 }
 
+// ── Windows settings AI ───────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AiWindowsRecommendation {
+    pub preset_id: String,  // "default" | "gaming" | "balanced"
+    pub explanation: String,
+}
+
+#[tauri::command]
+pub async fn get_ai_windows_recommendation() -> Result<AiWindowsRecommendation, String> {
+    let api_key = load_config().ai_api_key;
+    if api_key.is_empty() {
+        return Err("Anthropic API キーが設定されていません。設定ページで入力してください。".to_string());
+    }
+
+    let context = tokio::task::spawn_blocking(
+        super::windows_settings::export_windows_settings_context,
+    )
+    .await
+    .map_err(|e| format!("コンテキスト取得エラー: {}", e))??;
+
+    let prompt = format!(
+        r#"あなたはゲーミングPC最適化の専門家です。以下のJSONはWindowsPCの視覚効果・Game DVR・メニュー遅延等の現在設定と利用可能なプリセット一覧です。
+
+{}
+
+オンラインゲームのパフォーマンスを最大化するために最適なプリセットを1つ選んでください。
+JSONのみを返してください（説明・マークダウン不要）：
+
+{{
+  "preset_id": "default" | "gaming" | "balanced",
+  "explanation": "なぜこのプリセットを選んだかの理由（日本語・1〜2文）"
+}}"#,
+        context
+    );
+
+    let content_text = call_claude_api(&api_key, &prompt, 256).await?;
+    let json_str = extract_json_object(&content_text);
+    serde_json::from_str::<AiWindowsRecommendation>(json_str)
+        .map_err(|e| format!("AIレスポンスの解析失敗: {}", e))
+}
+
+// ── Storage AI ────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AiStorageItem {
+    pub id: String,
+    pub recommend: bool,
+    pub reason: String,
+}
+
+#[tauri::command]
+pub async fn get_ai_storage_recommendation() -> Result<Vec<AiStorageItem>, String> {
+    let api_key = load_config().ai_api_key;
+    if api_key.is_empty() {
+        return Err("Anthropic API キーが設定されていません。設定ページで入力してください。".to_string());
+    }
+
+    let categories = tokio::task::spawn_blocking(super::storage::scan_storage)
+        .await
+        .map_err(|e| format!("スキャンエラー: {}", e))?;
+
+    if categories.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let context = serde_json::to_string_pretty(&categories)
+        .map_err(|e| format!("シリアライズ失敗: {}", e))?;
+
+    let prompt = format!(
+        r#"あなたはPCストレージ最適化の専門家です。以下はWindowsPCの一時ファイル・キャッシュカテゴリとサイズです。
+
+{}
+
+ゲーミングPC向けに、安全に削除できるカテゴリを選定してください。
+JSONのみを返してください（説明不要）：
+
+[
+  {{
+    "id": "カテゴリID（変更しない）",
+    "recommend": true または false,
+    "reason": "20文字以内の日本語の理由"
+  }}
+]
+
+基準：
+- accessible が false または size_mb が 0 のものは recommend: false
+- ブラウザキャッシュ・一時ファイル・サムネイルキャッシュは recommend: true
+- ゲームやシステムに必要なデータは recommend: false"#,
+        context
+    );
+
+    let content_text = call_claude_api(&api_key, &prompt, 1024).await?;
+    let json_str = extract_json_array(&content_text);
+    serde_json::from_str::<Vec<AiStorageItem>>(json_str)
+        .map_err(|e| format!("AIレスポンスの解析失敗: {}", e))
+}
+
 // ── Network recommendation AI ─────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

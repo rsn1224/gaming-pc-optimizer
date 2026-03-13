@@ -180,6 +180,8 @@ pub fn run() {
             ai::get_ai_update_priorities,
             ai::get_ai_hardware_mode,
             ai::get_ai_network_recommendation,
+            ai::get_ai_windows_recommendation,
+            ai::get_ai_storage_recommendation,
             // Updates
             updates::check_app_updates,
             updates::upgrade_apps,

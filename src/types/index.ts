@@ -191,6 +191,17 @@ export interface AiHardwareMode {
   suggested_power_limit_percent: number;
 }
 
+export interface AiWindowsRecommendation {
+  preset_id: string; // "default" | "gaming" | "balanced"
+  explanation: string;
+}
+
+export interface AiStorageItem {
+  id: string;
+  recommend: boolean;
+  reason: string;
+}
+
 export type ActivePage = "dashboard" | "gamemode" | "windows" | "storage" | "network" | "profiles" | "games" | "settings" | "updates" | "hardware";
 
 // export_profiles_context response shape

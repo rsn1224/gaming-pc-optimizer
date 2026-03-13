@@ -9,9 +9,10 @@ import {
   XCircle,
   AlertCircle,
   FolderOpen,
+  Brain,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { StorageCategory, CleanResult } from "@/types";
+import type { StorageCategory, CleanResult, AiStorageItem } from "@/types";
 import { formatMemory } from "@/lib/utils";
 
 // ── Checkbox ────────────────────────────────────────────────────────────────
@@ -74,6 +75,31 @@ export function StorageCleanup() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<CleanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiItems, setAiItems] = useState<Map<string, AiStorageItem>>(new Map());
+  const [aiError, setAiError] = useState("");
+
+  const runAiRecommend = async () => {
+    setIsAiLoading(true);
+    setAiError("");
+    try {
+      const items = await invoke<AiStorageItem[]>("get_ai_storage_recommendation");
+      const map = new Map(items.map((i) => [i.id, i]));
+      setAiItems(map);
+      // If we have scan results, update categories shown from AI scan; else trigger a scan
+      if (categories.length === 0) {
+        const cats = await invoke<StorageCategory[]>("scan_storage");
+        setCategories(cats);
+        setPhase("ready");
+      }
+      // Auto-select only what AI recommends
+      setSelected(new Set(items.filter((i) => i.recommend).map((i) => i.id)));
+    } catch (e) {
+      setAiError(String(e));
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   const scan = async () => {
     setPhase("scanning");
@@ -163,15 +189,51 @@ export function StorageCleanup() {
             </p>
           </div>
         </div>
-        <button
-          onClick={scan}
-          disabled={isBusy}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-border rounded-md hover:border-muted-foreground hover:text-foreground text-muted-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <RefreshCw size={14} className={phase === "scanning" ? "animate-spin" : ""} />
-          {phase === "scanning" ? "スキャン中..." : "スキャン"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={runAiRecommend}
+            disabled={isBusy || isAiLoading}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+              ${isAiLoading
+                ? "bg-purple-500/20 border-purple-500/50 text-purple-300"
+                : "bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20"
+              }`}
+          >
+            {isAiLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
+            {isAiLoading ? "AI分析中..." : "AIに推奨してもらう"}
+          </button>
+          <button
+            type="button"
+            onClick={scan}
+            disabled={isBusy || isAiLoading}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-border rounded-md hover:border-muted-foreground hover:text-foreground text-muted-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <RefreshCw size={14} className={phase === "scanning" ? "animate-spin" : ""} />
+            {phase === "scanning" ? "スキャン中..." : "スキャン"}
+          </button>
+        </div>
       </div>
+
+      {/* AI error */}
+      {aiError && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
+          <XCircle size={16} />
+          {aiError}
+        </div>
+      )}
+
+      {/* AI summary banner */}
+      {aiItems.size > 0 && !aiError && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-purple-500/10 border border-purple-500/30 rounded-lg text-sm">
+          <Brain size={14} className="text-purple-400 shrink-0" />
+          <span className="text-purple-300 font-medium">AI推奨</span>
+          <span className="text-muted-foreground">
+            削除OK: <span className="text-foreground font-medium">{[...aiItems.values()].filter((i) => i.recommend).length}件</span>
+            、スキップ: <span className="text-foreground font-medium">{[...aiItems.values()].filter((i) => !i.recommend).length}件</span>
+          </span>
+        </div>
+      )}
 
       {/* Idle state */}
       {phase === "idle" && (
@@ -292,9 +354,20 @@ export function StorageCleanup() {
                         disabled={!canSelect || isBusy}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{cat.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{cat.name}</p>
+                          {aiItems.has(cat.id) && (
+                            <span className={`shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${
+                              aiItems.get(cat.id)!.recommend
+                                ? "bg-green-500/15 text-green-400 border-green-500/30"
+                                : "bg-secondary text-muted-foreground border-border"
+                            }`}>
+                              {aiItems.get(cat.id)!.recommend ? "削除OK" : "スキップ"}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground truncate">
-                          {cat.description}
+                          {aiItems.get(cat.id)?.reason ?? cat.description}
                         </p>
                       </div>
                       {!cat.accessible ? (

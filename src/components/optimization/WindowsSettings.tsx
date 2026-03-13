@@ -11,9 +11,10 @@ import {
   ChevronRight,
   Copy,
   Check,
+  Brain,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { WindowsSettings as WS, WindowsPreset } from "@/types";
+import type { WindowsSettings as WS, WindowsPreset, AiWindowsRecommendation } from "@/types";
 import { Toggle } from "@/components/ui/toggle";
 import { BUILTIN_WINDOWS_PRESETS } from "@/data/windows_presets";
 import { diffWindowsSettings } from "@/lib/windows_diff";
@@ -178,6 +179,9 @@ export function WindowsSettings() {
   // Preset state
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiRec, setAiRec] = useState<AiWindowsRecommendation | null>(null);
+  const [aiError, setAiError] = useState("");
 
   const loadSettings = async () => {
     setIsLoading(true);
@@ -307,6 +311,21 @@ export function WindowsSettings() {
     }
   };
 
+  const handleAiRecommend = async () => {
+    setIsAiLoading(true);
+    setAiRec(null);
+    setAiError("");
+    try {
+      const rec = await invoke<AiWindowsRecommendation>("get_ai_windows_recommendation");
+      setAiRec(rec);
+      setSelectedPresetId(rec.preset_id);
+    } catch (e) {
+      setAiError(String(e));
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   const handleCopyContext = async () => {
     try {
       const json = await invoke<string>("export_windows_settings_context");
@@ -354,20 +373,35 @@ export function WindowsSettings() {
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={handleCopyContext}
-            disabled={isLoading}
-            title="AIでプリセットを生成するためのコンテキストJSONをコピー"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-muted-foreground rounded-md transition-colors disabled:opacity-40"
-          >
-            {copied ? (
-              <Check size={11} className="text-green-400" />
-            ) : (
-              <Copy size={11} />
-            )}
-            {copied ? "コピー済み" : "AIコンテキストをコピー"}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleAiRecommend}
+              disabled={isLoading || isAiLoading || actionStatus === "running"}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium border rounded-md transition-colors disabled:opacity-40
+                ${isAiLoading
+                  ? "bg-purple-500/20 border-purple-500/50 text-purple-300"
+                  : "bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20"
+                }`}
+            >
+              {isAiLoading ? <Loader2 size={11} className="animate-spin" /> : <Brain size={11} />}
+              {isAiLoading ? "AI分析中..." : "AIに推奨してもらう"}
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyContext}
+              disabled={isLoading}
+              title="AIでプリセットを生成するためのコンテキストJSONをコピー"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-muted-foreground rounded-md transition-colors disabled:opacity-40"
+            >
+              {copied ? (
+                <Check size={11} className="text-green-400" />
+              ) : (
+                <Copy size={11} />
+              )}
+              {copied ? "コピー済み" : "コンテキストをコピー"}
+            </button>
+          </div>
         </div>
 
         <div className="p-3 flex gap-2">
@@ -385,6 +419,24 @@ export function WindowsSettings() {
             />
           ))}
         </div>
+
+        {/* AI error */}
+        {aiError && (
+          <p className="mx-3 mb-1 text-xs text-destructive flex items-center gap-1">
+            <XCircle size={11} /> {aiError}
+          </p>
+        )}
+
+        {/* AI recommendation banner */}
+        {aiRec && !aiError && (
+          <div className="mx-3 mb-2 px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-md flex items-start gap-2">
+            <Brain size={12} className="text-purple-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[11px] font-semibold text-purple-300">AI推奨: {BUILTIN_WINDOWS_PRESETS.find((p) => p.id === aiRec.preset_id)?.label}</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">{aiRec.explanation}</p>
+            </div>
+          </div>
+        )}
 
         {/* Diff preview + explanation + apply */}
         <AnimatePresence>
