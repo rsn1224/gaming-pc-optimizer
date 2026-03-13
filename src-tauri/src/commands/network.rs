@@ -315,6 +315,93 @@ pub fn ping_host(host: String) -> PingResult {
     }
 }
 
+// ── DNS Auto-test ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize)]
+pub struct DnsPingSummary {
+    pub preset: String,           // "google" | "cloudflare" | "opendns" | "current"
+    pub primary: String,          // e.g. "8.8.8.8"
+    pub secondary: Option<String>,
+    pub ping: PingResult,
+}
+
+#[derive(Debug, Serialize)]
+pub struct NetworkAdvisorContext {
+    pub adapter: AdapterInfo,
+    pub settings: NetworkSettings,
+    pub dns_tests: Vec<DnsPingSummary>,
+}
+
+const DNS_TEST_PRESETS: &[(&str, &str, &str)] = &[
+    ("google", "8.8.8.8", "8.8.4.4"),
+    ("cloudflare", "1.1.1.1", "1.0.0.1"),
+    ("opendns", "208.67.222.222", "208.67.220.220"),
+];
+
+#[tauri::command]
+pub fn auto_test_dns(adapter_name: String) -> Result<Vec<DnsPingSummary>, String> {
+    let adapters = get_network_adapters();
+    let current = adapters.into_iter().find(|a| a.name == adapter_name);
+
+    let mut summaries: Vec<DnsPingSummary> = Vec::new();
+
+    // Test known presets
+    for (preset, primary, secondary) in DNS_TEST_PRESETS {
+        let ping = ping_host(primary.to_string());
+        summaries.push(DnsPingSummary {
+            preset: preset.to_string(),
+            primary: primary.to_string(),
+            secondary: Some(secondary.to_string()),
+            ping,
+        });
+    }
+
+    // Test current adapter DNS if set and not already covered by a preset
+    if let Some(adapter) = current {
+        if !adapter.primary_dns.is_empty() {
+            let already_tested = DNS_TEST_PRESETS
+                .iter()
+                .any(|(_, p, _)| *p == adapter.primary_dns);
+            if !already_tested {
+                let ping = ping_host(adapter.primary_dns.clone());
+                summaries.push(DnsPingSummary {
+                    preset: "current".to_string(),
+                    primary: adapter.primary_dns.clone(),
+                    secondary: if adapter.secondary_dns.is_empty() {
+                        None
+                    } else {
+                        Some(adapter.secondary_dns.clone())
+                    },
+                    ping,
+                });
+            }
+        }
+    }
+
+    Ok(summaries)
+}
+
+#[tauri::command]
+pub fn export_network_advisor_context(adapter_name: String) -> Result<String, String> {
+    let adapters = get_network_adapters();
+    let adapter = adapters
+        .into_iter()
+        .find(|a| a.name == adapter_name)
+        .ok_or_else(|| format!("アダプター '{}' が見つかりません", adapter_name))?;
+
+    let settings = get_network_settings();
+    let dns_tests = auto_test_dns(adapter_name)?;
+
+    let context = NetworkAdvisorContext {
+        adapter,
+        settings,
+        dns_tests,
+    };
+
+    serde_json::to_string_pretty(&context)
+        .map_err(|e| format!("JSONシリアライズ失敗: {}", e))
+}
+
 fn parse_packet_loss(output: &str) -> u32 {
     // Match "X% loss" or "X% ロス" or "(X% )"
     for line in output.lines() {

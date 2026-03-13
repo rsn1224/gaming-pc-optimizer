@@ -111,6 +111,20 @@ export interface PingResult {
 
 export type DnsPreset = "google" | "cloudflare" | "opendns" | "dhcp";
 
+export interface DnsPingSummary {
+  preset: string; // "google" | "cloudflare" | "opendns" | "current"
+  primary: string;
+  secondary: string | null;
+  ping: PingResult;
+}
+
+export interface NetworkRecommendation {
+  adapter_name: string;
+  dns_preset: DnsPreset | "current";
+  explanation: string;
+  apply_network_gaming: boolean;
+}
+
 export interface DiscoveredGame {
   app_id: string;
   name: string;

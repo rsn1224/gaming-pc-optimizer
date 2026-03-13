@@ -161,6 +161,8 @@ pub fn run() {
             network::get_network_adapters,
             network::set_adapter_dns,
             network::ping_host,
+            network::auto_test_dns,
+            network::export_network_advisor_context,
             // Profiles
             profiles::list_profiles,
             profiles::save_profile,

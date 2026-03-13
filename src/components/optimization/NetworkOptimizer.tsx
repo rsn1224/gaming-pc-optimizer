@@ -9,10 +9,13 @@ import {
   XCircle,
   AlertCircle,
   Activity,
+  Brain,
+  Copy,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { NetworkSettings, AdapterInfo, PingResult, DnsPreset } from "@/types";
+import type { NetworkSettings, AdapterInfo, PingResult, DnsPreset, DnsPingSummary, NetworkRecommendation } from "@/types";
 import { Toggle } from "@/components/ui/toggle";
+import { applyNetworkRecommendation } from "@/lib/network_apply";
 
 // ── DNS preset definitions ──────────────────────────────────────────────────
 
@@ -261,6 +264,268 @@ function DnsSection({
   );
 }
 
+// ── DnsAutoTestSection ───────────────────────────────────────────────────────
+
+const PRESET_LABEL: Record<string, string> = {
+  google: "Google",
+  cloudflare: "Cloudflare",
+  opendns: "OpenDNS",
+  current: "現在のDNS",
+};
+
+function DnsAutoTestSection({
+  selectedAdapter,
+  onNetworkUpdate,
+}: {
+  selectedAdapter: string;
+  onNetworkUpdate: (settings: NetworkSettings, adapters: AdapterInfo[]) => void;
+}) {
+  const [results, setResults] = useState<DnsPingSummary[]>([]);
+  const [isTesting, setIsTesting] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied">("idle");
+  const [recJson, setRecJson] = useState("");
+  const [parsedRec, setParsedRec] = useState<NetworkRecommendation | null>(null);
+  const [parseError, setParseError] = useState("");
+  const [applyStatus, setApplyStatus] = useState<ActionStatus>("idle");
+  const [applyMsg, setApplyMsg] = useState("");
+
+  const runTest = async () => {
+    if (!selectedAdapter || isTesting) return;
+    setIsTesting(true);
+    setResults([]);
+    try {
+      const summaries = await invoke<DnsPingSummary[]>("auto_test_dns", { adapterName: selectedAdapter });
+      setResults(summaries);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const copyContext = async () => {
+    if (!selectedAdapter) return;
+    try {
+      const json = await invoke<string>("export_network_advisor_context", { adapterName: selectedAdapter });
+      await navigator.clipboard.writeText(json);
+      setCopyStatus("copied");
+      setTimeout(() => setCopyStatus("idle"), 2000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleJsonChange = (val: string) => {
+    setRecJson(val);
+    setParseError("");
+    setParsedRec(null);
+    if (!val.trim()) return;
+    try {
+      const parsed = JSON.parse(val);
+      if (typeof parsed.adapter_name !== "string" || typeof parsed.dns_preset !== "string") {
+        setParseError("フィールドが不正です（adapter_name と dns_preset が必須）");
+        return;
+      }
+      setParsedRec(parsed as NetworkRecommendation);
+    } catch {
+      setParseError("JSON の解析に失敗しました");
+    }
+  };
+
+  const applyRec = async () => {
+    if (!parsedRec) return;
+    setApplyStatus("running");
+    setApplyMsg("");
+    try {
+      await applyNetworkRecommendation(parsedRec, onNetworkUpdate);
+      setApplyStatus("success");
+      setApplyMsg(
+        `${parsedRec.dns_preset} DNS${parsedRec.apply_network_gaming ? " + TCP/IP 最適化" : ""} を適用しました`,
+      );
+    } catch (e) {
+      setApplyStatus("error");
+      setApplyMsg(String(e));
+    }
+  };
+
+  // Best = success, zero packet loss, lowest avg_ms
+  const bestPreset =
+    results.length > 0
+      ? results
+          .filter((r) => r.ping.success && r.ping.packet_loss === 0)
+          .sort((a, b) => a.ping.avg_ms - b.ping.avg_ms)[0]?.preset ?? null
+      : null;
+
+  return (
+    <div className="bg-card border border-border rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Brain size={16} className="text-muted-foreground" />
+          <span className="text-sm font-semibold">DNS 自動テスト &amp; AI推奨</span>
+        </div>
+        <button
+          type="button"
+          onClick={runTest}
+          disabled={!selectedAdapter || isTesting}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md transition-all
+            ${isTesting
+              ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
+              : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+            }
+            disabled:opacity-40 disabled:cursor-not-allowed`}
+        >
+          {isTesting ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />}
+          {isTesting ? "テスト中..." : "DNS自動テスト"}
+        </button>
+      </div>
+
+      <div className="p-4 flex flex-col gap-3">
+        {results.length === 0 && !isTesting && (
+          <p className="text-xs text-muted-foreground">
+            「DNS自動テスト」をクリックすると Google / Cloudflare / OpenDNS / 現在のDNS に Ping を実行し、最適な設定を AI が提案します。
+          </p>
+        )}
+
+        {isTesting && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 size={12} className="animate-spin" />
+            主要DNSにPing送信中... しばらくお待ちください
+          </div>
+        )}
+
+        {results.length > 0 && (
+          <>
+            {/* Results table */}
+            <div className="overflow-hidden rounded-md border border-border">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-secondary/50">
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">DNS</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">アドレス</th>
+                    <th className="text-right px-3 py-2 text-muted-foreground font-medium">平均</th>
+                    <th className="text-right px-3 py-2 text-muted-foreground font-medium">最小</th>
+                    <th className="text-right px-3 py-2 text-muted-foreground font-medium">最大</th>
+                    <th className="text-right px-3 py-2 text-muted-foreground font-medium">損失</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {results.map((r) => {
+                    const isBest = r.preset === bestPreset;
+                    return (
+                      <tr key={r.preset} className={isBest ? "bg-green-500/5" : ""}>
+                        <td className="px-3 py-2 font-medium">
+                          <div className="flex items-center gap-1.5">
+                            {isBest && <CheckCircle2 size={11} className="text-green-400 shrink-0" />}
+                            <span className={isBest ? "text-green-400" : "text-foreground"}>
+                              {PRESET_LABEL[r.preset] ?? r.preset}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{r.primary}</td>
+                        {r.ping.success ? (
+                          <>
+                            <td className="px-3 py-2 text-right font-mono text-cyan-400">{r.ping.avg_ms.toFixed(0)}ms</td>
+                            <td className="px-3 py-2 text-right font-mono text-green-400">{r.ping.min_ms.toFixed(0)}ms</td>
+                            <td className="px-3 py-2 text-right font-mono text-yellow-400">{r.ping.max_ms.toFixed(0)}ms</td>
+                            <td className={`px-3 py-2 text-right font-mono ${r.ping.packet_loss > 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                              {r.ping.packet_loss}%
+                            </td>
+                          </>
+                        ) : (
+                          <td colSpan={4} className="px-3 py-2 text-right">
+                            <span className="text-destructive flex items-center justify-end gap-1">
+                              <XCircle size={11} /> 応答なし
+                            </span>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {bestPreset && (
+              <p className="text-xs text-green-400 flex items-center gap-1.5">
+                <CheckCircle2 size={12} />
+                最速DNS: <span className="font-semibold">{PRESET_LABEL[bestPreset] ?? bestPreset}</span>（低遅延・パケットロスなし）
+              </p>
+            )}
+
+            {/* Copy context */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground">
+                コンテキストをコピーして Claude に貼り付けると、最適な DNS / ネットワーク設定を JSON で提案してもらえます。
+              </p>
+              <button
+                type="button"
+                onClick={copyContext}
+                className="flex items-center gap-1.5 px-3 py-2 bg-secondary border border-border rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-all self-start"
+              >
+                {copyStatus === "copied" ? (
+                  <CheckCircle2 size={12} className="text-green-400" />
+                ) : (
+                  <Copy size={12} />
+                )}
+                {copyStatus === "copied" ? "コピーしました！" : "AIコンテキストをコピー"}
+              </button>
+            </div>
+
+            {/* Paste recommendation JSON */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground font-medium">AI推奨 JSON を貼り付けて適用</p>
+              <textarea
+                value={recJson}
+                onChange={(e) => handleJsonChange(e.target.value)}
+                placeholder='{"adapter_name": "...", "dns_preset": "cloudflare", "apply_network_gaming": true, "explanation": "..."}'
+                rows={4}
+                aria-label="AI推奨JSONを入力"
+                className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-xs font-mono placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary resize-y"
+              />
+              {parseError && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <XCircle size={11} /> {parseError}
+                </p>
+              )}
+              {parsedRec && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-blue-500/10 border border-blue-500/30 rounded-md p-3 flex flex-col gap-2"
+                >
+                  <p className="text-xs text-blue-300 font-semibold flex items-center gap-1.5">
+                    <Brain size={12} /> AI推奨
+                  </p>
+                  <p className="text-xs text-foreground">{parsedRec.explanation}</p>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>DNS: <span className="text-foreground font-semibold">{parsedRec.dns_preset}</span></span>
+                    <span>TCP/IP最適化: <span className="text-foreground font-semibold">{parsedRec.apply_network_gaming ? "あり" : "なし"}</span></span>
+                  </div>
+                  <StatusMessage status={applyStatus} message={applyMsg} />
+                  <button
+                    type="button"
+                    onClick={applyRec}
+                    disabled={applyStatus === "running"}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all self-start
+                      ${applyStatus === "running"
+                        ? "bg-primary/20 text-primary/60 cursor-not-allowed border border-primary/20"
+                        : "bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] border border-primary/20"
+                      }`}
+                  >
+                    {applyStatus === "running" ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                    この設定を適用
+                  </button>
+                </motion.div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── PingSection ───────────────────────────────────────────────────────────────
 
 const PING_TARGETS = [
@@ -425,6 +690,11 @@ export function NetworkOptimizer() {
     }
   };
 
+  const handleNetworkUpdate = (newSettings: NetworkSettings, newAdapters: AdapterInfo[]) => {
+    setSettings(newSettings);
+    setAdapters(newAdapters);
+  };
+
   const applyDns = async (preset: DnsPreset) => {
     if (!selectedAdapter) return;
     setDnsStatus("running");
@@ -474,6 +744,11 @@ export function NetworkOptimizer() {
         status={dnsStatus}
         message={dnsMsg}
         onApplyDns={applyDns}
+      />
+
+      <DnsAutoTestSection
+        selectedAdapter={selectedAdapter}
+        onNetworkUpdate={handleNetworkUpdate}
       />
 
       <PingSection />

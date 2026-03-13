@@ -305,3 +305,37 @@
 - 差分パネルは変更なしの場合「適用済みです」メッセージ表示
 - AIコンテキストコピー後2秒でボタンテキストをリセット（フィードバック）
 - アクセシビリティ: `<input type="range">` に `aria-label="メニュー表示遅延"` 付与
+
+## Phase: NetworkOptimizer DNS自動テスト & AI推奨（2026-03-14）
+
+### 新規追加ファイル
+
+- `src/lib/network_apply.ts`: `applyNetworkRecommendation()` — AI推奨JSONを受け取ってDNS・TCP/IP設定を適用
+- `docs/ai/network_advisor_prompt.md`: Claude用プロンプトテンプレート（コンテキスト貼り付け → JSON回答 → 適用フロー）
+
+### 変更ファイル — Rustバックエンド
+
+- `src-tauri/src/commands/network.rs`:
+  - `DnsPingSummary` 構造体（preset/primary/secondary/ping）
+  - `NetworkAdvisorContext` 構造体（adapter/settings/dns_tests）
+  - `auto_test_dns(adapter_name)`: Google/Cloudflare/OpenDNS/現在のDNS に対して Ping を実行し `Vec<DnsPingSummary>` を返す
+  - `export_network_advisor_context(adapter_name)`: アダプター情報・設定・Pingテスト結果を JSON 文字列で返す
+- `src-tauri/src/lib.rs`: `auto_test_dns`・`export_network_advisor_context` を invoke_handler に登録
+
+### 変更ファイル — フロントエンド
+
+- `src/types/index.ts`: `DnsPingSummary`・`NetworkRecommendation` 型を追加
+- `src/components/optimization/NetworkOptimizer.tsx`:
+  - `DnsAutoTestSection` コンポーネント追加:
+    - 「DNS自動テスト」ボタン → `auto_test_dns` 呼び出し → 結果テーブル表示（avg/min/max/loss）
+    - 最速DNS（低遅延・パケットロスなし）を緑ハイライト
+    - 「AIコンテキストをコピー」ボタン → `export_network_advisor_context` → クリップボード
+    - AI推奨JSONテキストエリア → パース → プレビューバナー + 「この設定を適用」ボタン
+  - `handleNetworkUpdate` コールバックで適用後に settings/adapters を同期
+
+### 設計メモ
+
+- `auto_test_dns` は既存の `ping_host` を直接呼び出し（同モジュール内関数）
+- 現在のDNSがプリセットと重複する場合はテストをスキップ（重複排除）
+- AI推奨の `dns_preset = "current"` の場合は DNS 変更をスキップ（`apply_network_gaming` のみ適用）
+- プロンプトテンプレートは `docs/ai/network_advisor_prompt.md` に記録
