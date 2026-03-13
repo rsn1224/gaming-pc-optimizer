@@ -289,6 +289,7 @@ function DnsAutoTestSection({
   const [parseError, setParseError] = useState("");
   const [applyStatus, setApplyStatus] = useState<ActionStatus>("idle");
   const [applyMsg, setApplyMsg] = useState("");
+  const [bestApplyStatus, setBestApplyStatus] = useState<"idle" | "applying" | "done" | "error">("idle");
 
   const runTest = async () => {
     if (!selectedAdapter || isTesting) return;
@@ -366,6 +367,22 @@ function DnsAutoTestSection({
     } catch (e) {
       setApplyStatus("error");
       setApplyMsg(String(e));
+    }
+  };
+
+  const applyBestDns = async () => {
+    if (!bestPreset || !selectedAdapter || bestApplyStatus === "applying") return;
+    setBestApplyStatus("applying");
+    try {
+      await invoke("set_adapter_dns", { adapterName: selectedAdapter, preset: bestPreset });
+      const [settings, adapters] = await Promise.all([
+        invoke<NetworkSettings>("get_network_settings"),
+        invoke<AdapterInfo[]>("get_network_adapters"),
+      ]);
+      onNetworkUpdate(settings, adapters);
+      setBestApplyStatus("done");
+    } catch {
+      setBestApplyStatus("error");
     }
   };
 
@@ -504,10 +521,34 @@ function DnsAutoTestSection({
             </div>
 
             {bestPreset && (
-              <p className="text-xs text-green-400 flex items-center gap-1.5">
-                <CheckCircle2 size={12} />
-                最速DNS: <span className="font-semibold">{PRESET_LABEL[bestPreset] ?? bestPreset}</span>（低遅延・パケットロスなし）
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-xs text-green-400 flex items-center gap-1.5 flex-1">
+                  <CheckCircle2 size={12} />
+                  最速DNS: <span className="font-semibold">{PRESET_LABEL[bestPreset] ?? bestPreset}</span>
+                  <span className="text-muted-foreground">（低遅延・パケットロスなし）</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={applyBestDns}
+                  disabled={bestApplyStatus === "applying"}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium border rounded-md transition-all shrink-0
+                    ${bestApplyStatus === "done"
+                      ? "bg-green-500/10 border-green-500/30 text-green-400"
+                      : bestApplyStatus === "error"
+                      ? "bg-destructive/10 border-destructive/30 text-destructive"
+                      : "bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20 disabled:opacity-40"
+                    }`}
+                >
+                  {bestApplyStatus === "applying" ? (
+                    <Loader2 size={10} className="animate-spin" />
+                  ) : bestApplyStatus === "done" ? (
+                    <CheckCircle2 size={10} />
+                  ) : (
+                    <Zap size={10} />
+                  )}
+                  {bestApplyStatus === "done" ? "適用済み" : bestApplyStatus === "error" ? "失敗" : "このDNSを適用"}
+                </button>
+              </div>
             )}
 
             {/* Copy context */}

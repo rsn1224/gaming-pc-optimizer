@@ -58,6 +58,56 @@ fn bytes_to_mb(b: u64) -> f64 {
     b as f64 / 1024.0 / 1024.0
 }
 
+/// Collect all Firefox `cache2` directories (one per profile).
+fn find_firefox_cache_dirs(local_app: &Option<PathBuf>) -> Vec<PathBuf> {
+    let Some(la) = local_app else {
+        return vec![];
+    };
+    let profiles_dir = la.join("Mozilla\\Firefox\\Profiles");
+    std::fs::read_dir(&profiles_dir)
+        .ok()
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| e.path().is_dir())
+        .map(|e| e.path().join("cache2"))
+        .filter(|p| p.exists())
+        .collect()
+}
+
+fn make_category_multi_path(
+    id: &str,
+    name: &str,
+    description: &str,
+    paths: Vec<PathBuf>,
+) -> StorageCategory {
+    if paths.is_empty() {
+        return StorageCategory {
+            id: id.to_string(),
+            name: name.to_string(),
+            description: description.to_string(),
+            size_mb: 0.0,
+            file_count: 0,
+            path: String::new(),
+            accessible: false,
+        };
+    }
+    let (bytes, count) = paths.iter().fold((0u64, 0u64), |(b, c), p| {
+        let (pb, pc) = scan_dir(p);
+        (b + pb, c + pc)
+    });
+    StorageCategory {
+        id: id.to_string(),
+        name: name.to_string(),
+        description: description.to_string(),
+        size_mb: bytes_to_mb(bytes),
+        file_count: count,
+        // Store first path for reference; cleaning re-discovers all dirs
+        path: paths[0].to_string_lossy().to_string(),
+        accessible: true,
+    }
+}
+
 fn make_category(
     id: &str,
     name: &str,
@@ -182,6 +232,27 @@ pub fn scan_storage() -> Vec<StorageCategory> {
             "DirectX コンパイル済みシェーダーキャッシュ",
             local_app.as_ref().map(|p| p.join("D3DSCache")),
         ),
+        // Firefox cache (all profiles)
+        make_category_multi_path(
+            "firefox_cache",
+            "Firefox キャッシュ",
+            "Mozilla Firefox の全プロファイルウェブキャッシュ",
+            find_firefox_cache_dirs(&local_app),
+        ),
+        // Windows Error Reporting
+        make_category(
+            "wer_reports",
+            "Windows エラーレポート",
+            "クラッシュレポートのキュー (WER\\ReportQueue)",
+            local_app.as_ref().map(|p| p.join("Microsoft\\Windows\\WER\\ReportQueue")),
+        ),
+        // Windows Prefetch
+        make_category(
+            "prefetch",
+            "Windows Prefetch",
+            "プリフェッチファイル (C:\\Windows\\Prefetch)",
+            Some(PathBuf::from(r"C:\Windows\Prefetch")),
+        ),
     ]
 }
 
@@ -262,6 +333,14 @@ pub fn clean_storage(ids: Vec<String>) -> CleanResult {
 
         let (freed, errs) = if cat.id == "thumbnails" {
             clean_thumbnail_dbs(&path)
+        } else if cat.id == "firefox_cache" {
+            // Re-discover all profile caches so we clean every profile, not just the first
+            let local_app = env_path("LOCALAPPDATA");
+            let cache_dirs = find_firefox_cache_dirs(&local_app);
+            cache_dirs.iter().fold((0u64, 0u64), |(fb, fe), cp| {
+                let (b, e) = clean_dir_contents(cp);
+                (fb + b, fe + e)
+            })
         } else {
             clean_dir_contents(&path)
         };

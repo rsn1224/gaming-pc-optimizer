@@ -135,7 +135,7 @@ export default function App() {
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-border">
-          <p className="text-[10px] text-muted-foreground">v0.2.0 · 常駐対応</p>
+          <p className="text-[10px] text-muted-foreground">v1.0.0 · AI搭載</p>
         </div>
       </aside>
 
