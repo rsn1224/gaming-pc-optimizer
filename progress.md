@@ -253,3 +253,21 @@
 ### タスク4: updates.rs のエラーログ追加
 - `check_app_updates` の winget spawn 失敗時に `eprintln!` でログ出力
 - `upgrade_apps` の各アプリ失敗時・spawn エラー時に `eprintln!` でログ出力
+
+## Phase: GameMode AI注釈対応（2026-03-14）
+
+### 追加ファイル
+- `src/types/index.ts`: `ProcessRiskLevel`, `ProcessAnnotation`, `AnnotatedProcess` 型を追加
+- `src/data/process_knowledge.ts`: 33種 BLOATWARE_PROCESSES 全件のアノテーション知識ベース（将来AI拡充想定）
+
+### 変更ファイル
+- `src/components/optimization/GameMode.tsx`
+  - `findAnnotation()` で ProcessInfo と知識ベースをマージし `AnnotatedProcess[]` を生成
+  - ProcessRow コンポーネント: display_name / description / recommended_action / RiskBadge を表示
+  - ProcessSummary バー: 「AI推奨: 停止OK N件 / 注意 M件」のサマリを一覧上部に表示
+  - リスクバッジ: safe_to_kill=緑, caution=黄, keep=グレー
+
+### 設計方針
+- 知識ベース（PROCESS_KNOWLEDGE[]）は TypeScript 配列で管理。JSON移行容易な構造
+- 注釈のないプロセスは従来通り exe名・PID・リソースのみ表示（既存挙動を壊さない）
+- 実際の停止ロジックは変更なし

@@ -1,3 +1,27 @@
+// ── Process knowledge base types ──────────────────────────────────────────────
+
+/**
+ * safe_to_kill: ゲーム中に停止してもほぼ問題なし
+ * caution:      使い方次第で停止を避けるべきケースあり
+ * keep:         システム機能に関わる・停止非推奨
+ */
+export type ProcessRiskLevel = "safe_to_kill" | "caution" | "keep";
+
+export interface ProcessAnnotation {
+  exe_name: string;           // "OneDrive.exe" など（大文字小文字一致）
+  display_name: string;       // 「OneDrive 同期クライアント」など人間向けの名称
+  description: string;        // 何のアプリか / 何をしているかの説明（日本語）
+  risk_level: ProcessRiskLevel;
+  recommended_action: string; // 「ゲーム中は停止推奨」などの一言
+}
+
+/** ProcessInfo に知識ベース注釈を付与した拡張型 */
+export interface AnnotatedProcess extends ProcessInfo {
+  annotation?: ProcessAnnotation;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface GpuInfo {
   name: string;
   driver_version: string;
