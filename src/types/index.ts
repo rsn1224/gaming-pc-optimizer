@@ -90,9 +90,14 @@ export interface GameProfile {
   storage_mode: "none" | "light" | "deep";
   network_mode: "none" | "gaming";
   dns_preset: "none" | "google" | "cloudflare" | "opendns" | "dhcp";
+  // Phase 8: AI-set metadata (optional — missing in old profiles.json)
+  // NOTE: future game_id?: string goes here when 1-game:N-profiles is needed
+  recommended_mode?: "competitive" | "balanced" | "quality";
+  recommended_reason?: string;
+  launcher?: string; // "steam" | "epic" | "battlenet" | "custom"
 }
 
-export type ActivePage = "dashboard" | "gamemode" | "windows" | "storage" | "network" | "profiles" | "settings";
+export type ActivePage = "dashboard" | "gamemode" | "windows" | "storage" | "network" | "profiles" | "games" | "settings";
 
 // export_profiles_context response shape
 export interface ProfilesContextProfile {

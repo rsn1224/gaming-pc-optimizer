@@ -164,6 +164,7 @@ pub fn run() {
             profiles::delete_profile,
             profiles::apply_profile,
             profiles::export_profiles_context,
+            profiles::launch_game,
             // Watcher / tray commands
             watcher::get_auto_start,
             watcher::set_auto_start,

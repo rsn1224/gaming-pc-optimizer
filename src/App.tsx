@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { Dashboard } from "@/components/dashboard/Dashboard";
@@ -9,6 +9,7 @@ import { WindowsSettings } from "@/components/optimization/WindowsSettings";
 import { StorageCleanup } from "@/components/optimization/StorageCleanup";
 import { NetworkOptimizer } from "@/components/optimization/NetworkOptimizer";
 import { Profiles } from "@/components/profiles/Profiles";
+import { GamesLibrary } from "@/components/games/GamesLibrary";
 import { Settings } from "@/components/settings/Settings";
 import type { ActivePage } from "@/types";
 
@@ -26,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "storage", icon: <HardDrive size={18} />, label: "ストレージ" },
   { id: "network", icon: <Wifi size={18} />, label: "ネットワーク" },
   { id: "profiles", icon: <BookMarked size={18} />, label: "プロファイル" },
+  { id: "games", icon: <Library size={18} />, label: "My Games" },
   { id: "settings", icon: <SettingsIcon size={18} />, label: "設定" },
 ];
 
@@ -43,6 +45,8 @@ function PageContent({ page }: { page: ActivePage }) {
       return <NetworkOptimizer />;
     case "profiles":
       return <Profiles />;
+    case "games":
+      return <GamesLibrary />;
     case "settings":
       return <Settings />;
   }

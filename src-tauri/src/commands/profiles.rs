@@ -21,6 +21,15 @@ pub struct GameProfile {
     pub network_mode: String,
     /// "none" | "google" | "cloudflare" | "opendns" | "dhcp"
     pub dns_preset: String,
+
+    // Phase 8: AI-set metadata — optional for backward-compat with existing profiles.json
+    // NOTE: future `game_id: Option<String>` belongs here when 1-game:N-profiles is needed
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recommended_mode: Option<String>, // "competitive" | "balanced" | "quality"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recommended_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub launcher: Option<String>, // "steam" | "epic" | "battlenet" | "custom"
 }
 
 impl Default for GameProfile {
@@ -36,6 +45,9 @@ impl Default for GameProfile {
             storage_mode: "none".to_string(),
             network_mode: "none".to_string(),
             dns_preset: "none".to_string(),
+            recommended_mode: None,
+            recommended_reason: None,
+            launcher: None,
         }
     }
 }
@@ -249,6 +261,19 @@ fn unix_to_ymd_hms(secs: u64) -> (u64, u64, u64, u64, u64, u64) {
         mo += 1;
     }
     (y, mo, days + 1, h, mi, s)
+}
+
+// ── launch_game ───────────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub fn launch_game(exe_path: String) -> Result<(), String> {
+    let path = std::path::Path::new(&exe_path);
+    let dir = path.parent().unwrap_or_else(|| std::path::Path::new("."));
+    std::process::Command::new(&exe_path)
+        .current_dir(dir)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("起動失敗: {}", e))
 }
 
 // ── Tauri commands ───────────────────────────────────────────────────────────
