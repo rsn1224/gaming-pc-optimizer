@@ -1,0 +1,28 @@
+# Node
+node_modules/
+dist/
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/WixTools/
+
+# Build output
+*.exe
+*.msi
+*.dmg
+*.AppImage
+
+# Env / secrets
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Tauri generated
+src-tauri/gen/
