@@ -141,7 +141,10 @@ pub async fn check_app_updates() -> Result<Vec<AppUpdate>, String> {
                 "--disable-interactivity",
             ])
             .output()
-            .map_err(|e| format!("wingetの実行に失敗しました: {}", e))?;
+            .map_err(|e| {
+                eprintln!("[check_app_updates] winget spawn error: {}", e);
+                format!("wingetの実行に失敗しました: {}", e)
+            })?;
 
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();
         Ok(parse_winget_output(&stdout))
@@ -170,9 +173,13 @@ pub async fn upgrade_apps(ids: Vec<String>) -> Result<Vec<String>, String> {
                 Ok(o) if o.status.success() => results.push(format!("✓ {}", id)),
                 Ok(o) => {
                     let stderr = String::from_utf8_lossy(&o.stderr).trim().to_string();
+                    eprintln!("[upgrade_apps] {} failed: {}", id, stderr);
                     results.push(format!("✗ {} - {}", id, stderr))
                 }
-                Err(e) => results.push(format!("✗ {} - {}", id, e)),
+                Err(e) => {
+                    eprintln!("[upgrade_apps] {} spawn error: {}", id, e);
+                    results.push(format!("✗ {} - {}", id, e))
+                }
             }
         }
         results
@@ -234,7 +241,8 @@ pub async fn check_driver_info() -> Result<Vec<DriverInfo>, String> {
     .map_err(|e| e.to_string())?
 }
 
-/// Export context JSON for AI analysis
+/// Export context JSON for AI analysis (also callable as a Tauri command)
+#[tauri::command]
 pub async fn export_updates_context() -> Result<String, String> {
     let app_updates = check_app_updates().await?;
     let drivers = check_driver_info().await?;

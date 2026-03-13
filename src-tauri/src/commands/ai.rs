@@ -310,7 +310,7 @@ pub async fn get_ai_hardware_mode() -> Result<AiHardwareMode, String> {
 {{
   "mode": "performance" | "balanced" | "efficiency",
   "reason": "50文字以内の日本語の理由",
-  "suggested_power_limit_percent": 0.0から1.0の数値（デフォルト電力に対する割合）
+  "suggested_power_limit_percent": 0.0から1.0の数値（デフォルト電力に対する割合、あくまで目安。アプリ側ではmodeに対応した固定比を使用します）
 }}
 
 モードの定義：
@@ -318,6 +318,7 @@ pub async fn get_ai_hardware_mode() -> Result<AiHardwareMode, String> {
 - balanced: 日常使用向け（電力 0.8 = 20%削減）
 - efficiency: 発熱抑制・省電力優先（電力 0.65 = 35%削減）
 
+gpus配列に複数GPUが含まれる場合でも、推奨モードはGPU #0（インデックス0）を前提に決めてください。
 GPUデータが無い場合は balanced を推奨してください。"#,
         serde_json::to_string_pretty(&context).unwrap_or_default()
     );

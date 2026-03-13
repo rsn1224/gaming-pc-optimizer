@@ -233,3 +233,23 @@
 - `build.rs` の `requireAdministrator` は削除済み（STATUS_ENTRYPOINT_NOT_FOUND 対策）
 - winreg は HKCU のみ書き込み → 管理者権限不要
 - テスト環境では管理者・非管理者両方で確認推奨
+
+## Phase X-1/X-2 軽微改善（2026-03-14）
+
+### タスク1: export_updates_context を Tauri コマンドとして公開
+- `updates.rs` の `export_updates_context()` に `#[tauri::command]` を追加
+- `lib.rs` に `updates::export_updates_context` を登録
+- フロントエンド・デバッグから直接呼び出し可能に
+
+### タスク2: suggested_power_limit_percent を UI に表示
+- `Hardware.tsx` のAI推奨バナーに「推奨電力比: 0.80（参考値）」を追加
+- `aiLog` メッセージにも推奨電力比を含める
+- 実際の適用は従来どおり `MODE_CONFIG[mode].powerRatio` の固定比を使用
+
+### タスク3: get_ai_hardware_mode プロンプトにマルチGPU前提を明示
+- `ai.rs` のプロンプトに「gpus配列に複数GPUが含まれる場合でも GPU #0 を前提に推奨する」を追記
+- `suggested_power_limit_percent` はアプリ側で固定比を使う旨を明記
+
+### タスク4: updates.rs のエラーログ追加
+- `check_app_updates` の winget spawn 失敗時に `eprintln!` でログ出力
+- `upgrade_apps` の各アプリ失敗時・spawn エラー時に `eprintln!` でログ出力

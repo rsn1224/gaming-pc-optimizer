@@ -248,7 +248,7 @@ export function Hardware() {
       const result = await invoke<AiHardwareMode>("get_ai_hardware_mode");
       setAiResult(result);
       setAiLog({
-        msg: `AI推奨: ${MODE_CONFIG[result.mode as GpuMode]?.label ?? result.mode} — ${result.reason}`,
+        msg: `AI推奨: ${MODE_CONFIG[result.mode as GpuMode]?.label ?? result.mode} — ${result.reason}（推奨電力比: ${result.suggested_power_limit_percent.toFixed(2)}）`,
         ok: true,
       });
     } catch (e) {
@@ -331,6 +331,9 @@ export function Hardware() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-purple-300">
               AI推奨モード: {MODE_CONFIG[aiResult.mode as GpuMode]?.label ?? aiResult.mode}
+              <span className="ml-2 text-[11px] font-normal opacity-70">
+                推奨電力比: {aiResult.suggested_power_limit_percent.toFixed(2)}（参考値）
+              </span>
             </p>
             <p className="text-xs text-purple-400/80 mt-0.5">{aiResult.reason}</p>
           </div>

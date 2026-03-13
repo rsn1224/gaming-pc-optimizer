@@ -179,6 +179,7 @@ pub fn run() {
             updates::check_app_updates,
             updates::upgrade_apps,
             updates::check_driver_info,
+            updates::export_updates_context,
             // Hardware
             hardware::get_gpu_status,
             hardware::set_gpu_power_limit,
