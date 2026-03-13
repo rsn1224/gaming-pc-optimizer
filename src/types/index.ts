@@ -79,4 +79,17 @@ export interface PingResult {
 
 export type DnsPreset = "google" | "cloudflare" | "opendns" | "dhcp";
 
-export type ActivePage = "dashboard" | "gamemode" | "windows" | "storage" | "network" | "settings";
+export interface GameProfile {
+  id: string;
+  name: string;
+  exe_path: string;
+  tags: string[];
+  kill_bloatware: boolean;
+  power_plan: "none" | "ultimate" | "high_performance";
+  windows_preset: "none" | "gaming" | "default";
+  storage_mode: "none" | "light" | "deep";
+  network_mode: "none" | "gaming";
+  dns_preset: "none" | "google" | "cloudflare" | "opendns" | "dhcp";
+}
+
+export type ActivePage = "dashboard" | "gamemode" | "windows" | "storage" | "network" | "profiles" | "settings";

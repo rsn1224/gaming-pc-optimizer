@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{network, power, process, storage, system_info, windows_settings};
+use commands::{network, power, process, profiles, storage, system_info, windows_settings};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -31,6 +31,10 @@ pub fn run() {
             network::get_network_adapters,
             network::set_adapter_dns,
             network::ping_host,
+            profiles::list_profiles,
+            profiles::save_profile,
+            profiles::delete_profile,
+            profiles::apply_profile,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -955,6 +955,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-shell",
  "tokio",
+ "uuid",
  "winreg",
 ]
 

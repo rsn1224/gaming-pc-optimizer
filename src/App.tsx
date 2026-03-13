@@ -1,4 +1,4 @@
-import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { Dashboard } from "@/components/dashboard/Dashboard";
@@ -6,6 +6,7 @@ import { GameMode } from "@/components/optimization/GameMode";
 import { WindowsSettings } from "@/components/optimization/WindowsSettings";
 import { StorageCleanup } from "@/components/optimization/StorageCleanup";
 import { NetworkOptimizer } from "@/components/optimization/NetworkOptimizer";
+import { Profiles } from "@/components/profiles/Profiles";
 import { Settings } from "@/components/settings/Settings";
 import type { ActivePage } from "@/types";
 
@@ -22,6 +23,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "windows", icon: <Monitor size={18} />, label: "Windows設定" },
   { id: "storage", icon: <HardDrive size={18} />, label: "ストレージ" },
   { id: "network", icon: <Wifi size={18} />, label: "ネットワーク" },
+  { id: "profiles", icon: <BookMarked size={18} />, label: "プロファイル" },
   { id: "settings", icon: <SettingsIcon size={18} />, label: "設定" },
 ];
 
@@ -37,6 +39,8 @@ function PageContent({ page }: { page: ActivePage }) {
       return <StorageCleanup />;
     case "network":
       return <NetworkOptimizer />;
+    case "profiles":
+      return <Profiles />;
     case "settings":
       return <Settings />;
   }
@@ -66,6 +70,7 @@ export default function App() {
             const isActive = activePage === item.id;
             return (
               <button
+                type="button"
                 key={item.id}
                 onClick={() => setActivePage(item.id)}
                 className={cn(

@@ -48,7 +48,26 @@
 3. ~~Phase 2: Windows設定（winreg crate）~~ ✅ (2026-03-13 完了)
 4. ~~Phase 3: ストレージ管理~~ ✅ (2026-03-13 完了)
 5. ~~Phase 4: ネットワーク最適化~~ ✅ (2026-03-13 完了)
-6. 全 Phase 完了 🎉
+6. ~~Phase 5: ゲームプロファイル機能~~ ✅ (2026-03-14 完了)
+7. 全 Phase 完了 🎉
+
+### Phase 5 実装内容 (2026-03-14)
+
+**Rustバックエンド** `src-tauri/src/commands/profiles.rs`
+
+- `GameProfile` 構造体: id(UUID v4), name, exe_path, tags, kill_bloatware, power_plan, windows_preset, storage_mode, network_mode, dns_preset
+- JSON永続化: `%APPDATA%\gaming-pc-optimizer\profiles.json`
+- コマンド: `list_profiles`, `save_profile`, `delete_profile`, `apply_profile`
+- `apply_profile`: 既存コマンドを順次呼び出し (kill_bloatware → 電源 → Windows → ストレージ → ネット → DNS)
+
+**フロントエンド** `src/components/profiles/Profiles.tsx`
+
+- プロファイル一覧（グリッド表示、name/exe_path/タグ/最適化バッジ）
+- 「新規作成」ボタン → モーダルで全設定を編集
+- 編集・削除ボタン（削除は confirm ダイアログ）
+- 「このプロファイルを適用」ボタン → apply_profile 呼び出し → ログ表示
+- `src/types/index.ts` に `GameProfile` 型定義追加
+- `src/App.tsx` に「プロファイル」ナビタブ追加（BookMarked アイコン）
 
 ### Phase 2 実装内容 (2026-03-13)
 
