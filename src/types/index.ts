@@ -93,3 +93,41 @@ export interface GameProfile {
 }
 
 export type ActivePage = "dashboard" | "gamemode" | "windows" | "storage" | "network" | "profiles" | "settings";
+
+// export_profiles_context response shape
+export interface ProfilesContextProfile {
+  id: string;
+  name: string;
+  exe_path: string;
+  tags: string[];
+  is_draft: boolean;
+  settings: {
+    kill_bloatware: boolean;
+    power_plan: string;
+    windows_preset: string;
+    storage_mode: string;
+    network_mode: string;
+    dns_preset: string;
+  };
+}
+
+export interface ProfilesContext {
+  schema_version: string;
+  generated_at: string;
+  available_options: {
+    power_plan: string[];
+    windows_preset: string[];
+    storage_mode: string[];
+    network_mode: string[];
+    dns_preset: string[];
+  };
+  system: {
+    cpu_name: string;
+    cpu_cores: number;
+    memory_total_mb: number;
+    os_name: string;
+    os_version: string;
+  };
+  gpu: { name: string; vram_total_mb: number }[];
+  profiles: ProfilesContextProfile[];
+}

@@ -73,6 +73,184 @@ fn save_profiles(profiles: &[GameProfile]) -> Result<(), String> {
         .map_err(|e| format!("ファイル書き込み失敗: {}", e))
 }
 
+// ── is_draft helper ──────────────────────────────────────────────────────────
+
+/// A profile is a "draft" if none of its optimization flags have been set yet.
+/// Computed dynamically at export time; no field added to GameProfile.
+fn is_draft(p: &GameProfile) -> bool {
+    !p.kill_bloatware
+        && p.power_plan == "none"
+        && p.windows_preset == "none"
+        && p.storage_mode == "none"
+        && p.network_mode == "none"
+        && p.dns_preset == "none"
+}
+
+// ── export_profiles_context ───────────────────────────────────────────────────
+
+#[derive(Serialize)]
+struct SystemSnapshot {
+    cpu_name: String,
+    cpu_cores: usize,
+    memory_total_mb: f64,
+    os_name: String,
+    os_version: String,
+}
+
+#[derive(Serialize)]
+struct GpuSnapshot {
+    name: String,
+    vram_total_mb: f64,
+}
+
+#[derive(Serialize)]
+struct ProfileEntry<'a> {
+    id: &'a str,
+    name: &'a str,
+    exe_path: &'a str,
+    tags: &'a [String],
+    is_draft: bool,
+    settings: ProfileSettings<'a>,
+}
+
+#[derive(Serialize)]
+struct ProfileSettings<'a> {
+    kill_bloatware: bool,
+    power_plan: &'a str,
+    windows_preset: &'a str,
+    storage_mode: &'a str,
+    network_mode: &'a str,
+    dns_preset: &'a str,
+}
+
+/// Export system info + all profiles into a single JSON string.
+/// Intended for use with Claude Code to generate AI-assisted profile suggestions.
+/// `cpu_usage` is deliberately excluded to avoid the 200 ms polling delay.
+#[tauri::command]
+pub fn export_profiles_context() -> Result<String, String> {
+    // System info (lightweight — no cpu_usage, no sleep)
+    use sysinfo::{MemoryRefreshKind, RefreshKind, System};
+    let mut sys = System::new_with_specifics(
+        RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
+    );
+    sys.refresh_memory();
+
+    let cpu_name = {
+        use sysinfo::CpuRefreshKind;
+        let mut s2 = System::new_with_specifics(
+            RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()),
+        );
+        s2.refresh_cpu_list(CpuRefreshKind::nothing());
+        s2.cpus()
+            .first()
+            .map(|c| c.brand().to_string())
+            .unwrap_or_else(|| "Unknown".to_string())
+    };
+    let cpu_cores = {
+        use sysinfo::CpuRefreshKind;
+        let mut s2 = System::new_with_specifics(
+            RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()),
+        );
+        s2.refresh_cpu_list(CpuRefreshKind::nothing());
+        s2.cpus().len()
+    };
+
+    let system = SystemSnapshot {
+        cpu_name,
+        cpu_cores,
+        memory_total_mb: sys.total_memory() as f64 / 1024.0 / 1024.0,
+        os_name: System::name().unwrap_or_else(|| "Windows".to_string()),
+        os_version: System::os_version().unwrap_or_else(|| "Unknown".to_string()),
+    };
+
+    // GPU info
+    let gpu: Vec<GpuSnapshot> = super::system_info::get_gpu_info()
+        .into_iter()
+        .map(|g| GpuSnapshot {
+            name: g.name,
+            vram_total_mb: g.vram_total_mb,
+        })
+        .collect();
+
+    // Profiles
+    let raw_profiles = load_profiles();
+    let profile_entries: Vec<ProfileEntry> = raw_profiles
+        .iter()
+        .map(|p| ProfileEntry {
+            id: &p.id,
+            name: &p.name,
+            exe_path: &p.exe_path,
+            tags: &p.tags,
+            is_draft: is_draft(p),
+            settings: ProfileSettings {
+                kill_bloatware: p.kill_bloatware,
+                power_plan: &p.power_plan,
+                windows_preset: &p.windows_preset,
+                storage_mode: &p.storage_mode,
+                network_mode: &p.network_mode,
+                dns_preset: &p.dns_preset,
+            },
+        })
+        .collect();
+
+    // Available options (so AI knows valid values)
+    let available_options = serde_json::json!({
+        "power_plan":      ["none", "ultimate", "high_performance"],
+        "windows_preset":  ["none", "gaming", "default"],
+        "storage_mode":    ["none", "light", "deep"],
+        "network_mode":    ["none", "gaming"],
+        "dns_preset":      ["none", "google", "cloudflare", "opendns", "dhcp"]
+    });
+
+    let ctx = serde_json::json!({
+        "schema_version": "1",
+        "generated_at": chrono_now(),
+        "available_options": available_options,
+        "system": system,
+        "gpu": gpu,
+        "profiles": profile_entries,
+    });
+
+    serde_json::to_string_pretty(&ctx).map_err(|e| e.to_string())
+}
+
+fn chrono_now() -> String {
+    // Simple ISO-8601 timestamp without pulling in chrono crate
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    // Format as approximate UTC (good enough for context metadata)
+    let (y, mo, d, h, mi, s) = unix_to_ymd_hms(secs);
+    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", y, mo, d, h, mi, s)
+}
+
+fn unix_to_ymd_hms(secs: u64) -> (u64, u64, u64, u64, u64, u64) {
+    let s = secs % 60;
+    let total_min = secs / 60;
+    let mi = total_min % 60;
+    let total_hr = total_min / 60;
+    let h = total_hr % 24;
+    let mut days = total_hr / 24;
+    let mut y = 1970u64;
+    loop {
+        let dy = if y % 4 == 0 && (y % 100 != 0 || y % 400 == 0) { 366 } else { 365 };
+        if days < dy { break; }
+        days -= dy;
+        y += 1;
+    }
+    let leap = y % 4 == 0 && (y % 100 != 0 || y % 400 == 0);
+    let months = [31u64, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let mut mo = 1u64;
+    for dm in &months {
+        if days < *dm { break; }
+        days -= dm;
+        mo += 1;
+    }
+    (y, mo, days + 1, h, mi, s)
+}
+
 // ── Tauri commands ───────────────────────────────────────────────────────────
 
 #[tauri::command]

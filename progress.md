@@ -49,7 +49,42 @@
 4. ~~Phase 3: ストレージ管理~~ ✅ (2026-03-13 完了)
 5. ~~Phase 4: ネットワーク最適化~~ ✅ (2026-03-13 完了)
 6. ~~Phase 5: ゲームプロファイル機能~~ ✅ (2026-03-14 完了)
-7. 全 Phase 完了 🎉
+7. ~~Phase 6: 常駐型（システムトレイ・自動最適化）~~ ✅ (2026-03-14 完了)
+8. ~~Phase 7: AI プロファイルコンテキストエクスポート~~ ✅ (2026-03-14 完了)
+
+### Phase 7 実装内容 (2026-03-14) — AI プロファイルコンテキストエクスポート
+
+**Rustバックエンド** `src-tauri/src/commands/profiles.rs`
+
+- `export_profiles_context()` Tauriコマンド: システム情報 + GPU + 全プロファイルを単一JSONへ出力
+- `is_draft()` ヘルパー: 全設定が "none"/false なら true (構造体に追加せず動的算出)
+- `available_options` を JSON に埋め込み: AI が有効な列挙値を把握できる
+- `cpu_usage` を意図的に除外: 200ms の sleep ペナルティを回避
+- `chrono_now()` + `unix_to_ymd_hms()`: chrono クレート不要の ISO-8601 タイムスタンプ生成
+- `lib.rs` に `export_profiles_context` コマンドを登録
+
+**フロントエンド**
+
+- `src/types/index.ts` に `ProfilesContext` / `ProfilesContextProfile` 型定義追加
+- `Profiles.tsx`: "ドラフト追加" クイックボタン → 名前+EXEのみ入力モーダル
+- `Profiles.tsx`: ProfileCard にドラフトバッジ（amber）表示（全設定が none/false の場合）
+
+### Phase 6 実装内容 (2026-03-14) — 常駐型（システムトレイ・自動最適化）
+
+**Rustバックエンド**
+
+- `src-tauri/src/commands/watcher.rs` 新規: autostart(winreg)、auto_optimize 状態、watcher_loop（4秒ポーリング）
+- `src-tauri/src/lib.rs` 全面改訂: WatcherState + AppState、システムトレイメニュー（CheckMenuItem含む）、Close-to-tray、watcher_loop 起動
+- `src-tauri/src/commands/power.rs`: power_backup.json でプラン GUID をバックアップ/復元
+- `tauri-plugin-notification` でゲーム検出時/終了時にトースト通知
+- `src-tauri/capabilities/default.json` 新規: notification 権限
+
+**フロントエンド**
+
+- `src/stores/useAppStore.ts`: activeProfileId, autoOptimize 状態追加
+- `src/App.tsx`: active_profile_changed / auto_optimize_changed イベントリスナー、プロファイルタブにシアン点滅ドット
+- `src/components/settings/Settings.tsx`: 自動起動トグル、自動最適化トグル
+- `src/components/profiles/Profiles.tsx`: isActive prop → シアンボーダー + 適用中バッジ
 
 ### Phase 5 実装内容 (2026-03-14)
 

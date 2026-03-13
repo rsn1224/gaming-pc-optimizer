@@ -163,6 +163,7 @@ pub fn run() {
             profiles::save_profile,
             profiles::delete_profile,
             profiles::apply_profile,
+            profiles::export_profiles_context,
             // Watcher / tray commands
             watcher::get_auto_start,
             watcher::set_auto_start,

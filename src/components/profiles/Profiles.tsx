@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap } from "lucide-react";
+import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap, FilePlus } from "lucide-react";
 import { useAppStore } from "@/stores/useAppStore";
 import type { GameProfile } from "@/types";
 
@@ -286,6 +286,7 @@ function ProfileCard({ profile, onEdit, onDelete, onApply, applying, isActive }:
   if (profile.storage_mode !== "none") badges.push("ストレージ " + profile.storage_mode);
   if (profile.network_mode === "gaming") badges.push("ネット最適化");
   if (profile.dns_preset !== "none") badges.push("DNS:" + profile.dns_preset);
+  const isDraft = badges.length === 0 && !profile.kill_bloatware;
 
   return (
     <div className={`bg-card border rounded-lg p-4 flex flex-col gap-3 transition-colors ${isActive ? "border-cyan-500/50 shadow-[0_0_0_1px] shadow-cyan-500/20" : "border-border hover:border-primary/30"}`}>
@@ -297,6 +298,11 @@ function ProfileCard({ profile, onEdit, onDelete, onApply, applying, isActive }:
               <span className="inline-flex items-center gap-1 text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-full px-2 py-0.5 shrink-0">
                 <Zap size={9} />
                 適用中
+              </span>
+            )}
+            {isDraft && !isActive && (
+              <span className="inline-flex items-center gap-1 text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full px-2 py-0.5 shrink-0">
+                下書き
               </span>
             )}
           </div>
@@ -360,6 +366,101 @@ function ProfileCard({ profile, onEdit, onDelete, onApply, applying, isActive }:
   );
 }
 
+// ── Quick-draft modal ─────────────────────────────────────────────────────────
+
+interface QuickDraftProps {
+  onSave: (p: GameProfile) => void;
+  onClose: () => void;
+}
+
+function QuickDraftModal({ onSave, onClose }: QuickDraftProps) {
+  const [name, setName] = useState("");
+  const [exePath, setExePath] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const handleSave = async () => {
+    if (!name.trim()) { setErr("プロファイル名は必須です"); return; }
+    setSaving(true);
+    setErr("");
+    try {
+      const profile: GameProfile = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        exe_path: exePath.trim(),
+        tags: [],
+        kill_bloatware: false,
+        power_plan: "none",
+        windows_preset: "none",
+        storage_mode: "none",
+        network_mode: "none",
+        dns_preset: "none",
+      };
+      await invoke("save_profile", { profile });
+      onSave(profile);
+    } catch (e) {
+      setErr(String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-xl w-full max-w-sm mx-4 shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="font-semibold text-base">ドラフトとして追加</h2>
+          <button type="button" onClick={onClose} aria-label="閉じる" className="text-muted-foreground hover:text-foreground">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-5 flex flex-col gap-4">
+          <p className="text-xs text-muted-foreground">名前と実行ファイルだけ登録し、設定は後で編集できます。</p>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">プロファイル名 *</label>
+            <input
+              className="bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-primary/60"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              placeholder="例: Apex Legends"
+              autoFocus
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">実行ファイルパス（任意）</label>
+            <input
+              className="bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-primary/60 font-mono"
+              value={exePath}
+              onChange={(e) => setExePath(e.target.value)}
+              placeholder="r5apex.exe"
+            />
+          </div>
+          {err && <p className="text-xs text-red-400">{err}</p>}
+        </div>
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-border">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-md text-sm bg-secondary border border-border hover:bg-secondary/80"
+          >
+            キャンセル
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+          >
+            {saving && <Loader2 size={14} className="animate-spin" />}
+            追加
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function Profiles() {
@@ -369,6 +470,7 @@ export function Profiles() {
   const [modal, setModal] = useState<Partial<GameProfile> | null>(null);
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [applyLog, setApplyLog] = useState<{ id: string; log: string; ok: boolean } | null>(null);
+  const [quickDraft, setQuickDraft] = useState(false);
 
   const reload = async () => {
     try {
@@ -432,14 +534,25 @@ export function Profiles() {
             <p className="text-sm text-muted-foreground">ゲームごとの最適化設定を保存・適用</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setModal({})}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
-          <Plus size={16} />
-          新規作成
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setQuickDraft(true)}
+            title="ドラフトとして追加（名前とEXEのみ）"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary border border-border text-sm font-medium hover:bg-secondary/80 transition-colors text-muted-foreground"
+          >
+            <FilePlus size={16} />
+            ドラフト追加
+          </button>
+          <button
+            type="button"
+            onClick={() => setModal({})}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Plus size={16} />
+            新規作成
+          </button>
+        </div>
       </div>
 
       {/* Apply log */}
@@ -495,6 +608,12 @@ export function Profiles() {
           initial={modal}
           onSave={handleSave}
           onClose={() => setModal(null)}
+        />
+      )}
+      {quickDraft && (
+        <QuickDraftModal
+          onSave={(p) => { handleSave(p); setQuickDraft(false); }}
+          onClose={() => setQuickDraft(false)}
         />
       )}
     </div>
