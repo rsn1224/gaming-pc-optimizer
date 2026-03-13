@@ -276,6 +276,63 @@ pub async fn get_ai_update_priorities() -> Result<Vec<AiUpdatePriority>, String>
         .map_err(|e| format!("AIレスポンスの解析失敗: {}", e))
 }
 
+// ── Network recommendation AI ─────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AiNetworkRecommendation {
+    pub adapter_name: String,
+    pub dns_preset: String, // "google" | "cloudflare" | "opendns" | "current"
+    pub explanation: String,
+    pub apply_network_gaming: bool,
+}
+
+#[tauri::command]
+pub async fn get_ai_network_recommendation(
+    adapter_name: String,
+) -> Result<AiNetworkRecommendation, String> {
+    let api_key = load_config().ai_api_key;
+    if api_key.is_empty() {
+        return Err("Anthropic API キーが設定されていません。設定ページで入力してください。".to_string());
+    }
+
+    // export_network_advisor_context runs ping (blocking I/O) — use spawn_blocking
+    let context = tokio::task::spawn_blocking({
+        let name = adapter_name.clone();
+        move || super::network::export_network_advisor_context(name)
+    })
+    .await
+    .map_err(|e| format!("コンテキスト取得エラー: {}", e))??;
+
+    let prompt = format!(
+        r#"あなたはオンラインゲームに詳しいネットワークエンジニアです。
+以下のJSONはこのPCのネットワーク設定と、主要DNSに対するPingテスト結果です。
+
+{}
+
+オンラインゲーム（FPS等）のプレイ時に最もレイテンシが低く安定するDNSプリセットとネットワーク設定を1つ提案してください。
+
+考慮点:
+- 平均レイテンシ（avg_ms）、ジッター（max_ms - min_ms）、パケットロス（packet_loss）を考慮する
+- packet_loss が 0 でないDNSは避ける
+- apply_network_gaming を true にするとNetworkThrottlingIndex等のレジストリを最適値に変更する（管理者権限が必要）
+
+JSONのみを返してください（説明・マークダウン不要）：
+
+{{
+  "adapter_name": "<上記JSONのadapter.nameをそのまま使用>",
+  "dns_preset": "google" | "cloudflare" | "opendns" | "current",
+  "apply_network_gaming": true または false,
+  "explanation": "なぜこのDNSと設定を選んだかの理由（日本語・2〜3文）"
+}}"#,
+        context
+    );
+
+    let content_text = call_claude_api(&api_key, &prompt, 512).await?;
+    let json_str = extract_json_object(&content_text);
+    serde_json::from_str::<AiNetworkRecommendation>(json_str)
+        .map_err(|e| format!("AIレスポンスの解析失敗: {}", e))
+}
+
 // ── Hardware mode AI ──────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

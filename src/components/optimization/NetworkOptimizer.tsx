@@ -282,6 +282,7 @@ function DnsAutoTestSection({
 }) {
   const [results, setResults] = useState<DnsPingSummary[]>([]);
   const [isTesting, setIsTesting] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied">("idle");
   const [recJson, setRecJson] = useState("");
   const [parsedRec, setParsedRec] = useState<NetworkRecommendation | null>(null);
@@ -300,6 +301,26 @@ function DnsAutoTestSection({
       console.error(e);
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const handleAiRecommend = async () => {
+    if (!selectedAdapter || isAiLoading) return;
+    setIsAiLoading(true);
+    setParsedRec(null);
+    setRecJson("");
+    setParseError("");
+    setApplyStatus("idle");
+    setApplyMsg("");
+    try {
+      const rec = await invoke<NetworkRecommendation>("get_ai_network_recommendation", {
+        adapterName: selectedAdapter,
+      });
+      setParsedRec(rec);
+    } catch (e) {
+      setParseError(String(e));
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -364,26 +385,48 @@ function DnsAutoTestSection({
           <Brain size={16} className="text-muted-foreground" />
           <span className="text-sm font-semibold">DNS 自動テスト &amp; AI推奨</span>
         </div>
-        <button
-          type="button"
-          onClick={runTest}
-          disabled={!selectedAdapter || isTesting}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md transition-all
-            ${isTesting
-              ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
-              : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
-            }
-            disabled:opacity-40 disabled:cursor-not-allowed`}
-        >
-          {isTesting ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />}
-          {isTesting ? "テスト中..." : "DNS自動テスト"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={runTest}
+            disabled={!selectedAdapter || isTesting || isAiLoading}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md transition-all
+              ${isTesting
+                ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
+                : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+              }
+              disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            {isTesting ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />}
+            {isTesting ? "テスト中..." : "DNS自動テスト"}
+          </button>
+          <button
+            type="button"
+            onClick={handleAiRecommend}
+            disabled={!selectedAdapter || isTesting || isAiLoading}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md transition-all
+              ${isAiLoading
+                ? "bg-purple-500/20 border-purple-500/50 text-purple-300"
+                : "bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20 hover:border-purple-500/50"
+              }
+              disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            {isAiLoading ? <Loader2 size={12} className="animate-spin" /> : <Brain size={12} />}
+            {isAiLoading ? "AI分析中..." : "AIに推奨してもらう"}
+          </button>
+        </div>
       </div>
 
       <div className="p-4 flex flex-col gap-3">
-        {results.length === 0 && !isTesting && (
+        {results.length === 0 && !isTesting && !isAiLoading && !parsedRec && (
           <p className="text-xs text-muted-foreground">
-            「DNS自動テスト」をクリックすると Google / Cloudflare / OpenDNS / 現在のDNS に Ping を実行し、最適な設定を AI が提案します。
+            「AIに推奨してもらう」でDNSテスト＋AI分析を自動実行します。「DNS自動テスト」で生データを確認してから手動でClaudeに聞くこともできます。
+          </p>
+        )}
+
+        {parseError && !isTesting && !isAiLoading && results.length === 0 && (
+          <p className="text-xs text-destructive flex items-center gap-1">
+            <XCircle size={11} /> {parseError}
           </p>
         )}
 
@@ -392,6 +435,20 @@ function DnsAutoTestSection({
             <Loader2 size={12} className="animate-spin" />
             主要DNSにPing送信中... しばらくお待ちください
           </div>
+        )}
+
+        {isAiLoading && (
+          <div className="flex items-center gap-2 text-xs text-purple-400">
+            <Loader2 size={12} className="animate-spin" />
+            DNSテスト実行中 → Claude AI が分析中... しばらくお待ちください
+          </div>
+        )}
+
+        {parsedRec && !isAiLoading && results.length === 0 && (
+          <p className="text-xs text-green-400 flex items-center gap-1.5">
+            <CheckCircle2 size={12} />
+            AI分析完了 — 下の推奨設定を確認して適用してください
+          </p>
         )}
 
         {results.length > 0 && (
