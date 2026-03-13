@@ -1,8 +1,8 @@
 mod commands;
 
 use commands::{
-    ai, hardware, network, power, process, profiles, steam, storage, system_info, updates, watcher,
-    windows_settings,
+    ai, hardware, network, power, process, profiles, self_improve, steam, storage, system_info,
+    updates, watcher, windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -182,6 +182,8 @@ pub fn run() {
             ai::get_ai_network_recommendation,
             ai::get_ai_windows_recommendation,
             ai::get_ai_storage_recommendation,
+            // Self-improvement
+            self_improve::export_self_improve_context,
             // Updates
             updates::check_app_updates,
             updates::upgrade_apps,

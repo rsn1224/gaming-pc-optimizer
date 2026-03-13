@@ -162,6 +162,10 @@ pub fn apply_gaming_windows_settings() -> Result<WindowsSettings, String> {
     set_menu_show_delay(0)?;     // Instant menus
     set_animate_windows(false)?; // No animations
 
+    super::log_observation(
+        "apply_gaming_windows_settings",
+        serde_json::json!({ "applied": true }),
+    );
     get_windows_settings()
 }
 
@@ -195,6 +199,10 @@ pub fn restore_windows_settings() -> Result<WindowsSettings, String> {
     // Remove backup after successful restore
     std::fs::remove_file(&backup_path).ok();
 
+    super::log_observation(
+        "restore_windows_settings",
+        serde_json::json!({ "restored": true }),
+    );
     get_windows_settings()
 }
 
@@ -212,6 +220,16 @@ pub fn apply_windows_preset(settings: WindowsSettings) -> Result<WindowsSettings
     set_game_dvr(settings.game_dvr)?;
     set_menu_show_delay(settings.menu_show_delay)?;
     set_animate_windows(settings.animate_windows)?;
+    super::log_observation(
+        "apply_windows_preset",
+        serde_json::json!({
+            "visual_fx": settings.visual_fx,
+            "transparency": settings.transparency,
+            "game_dvr": settings.game_dvr,
+            "menu_show_delay": settings.menu_show_delay,
+            "animate_windows": settings.animate_windows,
+        }),
+    );
     get_windows_settings()
 }
 

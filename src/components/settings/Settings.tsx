@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check } from "lucide-react";
+import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check, Copy, FlaskConical } from "lucide-react";
 import { useAppStore, type Theme } from "@/stores/useAppStore";
 import { Toggle } from "@/components/ui/toggle";
 
@@ -33,6 +33,8 @@ export function Settings() {
   const [apiKey, setApiKey] = useState("");
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
   const [apiKeySaved, setApiKeySaved] = useState(false);
+  const [selfImproveCopied, setSelfImproveCopied] = useState(false);
+  const [selfImproveError, setSelfImproveError] = useState("");
 
   // Load initial values from Rust
   useEffect(() => {
@@ -66,6 +68,18 @@ export function Settings() {
       setAutoOptimize(enabled);
     } catch (e) {
       alert("自動最適化の設定に失敗しました: " + e);
+    }
+  };
+
+  const handleCopySelfImprove = async () => {
+    setSelfImproveError("");
+    try {
+      const json = await invoke<string>("export_self_improve_context", { limit: 200 });
+      await navigator.clipboard.writeText(json);
+      setSelfImproveCopied(true);
+      setTimeout(() => setSelfImproveCopied(false), 2000);
+    } catch (e) {
+      setSelfImproveError(String(e));
     }
   };
 
@@ -197,6 +211,35 @@ export function Settings() {
               {apiKeySaved ? <><Check size={14} /> 保存済み</> : "保存"}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Self-improve */}
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <FlaskConical size={16} className="text-muted-foreground" />
+          <span className="text-sm font-semibold">自己改善ログ（開発者向け）</span>
+        </div>
+        <div className="p-4 flex flex-col gap-3">
+          <p className="text-xs text-muted-foreground">
+            アプリの操作ログ（直近200件）をJSON形式でコピーします。Claude に貼り付けると、あなたの使い方のパターンを分析して改善提案を生成できます。
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCopySelfImprove}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border rounded-md transition-colors ${
+                selfImproveCopied
+                  ? "bg-green-500/10 text-green-400 border-green-500/30"
+                  : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+              }`}
+            >
+              {selfImproveCopied ? <><Check size={14} /> コピー済み</> : <><Copy size={14} /> 自己改善コンテキストをコピー</>}
+            </button>
+          </div>
+          {selfImproveError && (
+            <p className="text-xs text-destructive">{selfImproveError}</p>
+          )}
         </div>
       </div>
 

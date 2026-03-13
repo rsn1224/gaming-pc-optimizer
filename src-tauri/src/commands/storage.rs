@@ -273,9 +273,19 @@ pub fn clean_storage(ids: Vec<String>) -> CleanResult {
         }
     }
 
-    CleanResult {
+    let result = CleanResult {
         freed_mb: bytes_to_mb(total_freed),
         cleaned_count,
         error_count,
-    }
+    };
+    super::log_observation(
+        "clean_storage",
+        serde_json::json!({
+            "ids": ids,
+            "freed_mb": result.freed_mb,
+            "cleaned_count": result.cleaned_count,
+            "error_count": result.error_count,
+        }),
+    );
+    result
 }

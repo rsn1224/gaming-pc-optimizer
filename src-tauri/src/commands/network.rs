@@ -87,7 +87,9 @@ pub fn apply_network_gaming() -> Result<NetworkSettings, String> {
         key.set_value("TCPNoDelay", &1u32).ok();
     }
 
-    Ok(get_network_settings())
+    let s = get_network_settings();
+    super::log_observation("apply_network_gaming", serde_json::json!({ "applied": true }));
+    Ok(s)
 }
 
 #[tauri::command]
@@ -240,6 +242,10 @@ pub fn set_adapter_dns(adapter_name: String, preset: String) -> Result<(), Strin
         .output()
         .ok();
 
+    super::log_observation(
+        "set_adapter_dns",
+        serde_json::json!({ "adapter": adapter_name, "preset": preset }),
+    );
     Ok(())
 }
 

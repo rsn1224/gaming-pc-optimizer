@@ -108,9 +108,18 @@ pub async fn kill_bloatware(targets: Option<Vec<String>>) -> Result<KillResult, 
         }
     }
 
-    Ok(KillResult {
-        killed,
-        skipped,
+    let result = KillResult {
+        killed: killed.clone(),
+        skipped: skipped.clone(),
         freed_memory_mb: freed_bytes as f64 / 1024.0 / 1024.0,
-    })
+    };
+    super::log_observation(
+        "kill_bloatware",
+        serde_json::json!({
+            "killed": killed,
+            "skipped": skipped,
+            "freed_memory_mb": result.freed_memory_mb,
+        }),
+    );
+    Ok(result)
 }

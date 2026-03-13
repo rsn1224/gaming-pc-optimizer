@@ -113,6 +113,10 @@ pub async fn set_ultimate_performance() -> Result<String, String> {
             .output()
             .ok();
 
+        super::log_observation(
+            "set_ultimate_performance",
+            serde_json::json!({ "guid": guid, "previous_guid": previous_guid }),
+        );
         Ok(format!(
             "{}|{}",
             guid,
