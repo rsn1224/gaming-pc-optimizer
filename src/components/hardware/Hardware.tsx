@@ -13,6 +13,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { GpuStatus, AiHardwareMode } from "@/types";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 // ── Mode config ───────────────────────────────────────────────────────────────
 
@@ -77,12 +78,14 @@ function GpuCard({
   gpu,
   index,
   appliedMode,
+  aiRecommendedMode,
   applying,
   onApplyMode,
 }: {
   gpu: GpuStatus;
   index: number;
   appliedMode: GpuMode | null;
+  aiRecommendedMode?: GpuMode | null;
   applying: boolean;
   onApplyMode: (mode: GpuMode) => void;
 }) {
@@ -148,14 +151,8 @@ function GpuCard({
       <div>
         <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
           <span>VRAM使用率</span>
-          <span>{vramPct.toFixed(1)}%</span>
         </div>
-        <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${vramPct > 90 ? "bg-red-500" : vramPct > 70 ? "bg-amber-400" : "bg-cyan-500"}`}
-            style={{ width: `${vramPct}%` }}
-          />
-        </div>
+        <ProgressBar value={vramPct} colorByValue showLabel />
       </div>
 
       {/* Mode buttons */}
@@ -165,6 +162,7 @@ function GpuCard({
           {(Object.entries(MODE_CONFIG) as [GpuMode, (typeof MODE_CONFIG)[GpuMode]][]).map(
             ([mode, cfg]) => {
               const isActive = appliedMode === mode;
+              const isAiRec = aiRecommendedMode === mode;
               const watts =
                 gpu.power_limit_default_w > 0
                   ? Math.round(gpu.power_limit_default_w * cfg.powerRatio)
@@ -176,10 +174,15 @@ function GpuCard({
                   onClick={() => onApplyMode(mode)}
                   disabled={applying}
                   title={cfg.desc}
-                  className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                  className={`relative flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                     isActive ? cfg.activeCls : cfg.cls
                   } hover:opacity-90`}
                 >
+                  {isAiRec && !isActive && (
+                    <span className="absolute -top-1.5 right-1 text-[8px] font-bold px-1 py-0.5 rounded-full bg-purple-500/30 text-purple-300 border border-purple-500/40">
+                      AI
+                    </span>
+                  )}
                   {isActive && <CheckCircle2 size={12} className="shrink-0" />}
                   <span>{cfg.label}</span>
                   {watts !== null && (
@@ -340,11 +343,15 @@ export function Hardware() {
           {gpus.length > 0 && (
             <button
               type="button"
-              onClick={() => handleApplyMode(0, aiResult.mode as GpuMode)}
+              onClick={async () => {
+                for (let i = 0; i < gpus.length; i++) {
+                  await handleApplyMode(i, aiResult.mode as GpuMode);
+                }
+              }}
               disabled={applyingIdx !== null}
               className="shrink-0 text-xs px-3 py-1.5 rounded-md bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30 disabled:opacity-50 transition-colors"
             >
-              GPU #0 に適用
+              {gpus.length > 1 ? "全GPUに適用" : "適用"}
             </button>
           )}
         </div>
@@ -384,6 +391,7 @@ export function Hardware() {
               gpu={gpu}
               index={i}
               appliedMode={appliedModes[i] ?? null}
+              aiRecommendedMode={aiResult ? (aiResult.mode as GpuMode) : null}
               applying={applyingIdx === i}
               onApplyMode={(mode) => handleApplyMode(i, mode)}
             />

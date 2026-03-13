@@ -241,3 +241,14 @@ export interface ProfilesContext {
   gpu: { name: string; vram_total_mb: number }[];
   profiles: ProfilesContextProfile[];
 }
+
+// ── All-in-one optimizer ────────────────────────────────────────────────────
+
+export interface AllOptimizationResult {
+  process_killed: number;
+  process_freed_mb: number;
+  power_plan_set: boolean;
+  windows_applied: boolean;
+  network_applied: boolean;
+  errors: string[];
+}

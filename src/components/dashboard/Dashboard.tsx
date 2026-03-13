@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Cpu, MemoryStick, Zap, Monitor, MonitorCheck, Shield, HardDrive, Wifi, ChevronRight } from "lucide-react";
+import { Cpu, MemoryStick, Zap, Monitor, MonitorCheck, Shield, HardDrive, Wifi, ChevronRight, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { StatCard } from "@/components/ui/stat-card";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSystemInfo } from "@/hooks/useSystemInfo";
 import { formatMemory } from "@/lib/utils";
-import type { GpuInfo, NetworkSettings } from "@/types";
+import type { GpuInfo, NetworkSettings, AllOptimizationResult } from "@/types";
 
 // ── Health Score ─────────────────────────────────────────────────────────────
 
@@ -49,9 +49,10 @@ export function Dashboard() {
   const [windowsOptimized, setWindowsOptimized] = useState(false);
   const [networkOptimized, setNetworkOptimized] = useState(false);
   const [powerOptimized, setPowerOptimized] = useState(false);
+  const [allOptRunning, setAllOptRunning] = useState(false);
+  const [allOptResult, setAllOptResult] = useState<AllOptimizationResult | null>(null);
 
-  useEffect(() => {
-    invoke<GpuInfo[]>("get_gpu_info").then(setGpuList).catch(console.error);
+  const refreshOptStates = () => {
     invoke<boolean>("has_windows_settings_backup").then(setWindowsOptimized).catch(() => {});
     invoke<NetworkSettings>("get_network_settings")
       .then((s) => setNetworkOptimized(s.throttling_disabled))
@@ -62,7 +63,29 @@ export function Dashboard() {
         setPowerOptimized(lower.includes("ultimate") || lower.includes("high performance") || lower.includes("ハイパフォーマンス"));
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    invoke<GpuInfo[]>("get_gpu_info").then(setGpuList).catch(console.error);
+    refreshOptStates();
   }, []);
+
+  const runAllOptimizations = async () => {
+    if (allOptRunning) return;
+    setAllOptRunning(true);
+    setAllOptResult(null);
+    try {
+      const r = await invoke<AllOptimizationResult>("apply_all_optimizations");
+      setAllOptResult(r);
+      useAppStore.getState().setGameModeActive(true);
+      useAppStore.getState().setFreedMemoryMb(r.process_freed_mb);
+      refreshOptStates();
+    } catch (e) {
+      setAllOptResult({ process_killed: 0, process_freed_mb: 0, power_plan_set: false, windows_applied: false, network_applied: false, errors: [String(e)] });
+    } finally {
+      setAllOptRunning(false);
+    }
+  };
 
   const healthChecks: HealthCheck[] = [
     { label: "プロセス最適化", active: gameModeActive, page: "gamemode" },
@@ -99,29 +122,74 @@ export function Dashboard() {
       </div>
 
       {/* Health Score */}
-      <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-6">
-        <HealthRing score={healthScore} />
-        <div className="flex-1 flex flex-col gap-2">
-          <p className="text-sm font-semibold text-foreground">ゲーミング最適化スコア</p>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-            {healthChecks.map((c) => (
-              <button
-                key={c.label}
-                type="button"
-                onClick={() => useAppStore.getState().setActivePage(c.page as never)}
-                className="flex items-center gap-2 text-xs group text-left"
-              >
-                <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${c.active ? "bg-green-400" : "bg-border"}`} />
-                <span className={c.active ? "text-foreground" : "text-muted-foreground group-hover:text-foreground transition-colors"}>
-                  {c.label}
-                </span>
-                {!c.active && (
-                  <ChevronRight size={10} className="text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
-                )}
-              </button>
-            ))}
+      <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-4">
+        <div className="flex items-center gap-6">
+          <HealthRing score={healthScore} />
+          <div className="flex-1 flex flex-col gap-2">
+            <p className="text-sm font-semibold text-foreground">ゲーミング最適化スコア</p>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              {healthChecks.map((c) => (
+                <button
+                  key={c.label}
+                  type="button"
+                  onClick={() => useAppStore.getState().setActivePage(c.page as never)}
+                  className="flex items-center gap-2 text-xs group text-left"
+                >
+                  <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${c.active ? "bg-green-400" : "bg-border"}`} />
+                  <span className={c.active ? "text-foreground" : "text-muted-foreground group-hover:text-foreground transition-colors"}>
+                    {c.label}
+                  </span>
+                  {!c.active && (
+                    <ChevronRight size={10} className="text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* All-in-one optimization CTA */}
+        {healthScore < 100 && !allOptResult && (
+          <button
+            type="button"
+            onClick={runAllOptimizations}
+            disabled={allOptRunning}
+            className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all border
+              ${allOptRunning
+                ? "bg-primary/20 text-primary/60 cursor-not-allowed border-primary/20"
+                : "bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] glow-cyan border-primary/20"
+              }`}
+          >
+            {allOptRunning ? (
+              <><Loader2 size={18} className="animate-spin" /> 全最適化実行中...</>
+            ) : (
+              <><Zap size={18} /> 今すぐ全最適化（プロセス・電源・Windows・ネットワーク）</>
+            )}
+          </button>
+        )}
+
+        {/* Result banner */}
+        {allOptResult && (
+          <div className={`rounded-lg px-4 py-3 flex flex-col gap-1.5 border ${allOptResult.errors.length > 0 && allOptResult.process_killed === 0 ? "bg-destructive/10 border-destructive/30" : "bg-green-500/10 border-green-500/30"}`}>
+            <div className="flex items-center gap-2">
+              {allOptResult.errors.length === 0 ? (
+                <CheckCircle2 size={15} className="text-green-400 shrink-0" />
+              ) : (
+                <XCircle size={15} className="text-amber-400 shrink-0" />
+              )}
+              <p className="text-sm font-medium text-green-400">全最適化完了</p>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground pl-5">
+              <span>プロセス停止: <span className="text-foreground">{allOptResult.process_killed}件 ({allOptResult.process_freed_mb.toFixed(0)} MB解放)</span></span>
+              {allOptResult.power_plan_set && <span className="text-foreground">電源✓</span>}
+              {allOptResult.windows_applied && <span className="text-foreground">Windows✓</span>}
+              {allOptResult.network_applied && <span className="text-foreground">ネットワーク✓</span>}
+              {allOptResult.errors.map((e, i) => (
+                <span key={i} className="text-amber-400">{e}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* System Stats Grid */}

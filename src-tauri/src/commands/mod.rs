@@ -1,6 +1,7 @@
 pub mod ai;
 pub mod hardware;
 pub mod network;
+pub mod optimizer;
 pub mod power;
 pub mod process;
 pub mod profiles;

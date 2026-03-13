@@ -172,6 +172,18 @@ export function GameMode() {
       description: "Ultimate Performance に切り替え",
       status: "idle",
     },
+    {
+      id: "windows",
+      label: "Windows ゲーミング設定",
+      description: "視覚効果・Game DVR・アニメーションを最適化",
+      status: "idle",
+    },
+    {
+      id: "network",
+      label: "ネットワーク最適化",
+      description: "NetworkThrottlingIndex・TCP/IP を最適値に変更",
+      status: "idle",
+    },
   ]);
 
   // Merge raw processes with knowledge base
@@ -241,21 +253,39 @@ export function GameMode() {
       updateStep("power", { status: "error", result: String(e) });
     }
 
+    // Step 3: Windows gaming settings
+    updateStep("windows", { status: "running" });
+    try {
+      await invoke("apply_gaming_windows_settings");
+      updateStep("windows", { status: "success", result: "視覚効果・Game DVR を最適化しました" });
+    } catch (e) {
+      updateStep("windows", { status: "error", result: String(e) });
+    }
+
+    // Step 4: Network gaming tweaks
+    updateStep("network", { status: "running" });
+    try {
+      await invoke("apply_network_gaming");
+      updateStep("network", { status: "success", result: "TCP/IP・NetworkThrottlingIndex を最適化しました" });
+    } catch (e) {
+      updateStep("network", { status: "error", result: String(e) });
+    }
+
     await scanProcesses();
     setGameModeActive(true);
     setIsOptimizing(false);
   };
 
   const restoreOptimization = async () => {
-    if (!prevPowerGuid) return;
     setIsRestoring(true);
     try {
-      await invoke("restore_power_plan", { previousGuid: prevPowerGuid });
+      // restore_all reverts Windows settings, network settings, and power plan
+      await invoke("restore_all");
       setPrevPowerGuid(null);
       setGameModeActive(false);
       setSteps((prev) => prev.map((s) => ({ ...s, status: "idle", result: undefined })));
     } catch (e) {
-      console.error("Failed to restore power plan:", e);
+      console.error("Failed to restore:", e);
     } finally {
       setIsRestoring(false);
     }
@@ -393,7 +423,7 @@ export function GameMode() {
           )}
         </button>
 
-        {prevPowerGuid && (
+        {gameModeActive && (
           <button
             type="button"
             onClick={restoreOptimization}
