@@ -149,6 +149,8 @@ pub fn run() {
             windows_settings::apply_gaming_windows_settings,
             windows_settings::restore_windows_settings,
             windows_settings::has_windows_settings_backup,
+            windows_settings::apply_windows_preset,
+            windows_settings::export_windows_settings_context,
             // Storage
             storage::scan_storage,
             storage::clean_storage,

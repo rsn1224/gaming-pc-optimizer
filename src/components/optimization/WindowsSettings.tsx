@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   Monitor,
@@ -7,10 +7,16 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
+  Sparkles,
+  ChevronRight,
+  Copy,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { WindowsSettings as WS } from "@/types";
+import type { WindowsSettings as WS, WindowsPreset } from "@/types";
 import { Toggle } from "@/components/ui/toggle";
+import { BUILTIN_WINDOWS_PRESETS } from "@/data/windows_presets";
+import { diffWindowsSettings } from "@/lib/windows_diff";
 
 // ── SettingRow ──────────────────────────────────────────────────────────────
 
@@ -60,6 +66,7 @@ function VisualFXSelector({
       {VISUAL_FX_OPTIONS.map((opt) => (
         <button
           key={opt.value}
+          type="button"
           disabled={disabled}
           onClick={() => onChange(opt.value)}
           className={`
@@ -78,6 +85,85 @@ function VisualFXSelector({
   );
 }
 
+// ── Preset Card ─────────────────────────────────────────────────────────────
+
+function PresetCard({
+  preset,
+  isSelected,
+  isCurrent,
+  onClick,
+}: {
+  preset: WindowsPreset;
+  isSelected: boolean;
+  isCurrent: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 text-left rounded-lg border px-3 py-2.5 transition-all ${
+        isSelected
+          ? "bg-primary/10 border-primary/40 text-primary"
+          : "bg-card border-border text-foreground hover:border-primary/30 hover:bg-secondary/50"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-1">
+        <p className="text-xs font-semibold leading-tight">{preset.label}</p>
+        {isCurrent && !isSelected && (
+          <span className="text-[10px] text-muted-foreground/60 shrink-0">現在</span>
+        )}
+        {isSelected && !isCurrent && (
+          <ChevronRight size={12} className="text-primary shrink-0" />
+        )}
+        {isSelected && isCurrent && (
+          <CheckCircle2 size={12} className="text-green-400 shrink-0" />
+        )}
+      </div>
+      <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
+        {preset.description}
+      </p>
+    </button>
+  );
+}
+
+// ── Diff Table ───────────────────────────────────────────────────────────────
+
+function DiffTable({ diff }: { diff: ReturnType<typeof diffWindowsSettings> }) {
+  if (!diff.hasChanges) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-green-400 px-1">
+        <CheckCircle2 size={14} />
+        現在の設定と同じです
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      <table className="w-full text-xs">
+        <thead className="bg-secondary/50 border-b border-border">
+          <tr>
+            <th className="px-3 py-1.5 text-left text-muted-foreground font-medium">設定項目</th>
+            <th className="px-3 py-1.5 text-left text-muted-foreground font-medium">現在</th>
+            <th className="px-3 py-1.5 text-center text-muted-foreground font-medium w-6">→</th>
+            <th className="px-3 py-1.5 text-left text-primary font-medium">変更後</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/50">
+          {diff.items.map((item) => (
+            <tr key={item.key}>
+              <td className="px-3 py-2 font-medium">{item.label}</td>
+              <td className="px-3 py-2 text-muted-foreground">{item.before}</td>
+              <td className="px-3 py-2 text-center text-muted-foreground/50">→</td>
+              <td className="px-3 py-2 text-primary font-medium">{item.after}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ── Main Component ──────────────────────────────────────────────────────────
 
 type ActionStatus = "idle" | "running" | "success" | "error";
@@ -88,6 +174,10 @@ export function WindowsSettings() {
   const [actionStatus, setActionStatus] = useState<ActionStatus>("idle");
   const [actionMessage, setActionMessage] = useState("");
   const [hasBackup, setHasBackup] = useState(false);
+
+  // Preset state
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const loadSettings = async () => {
     setIsLoading(true);
@@ -109,6 +199,34 @@ export function WindowsSettings() {
     loadSettings();
   }, []);
 
+  // Detect which preset currently matches live settings
+  const currentPresetId = useMemo(() => {
+    if (!settings) return null;
+    for (const p of BUILTIN_WINDOWS_PRESETS) {
+      const s = p.settings;
+      if (
+        s.visual_fx === settings.visual_fx &&
+        s.transparency === settings.transparency &&
+        s.game_dvr === settings.game_dvr &&
+        s.menu_show_delay === settings.menu_show_delay &&
+        s.animate_windows === settings.animate_windows
+      ) {
+        return p.id;
+      }
+    }
+    return null;
+  }, [settings]);
+
+  const selectedPreset = useMemo(
+    () => BUILTIN_WINDOWS_PRESETS.find((p) => p.id === selectedPresetId) ?? null,
+    [selectedPresetId]
+  );
+
+  const diff = useMemo(() => {
+    if (!settings || !selectedPreset) return null;
+    return diffWindowsSettings(settings, selectedPreset.settings);
+  }, [settings, selectedPreset]);
+
   // Individual toggle handlers — optimistic update + backend write
   const handleToggle = async (
     command: string,
@@ -121,7 +239,7 @@ export function WindowsSettings() {
     try {
       await invoke(command, { [key]: value });
     } catch (e) {
-      setSettings(prev); // rollback
+      setSettings(prev);
       console.error(e);
     }
   };
@@ -134,6 +252,26 @@ export function WindowsSettings() {
       await invoke("set_visual_fx", { mode });
     } catch (e) {
       setSettings(prev);
+    }
+  };
+
+  // Apply selected preset via single Rust call
+  const applyPreset = async () => {
+    if (!selectedPreset) return;
+    setActionStatus("running");
+    setActionMessage("");
+    try {
+      const result = await invoke<WS>("apply_windows_preset", {
+        settings: selectedPreset.settings,
+      });
+      setSettings(result);
+      setHasBackup(true);
+      setActionStatus("success");
+      setActionMessage(`「${selectedPreset.label}」プリセットを適用しました`);
+      setSelectedPresetId(null);
+    } catch (e) {
+      setActionStatus("error");
+      setActionMessage(String(e));
     }
   };
 
@@ -169,6 +307,17 @@ export function WindowsSettings() {
     }
   };
 
+  const handleCopyContext = async () => {
+    try {
+      const json = await invoke<string>("export_windows_settings_context");
+      await navigator.clipboard.writeText(json);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const isApplying = actionStatus === "running";
 
   return (
@@ -192,7 +341,89 @@ export function WindowsSettings() {
         )}
       </div>
 
-      {/* Settings Card */}
+      {/* Preset Selector */}
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles size={15} className="text-violet-400" />
+            <span className="text-sm font-semibold">プリセット</span>
+            {currentPresetId && (
+              <span className="text-[11px] text-muted-foreground/70">
+                — 現在:{" "}
+                {BUILTIN_WINDOWS_PRESETS.find((p) => p.id === currentPresetId)?.label}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyContext}
+            disabled={isLoading}
+            title="AIでプリセットを生成するためのコンテキストJSONをコピー"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-muted-foreground rounded-md transition-colors disabled:opacity-40"
+          >
+            {copied ? (
+              <Check size={11} className="text-green-400" />
+            ) : (
+              <Copy size={11} />
+            )}
+            {copied ? "コピー済み" : "AIコンテキストをコピー"}
+          </button>
+        </div>
+
+        <div className="p-3 flex gap-2">
+          {BUILTIN_WINDOWS_PRESETS.map((preset) => (
+            <PresetCard
+              key={preset.id}
+              preset={preset}
+              isSelected={selectedPresetId === preset.id}
+              isCurrent={currentPresetId === preset.id}
+              onClick={() =>
+                setSelectedPresetId((prev) =>
+                  prev === preset.id ? null : preset.id
+                )
+              }
+            />
+          ))}
+        </div>
+
+        {/* Diff preview + explanation + apply */}
+        <AnimatePresence>
+          {selectedPreset && diff && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="border-t border-border overflow-hidden"
+            >
+              <div className="px-4 py-3 flex flex-col gap-3">
+                <DiffTable diff={diff} />
+                {selectedPreset.explanation && (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {selectedPreset.explanation}
+                  </p>
+                )}
+                {diff.hasChanges && (
+                  <button
+                    type="button"
+                    onClick={applyPreset}
+                    disabled={isApplying}
+                    className="self-start flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 disabled:opacity-50 transition-colors"
+                  >
+                    {isApplying ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Zap size={14} />
+                    )}
+                    「{selectedPreset.label}」を適用
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Individual Settings Card */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex items-center gap-2">
           <Zap size={16} className="text-muted-foreground" />
@@ -206,7 +437,6 @@ export function WindowsSettings() {
           </div>
         ) : settings ? (
           <div className="divide-y divide-border/50">
-            {/* Visual FX */}
             <div className="px-4 py-3">
               <p className="text-sm font-medium mb-1">視覚効果</p>
               <p className="text-xs text-muted-foreground mb-2">
@@ -223,9 +453,7 @@ export function WindowsSettings() {
               label="透明効果"
               description="タスクバー・スタートメニューの半透明効果"
               checked={settings.transparency}
-              onChange={(v) =>
-                handleToggle("set_transparency", "transparency", v)
-              }
+              onChange={(v) => handleToggle("set_transparency", "transparency", v)}
               disabled={isApplying}
             />
 
@@ -247,7 +475,6 @@ export function WindowsSettings() {
               disabled={isApplying}
             />
 
-            {/* Menu Show Delay */}
             <div className="px-4 py-3">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm font-medium">メニュー表示遅延</p>
@@ -260,6 +487,7 @@ export function WindowsSettings() {
               </p>
               <input
                 type="range"
+                aria-label="メニュー表示遅延"
                 min={0}
                 max={400}
                 step={50}
@@ -272,9 +500,7 @@ export function WindowsSettings() {
                 }}
                 onMouseUp={(e) => {
                   const v = Number((e.target as HTMLInputElement).value);
-                  invoke("set_menu_show_delay", { delay_ms: v }).catch(
-                    console.error
-                  );
+                  invoke("set_menu_show_delay", { delay_ms: v }).catch(console.error);
                 }}
                 className="w-full accent-cyan-500 disabled:opacity-40"
               />
@@ -311,9 +537,7 @@ export function WindowsSettings() {
           >
             {actionStatus === "success" && <CheckCircle2 size={16} />}
             {actionStatus === "error" && <XCircle size={16} />}
-            {actionStatus === "running" && (
-              <Loader2 size={16} className="animate-spin" />
-            )}
+            {actionStatus === "running" && <Loader2 size={16} className="animate-spin" />}
             {actionMessage}
           </motion.div>
         )}
@@ -322,6 +546,7 @@ export function WindowsSettings() {
       {/* Action Buttons */}
       <div className="flex gap-3">
         <button
+          type="button"
           onClick={applyGaming}
           disabled={isApplying || !settings}
           className={`
@@ -346,6 +571,7 @@ export function WindowsSettings() {
         </button>
 
         <button
+          type="button"
           onClick={restoreDefaults}
           disabled={isApplying || !settings}
           className={`

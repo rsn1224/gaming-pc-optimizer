@@ -271,3 +271,37 @@
 - 知識ベース（PROCESS_KNOWLEDGE[]）は TypeScript 配列で管理。JSON移行容易な構造
 - 注釈のないプロセスは従来通り exe名・PID・リソースのみ表示（既存挙動を壊さない）
 - 実際の停止ロジックは変更なし
+
+## Phase: WindowsSettings プリセットシステム（2026-03-14）
+
+### 新規追加ファイル
+
+- `src/types/index.ts`: `WindowsPreset` インターフェース追加
+- `src/data/windows_presets.ts`: ビルトインプリセット3種（default/gaming/balanced）+ `findPreset()` ユーティリティ
+- `src/lib/windows_diff.ts`: `diffWindowsSettings()` + `humanReadableValue()` — 現在設定とプリセットの差分を日本語で表示
+
+### 変更ファイル — Rustバックエンド
+
+- `src-tauri/src/commands/windows_settings.rs`:
+  - `apply_windows_preset(settings: WindowsSettings)`: 全設定値を一括適用してから現在値を返す
+  - `export_windows_settings_context()`: 現在設定 + ビルトインプリセット + フィールド説明 を JSON で返す（Claude コンテキスト用）
+- `src-tauri/src/lib.rs`: `apply_windows_preset`・`export_windows_settings_context` を invoke_handler に登録
+
+### 変更ファイル — フロントエンド
+
+- `src/components/optimization/WindowsSettings.tsx` 全面改訂:
+  - `PresetCard`: プリセット選択カード（ラベル・説明・適用済みバッジ）
+  - `DiffTable`: 変更予定項目の before/after 差分テーブル（アニメーション展開）
+  - `currentPresetId`: useMemo で現在の設定値と全プリセットを比較し、一致するプリセットIDを算出
+  - `selectedPresetId`: 選択中プリセット（クリックでトグル）
+  - `diff`: useMemo で selectedPreset との差分を算出
+  - `applyPreset()`: `invoke("apply_windows_preset")` で一括適用
+  - `handleCopyContext()`: `export_windows_settings_context` の JSON をクリップボードにコピー
+  - 既存の個別トグル・スライダー・「ゲーミング最適化」「復元」ボタンを維持
+
+### 設計メモ
+
+- プリセットは5フィールド全一致で判定（部分一致は「カスタム」扱い）
+- 差分パネルは変更なしの場合「適用済みです」メッセージ表示
+- AIコンテキストコピー後2秒でボタンテキストをリセット（フィードバック）
+- アクセシビリティ: `<input type="range">` に `aria-label="メニュー表示遅延"` 付与

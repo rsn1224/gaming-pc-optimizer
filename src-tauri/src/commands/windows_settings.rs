@@ -203,3 +203,54 @@ pub fn restore_windows_settings() -> Result<WindowsSettings, String> {
 pub fn has_windows_settings_backup() -> bool {
     backup_path().exists()
 }
+
+/// Apply an arbitrary WindowsSettings preset in one call (used by the preset UI).
+#[tauri::command]
+pub fn apply_windows_preset(settings: WindowsSettings) -> Result<WindowsSettings, String> {
+    set_visual_fx(settings.visual_fx)?;
+    set_transparency(settings.transparency)?;
+    set_game_dvr(settings.game_dvr)?;
+    set_menu_show_delay(settings.menu_show_delay)?;
+    set_animate_windows(settings.animate_windows)?;
+    get_windows_settings()
+}
+
+/// Export current settings + builtin preset definitions as JSON.
+/// Intended to be pasted into Claude Code for natural-language preset generation.
+#[tauri::command]
+pub fn export_windows_settings_context() -> Result<String, String> {
+    let current = get_windows_settings()?;
+
+    let context = serde_json::json!({
+        "schema_version": "1.0",
+        "purpose": "WindowsSettings preset generation context for Claude",
+        "fields": {
+            "visual_fx": "0=auto, 1=見た目優先, 2=パフォーマンス優先, 3=カスタム",
+            "transparency": "bool — タスクバー透明効果",
+            "game_dvr": "bool — Game DVR / Xbox Game Bar 録画機能",
+            "menu_show_delay": "u32 ms (0–400) — コンテキストメニュー表示遅延",
+            "animate_windows": "bool — ウィンドウ最小化・最大化アニメーション"
+        },
+        "current": current,
+        "builtin_presets": [
+            {
+                "id": "default",
+                "label": "標準 (Windows デフォルト)",
+                "settings": { "visual_fx": 0, "transparency": true, "game_dvr": true, "menu_show_delay": 400, "animate_windows": true }
+            },
+            {
+                "id": "gaming",
+                "label": "ゲーミング最適化",
+                "settings": { "visual_fx": 2, "transparency": false, "game_dvr": false, "menu_show_delay": 0, "animate_windows": false }
+            },
+            {
+                "id": "balanced",
+                "label": "バランス",
+                "settings": { "visual_fx": 0, "transparency": false, "game_dvr": false, "menu_show_delay": 100, "animate_windows": true }
+            }
+        ],
+        "custom_presets_note": "Add new presets to src/data/windows_presets.ts (BUILTIN_WINDOWS_PRESETS array)"
+    });
+
+    serde_json::to_string_pretty(&context).map_err(|e| e.to_string())
+}

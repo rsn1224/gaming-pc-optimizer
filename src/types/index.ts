@@ -55,6 +55,14 @@ export interface KillResult {
 
 export type OptimizationStatus = "idle" | "running" | "success" | "error";
 
+export interface WindowsPreset {
+  id: string;           // "default" | "gaming" | user-defined id
+  label: string;        // UI表示名（「標準」「ゲーミング」「Apex用」など）
+  description: string;  // 自然言語での意図（ユーザー記述 or AI整形）
+  settings: WindowsSettings;
+  explanation?: string; // 適用時に表示する差分解説（AIが生成、任意）
+}
+
 export interface WindowsSettings {
   visual_fx: number;       // 0=auto, 1=best appearance, 2=best performance, 3=custom
   transparency: boolean;
