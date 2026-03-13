@@ -343,7 +343,7 @@ export function WindowsSettings() {
     <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+        <div className="p-2 bg-gradient-to-br from-violet-500/20 to-purple-500/10 border border-violet-500/30 rounded-xl shadow-[0_0_12px_rgba(139,92,246,0.1)]">
           <Monitor className="text-violet-400" size={24} />
         </div>
         <div>

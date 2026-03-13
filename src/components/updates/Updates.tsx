@@ -16,19 +16,20 @@ import type { AppUpdate, AiUpdatePriority, DriverInfo } from "@/types";
 // ── Priority badge ─────────────────────────────────────────────────────────────
 
 const PRIORITY_CONFIG = {
-  critical:    { label: "重要",      cls: "bg-red-500/15 text-red-400 border-red-500/30" },
-  recommended: { label: "推奨",      cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
-  optional:    { label: "任意",      cls: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
-  skip:        { label: "スキップ",  cls: "bg-secondary text-muted-foreground border-border" },
+  critical:    { label: "重要",      cls: "bg-red-500/25 text-red-300 border-red-500/50",        rowCls: "bg-red-500/[0.06] border-l-2 border-l-red-500/50" },
+  recommended: { label: "推奨",      cls: "bg-amber-500/20 text-amber-300 border-amber-500/40",  rowCls: "bg-amber-500/[0.04]" },
+  optional:    { label: "任意",      cls: "bg-blue-500/15 text-blue-400 border-blue-500/30",     rowCls: "" },
+  skip:        { label: "スキップ",  cls: "bg-white/[0.06] text-muted-foreground border-white/10", rowCls: "" },
 } as const;
 
 function PriorityBadge({ priority, reason }: { priority: AiUpdatePriority["priority"]; reason: string }) {
   const cfg = PRIORITY_CONFIG[priority] ?? PRIORITY_CONFIG.optional;
   return (
     <span
-      className={`inline-flex items-center text-[10px] font-medium border rounded-full px-2 py-0.5 cursor-help ${cfg.cls}`}
+      className={`inline-flex items-center text-[10px] font-semibold border rounded-full px-2.5 py-0.5 cursor-help tracking-wide ${cfg.cls}`}
       title={reason}
     >
+      {priority === "critical" && <span className="mr-1 inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />}
       {cfg.label}
     </span>
   );
@@ -161,17 +162,19 @@ export function Updates() {
     else setSelected(new Set(appUpdates.map((u) => u.id)));
   };
 
+  const hasPriorities = Object.keys(priorities).length > 0;
+
   return (
-    <div className="p-6 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-secondary border border-border rounded-lg">
-            <Shield className="text-muted-foreground" size={24} />
+          <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-emerald-500/10 border border-cyan-500/30 rounded-xl shadow-[0_0_12px_rgba(34,211,238,0.1)]">
+            <Shield className="text-cyan-400" size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">アップデート</h1>
-            <p className="text-sm text-muted-foreground">アプリとドライバーの更新確認</p>
+            <h1 className="text-xl font-bold tracking-tight">アップデート</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">アプリとドライバーの更新確認</p>
           </div>
         </div>
 
@@ -180,9 +183,9 @@ export function Updates() {
             type="button"
             onClick={fetchAppUpdates}
             disabled={loadingApps}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary border border-border text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 transition-colors text-muted-foreground"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/[0.10] text-sm font-medium hover:bg-white/10 hover:text-foreground disabled:opacity-50 transition-colors text-muted-foreground"
           >
-            {loadingApps ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+            {loadingApps ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             再スキャン
           </button>
 
@@ -193,7 +196,7 @@ export function Updates() {
               disabled={loadingAi || loadingApps}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm font-medium hover:bg-purple-500/20 disabled:opacity-50 transition-colors"
             >
-              {loadingAi ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+              {loadingAi ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
               AI優先度分析
             </button>
           )}
@@ -202,14 +205,14 @@ export function Updates() {
 
       {/* App log */}
       {appLog && (
-        <div className={`rounded-lg border px-4 py-3 text-sm ${appLog.ok ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
+        <div className={`rounded-xl border px-4 py-3 text-sm ${appLog.ok ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400" : "bg-red-500/10 border-red-500/25 text-red-400"}`}>
           {appLog.msg}
         </div>
       )}
 
       {/* AI log */}
       {aiLog && (
-        <div className={`rounded-lg border px-4 py-3 text-sm ${aiLog.ok ? "bg-purple-500/10 border-purple-500/30 text-purple-400" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
+        <div className={`rounded-xl border px-4 py-3 text-sm ${aiLog.ok ? "bg-purple-500/10 border-purple-500/25 text-purple-400" : "bg-red-500/10 border-red-500/25 text-red-400"}`}>
           {aiLog.msg}
         </div>
       )}
@@ -218,10 +221,10 @@ export function Updates() {
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Download size={15} className="text-muted-foreground" />
+            <Download size={14} className="text-cyan-400" />
             アプリアップデート
             {appUpdates.length > 0 && (
-              <span className="text-[11px] bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-0.5">
+              <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full px-2 py-0.5 font-semibold">
                 {appUpdates.length}件
               </span>
             )}
@@ -232,7 +235,7 @@ export function Updates() {
               type="button"
               onClick={handleUpgrade}
               disabled={upgrading}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm font-medium hover:bg-primary/20 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 text-sm font-bold hover:brightness-110 disabled:opacity-50 transition-all active:scale-[0.97]"
             >
               {upgrading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
               {upgrading ? "更新中…" : `${selected.size}件を更新`}
@@ -242,68 +245,71 @@ export function Updates() {
 
         {loadingApps ? (
           <div className="flex items-center gap-2 text-muted-foreground text-sm py-8 justify-center">
-            <Loader2 size={16} className="animate-spin" />
+            <Loader2 size={15} className="animate-spin text-cyan-400" />
             <span>wingetでスキャン中…</span>
           </div>
         ) : appUpdates.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl px-4 py-8 text-center text-sm text-muted-foreground">
             利用可能なアップデートはありません
           </div>
         ) : (
-          <div className="rounded-lg border border-border overflow-hidden">
+          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-secondary/50 border-b border-border">
+              <thead className="bg-white/[0.03] border-b border-white/[0.06]">
                 <tr>
-                  <th className="px-3 py-2 text-left w-8">
+                  <th className="px-3 py-2.5 text-left w-8">
                     <input
                       type="checkbox"
                       checked={allSelected}
                       onChange={toggleAll}
-                      className="accent-primary"
+                      className="accent-cyan-500"
                       aria-label="全選択"
                     />
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">アプリ名</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground hidden sm:table-cell">バージョン</th>
-                  {Object.keys(priorities).length > 0 && (
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">AI優先度</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">アプリ名</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">バージョン</th>
+                  {hasPriorities && (
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">AI優先度</th>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-white/[0.04]">
                 {appUpdates.map((update) => {
                   const prio = priorities[update.id];
+                  const rowBg = prio ? (PRIORITY_CONFIG[prio.priority]?.rowCls ?? "") : "";
                   return (
                     <tr
                       key={update.id}
-                      className="hover:bg-secondary/30 transition-colors cursor-pointer"
+                      className={`hover:bg-white/[0.03] transition-colors cursor-pointer ${rowBg}`}
                       onClick={() => toggleSelect(update.id)}
                     >
-                      <td className="px-3 py-2.5">
+                      <td className="px-3 py-3">
                         <input
                           type="checkbox"
                           checked={selected.has(update.id)}
                           onChange={() => toggleSelect(update.id)}
                           onClick={(e) => e.stopPropagation()}
-                          className="accent-primary"
+                          className="accent-cyan-500"
                           aria-label={`${update.name}を選択`}
                         />
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td className="px-3 py-3">
                         <p className="font-medium truncate max-w-[200px]">{update.name}</p>
-                        <p className="text-[10px] text-muted-foreground font-mono">{update.id}</p>
+                        <p className="text-[10px] text-muted-foreground/60 font-mono mt-0.5">{update.id}</p>
                       </td>
-                      <td className="px-3 py-2.5 hidden sm:table-cell">
-                        <span className="text-muted-foreground">{update.current_version}</span>
-                        <ChevronRight size={11} className="inline mx-1 text-muted-foreground/50" />
-                        <span className="text-green-400 font-medium">{update.available_version}</span>
+                      <td className="px-3 py-3 hidden sm:table-cell">
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground/70 text-xs">{update.current_version}</span>
+                          <ChevronRight size={10} className="text-muted-foreground/40" />
+                          <span className="text-emerald-400 font-semibold text-xs">{update.available_version}</span>
+                        </div>
                       </td>
-                      {Object.keys(priorities).length > 0 && (
-                        <td className="px-3 py-2.5">
+                      {hasPriorities && (
+                        <td className="px-3 py-3">
                           {prio ? (
                             <PriorityBadge priority={prio.priority} reason={prio.reason} />
                           ) : (
-                            <span className="text-xs text-muted-foreground/50">—</span>
+                            <span className="text-xs text-muted-foreground/40">—</span>
                           )}
                         </td>
                       )}
@@ -317,11 +323,11 @@ export function Updates() {
 
         {/* Upgrade log */}
         {upgradeLog && (
-          <div className="rounded-lg border border-border bg-secondary/30 p-3 font-mono text-xs space-y-0.5 max-h-40 overflow-y-auto">
+          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl p-3 font-mono text-xs space-y-0.5 max-h-40 overflow-y-auto">
             {upgradeLog.map((line, i) => (
               <p
                 key={i}
-                className={line.startsWith("✓") ? "text-green-400" : "text-red-400"}
+                className={line.startsWith("✓") ? "text-emerald-400" : "text-red-400"}
               >
                 {line}
               </p>
@@ -333,10 +339,10 @@ export function Updates() {
       {/* Driver info section */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Cpu size={15} className="text-muted-foreground" />
+          <Cpu size={14} className="text-cyan-400" />
           インストール済みドライバー
           {drivers.length > 0 && (
-            <span className="text-[11px] bg-secondary text-muted-foreground border border-border rounded-full px-2 py-0.5">
+            <span className="text-[10px] bg-white/5 text-muted-foreground border border-white/[0.08] rounded-full px-2 py-0.5">
               {drivers.length}件
             </span>
           )}
@@ -344,36 +350,36 @@ export function Updates() {
 
         {loadingDrivers ? (
           <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
-            <Loader2 size={16} className="animate-spin" />
+            <Loader2 size={15} className="animate-spin text-cyan-400" />
             <span>ドライバー情報を取得中…</span>
           </div>
         ) : drivers.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl px-4 py-6 text-center text-sm text-muted-foreground">
             ドライバー情報を取得できませんでした
           </div>
         ) : (
-          <div className="rounded-lg border border-border overflow-hidden">
+          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-secondary/50 border-b border-border">
+              <thead className="bg-white/[0.03] border-b border-white/[0.06]">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">デバイス名</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">プロバイダー</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">バージョン</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground hidden sm:table-cell">日付</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">デバイス名</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">プロバイダー</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">バージョン</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">日付</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-white/[0.04]">
                 {drivers.map((d, i) => (
-                  <tr key={i} className="hover:bg-secondary/20 transition-colors">
+                  <tr key={i} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-3 py-2.5">
                       <p className="font-medium truncate max-w-[180px]">{d.device_name}</p>
-                      <p className="text-[10px] text-muted-foreground">{d.device_class}</p>
+                      <p className="text-[10px] text-muted-foreground/60">{d.device_class}</p>
                     </td>
-                    <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell text-xs truncate max-w-[120px]">
+                    <td className="px-3 py-2.5 text-muted-foreground/70 hidden md:table-cell text-xs truncate max-w-[120px]">
                       {d.provider}
                     </td>
-                    <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{d.driver_version}</td>
-                    <td className="px-3 py-2.5 text-xs text-muted-foreground hidden sm:table-cell">{d.driver_date}</td>
+                    <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground/70">{d.driver_version}</td>
+                    <td className="px-3 py-2.5 text-xs text-muted-foreground/60 hidden sm:table-cell">{d.driver_date}</td>
                   </tr>
                 ))}
               </tbody>
@@ -383,12 +389,12 @@ export function Updates() {
       </section>
 
       {/* Windows Update link */}
-      <div className="rounded-lg border border-border bg-card px-4 py-3 flex items-center justify-between gap-3">
+      <div className="bg-[#05080c] border border-white/[0.08] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <AlertTriangle size={16} className="text-amber-400 shrink-0" />
+          <AlertTriangle size={15} className="text-amber-400 shrink-0" />
           <div>
             <p className="text-sm font-medium">Windows Update</p>
-            <p className="text-xs text-muted-foreground">システムアップデートはWindows設定から確認できます</p>
+            <p className="text-xs text-muted-foreground/70">システムアップデートはWindows設定から確認できます</p>
           </div>
         </div>
         <button
@@ -400,9 +406,9 @@ export function Updates() {
               // fallback: silently ignore
             }
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary border border-border text-xs font-medium hover:bg-secondary/80 transition-colors text-muted-foreground shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/[0.10] text-xs font-medium hover:bg-white/10 hover:text-foreground transition-colors text-muted-foreground shrink-0"
         >
-          <ExternalLink size={12} />
+          <ExternalLink size={11} />
           設定を開く
         </button>
       </div>

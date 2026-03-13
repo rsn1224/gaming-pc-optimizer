@@ -223,16 +223,16 @@ export function GamesLibrary() {
     scanPhase === "scanning" ? "スキャン中…" : scanPhase === "tuning" ? "AIチューニング中…" : "Steamスキャン";
 
   return (
-    <div className="p-6 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-4 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-secondary border border-border rounded-lg">
-            <Library className="text-muted-foreground" size={24} />
+          <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-emerald-500/10 border border-cyan-500/30 rounded-xl shadow-[0_0_12px_rgba(34,211,238,0.1)]">
+            <Library className="text-cyan-400" size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">My Games</h1>
-            <p className="text-sm text-muted-foreground">{profiles.length} タイトル登録済み</p>
+            <h1 className="text-xl font-bold tracking-tight">My Games</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">{profiles.length} タイトル登録済み</p>
           </div>
         </div>
 
@@ -241,12 +241,12 @@ export function GamesLibrary() {
             type="button"
             onClick={handleSteamScan}
             disabled={scanning}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary border border-border text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 transition-colors text-muted-foreground"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/[0.10] text-sm font-medium hover:bg-white/10 hover:text-foreground disabled:opacity-50 transition-colors text-muted-foreground"
           >
             {scanning && scanPhase === "scanning" ? (
-              <Loader2 size={15} className="animate-spin" />
+              <Loader2 size={14} className="animate-spin" />
             ) : (
-              <ScanLine size={15} />
+              <ScanLine size={14} />
             )}
             {scanLabel === "AIチューニング中…" ? "Steamスキャン" : scanLabel}
           </button>
@@ -259,9 +259,9 @@ export function GamesLibrary() {
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm font-medium hover:bg-purple-500/20 disabled:opacity-50 transition-colors"
             >
               {scanning && scanPhase === "tuning" ? (
-                <Loader2 size={15} className="animate-spin" />
+                <Loader2 size={14} className="animate-spin" />
               ) : (
-                <Sparkles size={15} />
+                <Sparkles size={14} />
               )}
               AIチューニング
             </button>
@@ -272,10 +272,10 @@ export function GamesLibrary() {
       {/* Scan log */}
       {scanLog && (
         <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
+          className={`rounded-xl border px-4 py-3 text-sm ${
             scanLog.ok
-              ? "bg-green-500/10 border-green-500/30 text-green-400"
-              : "bg-red-500/10 border-red-500/30 text-red-400"
+              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+              : "bg-red-500/10 border-red-500/25 text-red-400"
           }`}
         >
           {scanLog.msg}
@@ -299,10 +299,10 @@ export function GamesLibrary() {
       {/* Launch log */}
       {launchLog && (
         <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
+          className={`rounded-xl border px-4 py-3 text-sm ${
             launchLog.ok
-              ? "bg-green-500/10 border-green-500/30 text-green-400"
-              : "bg-red-500/10 border-red-500/30 text-red-400"
+              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+              : "bg-red-500/10 border-red-500/25 text-red-400"
           }`}
         >
           {launchLog.msg}
@@ -312,18 +312,18 @@ export function GamesLibrary() {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center flex-1 text-muted-foreground gap-2">
-          <Loader2 size={18} className="animate-spin" />
+          <Loader2 size={16} className="animate-spin text-cyan-400" />
           <span className="text-sm">読み込み中…</span>
         </div>
       ) : profiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 text-muted-foreground">
-          <Library size={40} strokeWidth={1} />
+          <Library size={40} strokeWidth={1} className="text-muted-foreground/40" />
           <p className="text-sm">ゲームがまだ登録されていません</p>
           <button
             type="button"
             onClick={handleSteamScan}
             disabled={scanning}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary border border-border text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 text-sm font-bold hover:brightness-110 disabled:opacity-50 transition-all active:scale-[0.97]"
           >
             <ScanLine size={15} />
             Steamライブラリをスキャン
@@ -331,7 +331,7 @@ export function GamesLibrary() {
           <button
             type="button"
             onClick={() => setActivePage("profiles")}
-            className="text-sm text-primary hover:underline"
+            className="text-sm text-cyan-400 hover:text-cyan-300 hover:underline transition-colors"
           >
             手動でプロファイルを追加する →
           </button>

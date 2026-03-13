@@ -22,22 +22,22 @@ const MODE_CONFIG = {
     label: "パフォーマンス",
     desc: "ゲーミング・高負荷作業向け（電力制限なし）",
     powerRatio: 1.0,
-    cls: "bg-red-500/10 border-red-500/40 text-red-400",
-    activeCls: "bg-red-500/20 border-red-500/60 text-red-300",
+    cls: "bg-red-500/10 border-red-500/30 text-red-400",
+    activeCls: "bg-red-500/20 border-red-500/50 text-red-300 shadow-[0_0_0_1px_rgba(239,68,68,0.25)]",
   },
   balanced: {
     label: "バランス",
     desc: "日常使用向け（デフォルト比 -20%）",
     powerRatio: 0.8,
-    cls: "bg-green-500/10 border-green-500/40 text-green-400",
-    activeCls: "bg-green-500/20 border-green-500/60 text-green-300",
+    cls: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
+    activeCls: "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_0_1px_rgba(34,197,94,0.25)]",
   },
   efficiency: {
     label: "省電力",
     desc: "発熱抑制・省エネ優先（デフォルト比 -35%）",
     powerRatio: 0.65,
-    cls: "bg-blue-500/10 border-blue-500/40 text-blue-400",
-    activeCls: "bg-blue-500/20 border-blue-500/60 text-blue-300",
+    cls: "bg-blue-500/10 border-blue-500/30 text-blue-400",
+    activeCls: "bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_0_1px_rgba(59,130,246,0.25)]",
   },
 } as const;
 
@@ -59,14 +59,14 @@ function StatCell({
   warn?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-1.5 text-muted-foreground">
+    <div className="flex flex-col gap-1.5 p-3 bg-white/[0.02] rounded-lg border border-white/[0.05]">
+      <div className="flex items-center gap-1.5 text-muted-foreground/60">
         {icon}
-        <span className="text-xs">{label}</span>
+        <span className="text-[10px] uppercase tracking-wider">{label}</span>
       </div>
-      <p className={`text-lg font-bold ${warn ? "text-amber-400" : "text-foreground"}`}>
+      <p className={`text-lg font-bold tabular-nums ${warn ? "text-amber-400" : "text-foreground"}`}>
         {value}
-        {unit && <span className="text-sm font-normal text-muted-foreground ml-1">{unit}</span>}
+        {unit && <span className="text-xs font-normal text-muted-foreground/50 ml-1">{unit}</span>}
       </p>
     </div>
   );
@@ -92,106 +92,113 @@ function GpuCard({
   const vramPct = gpu.vram_total_mb > 0 ? (gpu.vram_used_mb / gpu.vram_total_mb) * 100 : 0;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-4">
-      {/* GPU name */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="p-1.5 bg-secondary border border-border rounded-md">
-          <Cpu size={16} className="text-cyan-400" />
+    <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden flex flex-col card-glow">
+      {/* Top accent line */}
+      <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+
+      <div className="p-5 flex flex-col gap-4">
+        {/* GPU name */}
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/25 rounded-xl shadow-[0_0_10px_rgba(34,211,238,0.1)]">
+            <Cpu size={16} className="text-cyan-400" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm leading-tight">{gpu.name}</p>
+            <p className="text-[10px] text-muted-foreground/50 font-mono mt-0.5">
+              Driver {gpu.driver_version} · GPU #{index}
+            </p>
+          </div>
         </div>
+
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <StatCell
+            icon={<Activity size={12} />}
+            label="GPU使用率"
+            value={gpu.utilization_percent}
+            unit="%"
+            warn={gpu.utilization_percent > 95}
+          />
+          <StatCell
+            icon={<Thermometer size={12} />}
+            label="温度"
+            value={gpu.temperature_c}
+            unit="°C"
+            warn={gpu.temperature_c > 83}
+          />
+          <StatCell
+            icon={<Zap size={12} />}
+            label="消費電力"
+            value={gpu.power_draw_w.toFixed(0)}
+            unit="W"
+          />
+          <StatCell
+            icon={<MemoryStick size={12} />}
+            label="VRAM"
+            value={`${(gpu.vram_used_mb / 1024).toFixed(1)} / ${(gpu.vram_total_mb / 1024).toFixed(1)}`}
+            unit="GB"
+            warn={vramPct > 90}
+          />
+          <StatCell
+            icon={<Wind size={12} />}
+            label="ファン"
+            value={gpu.fan_speed_percent === 0 ? "—" : gpu.fan_speed_percent}
+            unit={gpu.fan_speed_percent === 0 ? undefined : "%"}
+          />
+          <StatCell
+            icon={<Zap size={12} />}
+            label="電力上限"
+            value={gpu.power_limit_w.toFixed(0)}
+            unit={`/ ${gpu.power_limit_default_w.toFixed(0)}W`}
+          />
+        </div>
+
+        {/* VRAM progress bar */}
         <div>
-          <p className="font-semibold text-sm leading-tight">{gpu.name}</p>
-          <p className="text-[10px] text-muted-foreground font-mono">Driver {gpu.driver_version} · GPU #{index}</p>
+          <div className="flex justify-between text-[10px] text-muted-foreground/50 mb-1.5 uppercase tracking-wider">
+            <span>VRAM使用率</span>
+          </div>
+          <ProgressBar value={vramPct} colorByValue showLabel />
         </div>
-      </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <StatCell
-          icon={<Activity size={13} />}
-          label="GPU使用率"
-          value={gpu.utilization_percent}
-          unit="%"
-          warn={gpu.utilization_percent > 95}
-        />
-        <StatCell
-          icon={<Thermometer size={13} />}
-          label="温度"
-          value={gpu.temperature_c}
-          unit="°C"
-          warn={gpu.temperature_c > 83}
-        />
-        <StatCell
-          icon={<Zap size={13} />}
-          label="消費電力"
-          value={gpu.power_draw_w.toFixed(0)}
-          unit="W"
-        />
-        <StatCell
-          icon={<MemoryStick size={13} />}
-          label="VRAM"
-          value={`${(gpu.vram_used_mb / 1024).toFixed(1)} / ${(gpu.vram_total_mb / 1024).toFixed(1)}`}
-          unit="GB"
-          warn={vramPct > 90}
-        />
-        <StatCell
-          icon={<Wind size={13} />}
-          label="ファン"
-          value={gpu.fan_speed_percent === 0 ? "—" : gpu.fan_speed_percent}
-          unit={gpu.fan_speed_percent === 0 ? undefined : "%"}
-        />
-        <StatCell
-          icon={<Zap size={13} />}
-          label="電力上限"
-          value={gpu.power_limit_w.toFixed(0)}
-          unit={`/ ${gpu.power_limit_default_w.toFixed(0)}W`}
-        />
-      </div>
-
-      {/* VRAM progress bar */}
-      <div>
-        <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-          <span>VRAM使用率</span>
-        </div>
-        <ProgressBar value={vramPct} colorByValue showLabel />
-      </div>
-
-      {/* Mode buttons */}
-      <div className="flex flex-col gap-2">
-        <p className="text-xs text-muted-foreground font-medium">電力モード</p>
-        <div className="grid grid-cols-3 gap-2">
-          {(Object.entries(MODE_CONFIG) as [GpuMode, (typeof MODE_CONFIG)[GpuMode]][]).map(
-            ([mode, cfg]) => {
-              const isActive = appliedMode === mode;
-              const isAiRec = aiRecommendedMode === mode;
-              const watts =
-                gpu.power_limit_default_w > 0
-                  ? Math.round(gpu.power_limit_default_w * cfg.powerRatio)
-                  : null;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => onApplyMode(mode)}
-                  disabled={applying}
-                  title={cfg.desc}
-                  className={`relative flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-xs font-medium transition-colors disabled:opacity-50 ${
-                    isActive ? cfg.activeCls : cfg.cls
-                  } hover:opacity-90`}
-                >
-                  {isAiRec && !isActive && (
-                    <span className="absolute -top-1.5 right-1 text-[8px] font-bold px-1 py-0.5 rounded-full bg-purple-500/30 text-purple-300 border border-purple-500/40">
-                      AI
-                    </span>
-                  )}
-                  {isActive && <CheckCircle2 size={12} className="shrink-0" />}
-                  <span>{cfg.label}</span>
-                  {watts !== null && (
-                    <span className="text-[10px] opacity-70">{watts}W</span>
-                  )}
-                </button>
-              );
-            }
-          )}
+        {/* Mode buttons */}
+        <div className="flex flex-col gap-2">
+          <p className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-widest">電力モード</p>
+          <div className="grid grid-cols-3 gap-2">
+            {(Object.entries(MODE_CONFIG) as [GpuMode, (typeof MODE_CONFIG)[GpuMode]][]).map(
+              ([mode, cfg]) => {
+                const isActive = appliedMode === mode;
+                const isAiRec = aiRecommendedMode === mode;
+                const watts =
+                  gpu.power_limit_default_w > 0
+                    ? Math.round(gpu.power_limit_default_w * cfg.powerRatio)
+                    : null;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => onApplyMode(mode)}
+                    disabled={applying}
+                    title={cfg.desc}
+                    className={`relative flex flex-col items-center gap-1 rounded-xl border px-2 py-3 text-xs font-semibold transition-all disabled:opacity-40 ${
+                      isActive ? cfg.activeCls : cfg.cls
+                    } hover:opacity-90 active:scale-[0.97]`}
+                  >
+                    {isAiRec && !isActive && (
+                      <span className="absolute -top-2 right-1.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-purple-500/30 text-purple-300 border border-purple-500/40 shadow-[0_0_8px_rgba(168,85,247,0.3)]">
+                        AI
+                      </span>
+                    )}
+                    {isActive && <CheckCircle2 size={12} className="shrink-0" />}
+                    <span className="leading-tight">{cfg.label}</span>
+                    {watts !== null && (
+                      <span className="text-[10px] opacity-60 tabular-nums">{watts}W</span>
+                    )}
+                  </button>
+                );
+              }
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -281,7 +288,6 @@ export function Hardware() {
         msg: `GPU #${gpuIndex} を${MODE_CONFIG[mode].label}モード（${watts}W）に設定しました`,
         ok: true,
       });
-      // Refresh stats
       setTimeout(() => fetchGpus(true), 1500);
     } catch (e) {
       setApplyLog({ msg: String(e), ok: false });
@@ -295,12 +301,12 @@ export function Hardware() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-secondary border border-border rounded-lg">
-            <Cpu className="text-muted-foreground" size={24} />
+          <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/30 rounded-xl shadow-[0_0_12px_rgba(34,211,238,0.1)]">
+            <Cpu className="text-cyan-400" size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">ハードウェア</h1>
-            <p className="text-sm text-muted-foreground">GPU状態モニタリングと電力最適化</p>
+            <h1 className="text-xl font-bold tracking-tight">ハードウェア</h1>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">GPU状態モニタリングと電力最適化</p>
           </div>
         </div>
 
@@ -309,9 +315,9 @@ export function Hardware() {
             type="button"
             onClick={() => fetchGpus(true)}
             disabled={refreshing || loading}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary border border-border text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 transition-colors text-muted-foreground"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm font-medium hover:bg-white/[0.08] hover:text-foreground disabled:opacity-50 transition-colors text-muted-foreground"
           >
-            <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             更新
           </button>
 
@@ -319,9 +325,9 @@ export function Hardware() {
             type="button"
             onClick={handleAiRecommend}
             disabled={loadingAi || loading}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm font-medium hover:bg-purple-500/20 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm font-medium hover:bg-purple-500/20 disabled:opacity-50 transition-all hover:shadow-[0_0_12px_rgba(168,85,247,0.2)]"
           >
-            {loadingAi ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+            {loadingAi ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             AIモード推奨
           </button>
         </div>
@@ -329,16 +335,18 @@ export function Hardware() {
 
       {/* AI recommendation banner */}
       {aiResult && (
-        <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 px-4 py-3 flex items-start gap-3">
-          <Sparkles size={16} className="text-purple-400 shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-purple-500/30 bg-purple-500/8 px-4 py-3.5 flex items-start gap-3 shadow-[0_0_0_1px_rgba(168,85,247,0.1)]">
+          <div className="p-1.5 bg-purple-500/15 rounded-lg border border-purple-500/25 shrink-0 mt-0.5">
+            <Sparkles size={14} className="text-purple-400" />
+          </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-purple-300">
+            <p className="text-sm font-semibold text-purple-300">
               AI推奨モード: {MODE_CONFIG[aiResult.mode as GpuMode]?.label ?? aiResult.mode}
-              <span className="ml-2 text-[11px] font-normal opacity-70">
+              <span className="ml-2 text-[11px] font-normal opacity-60">
                 推奨電力比: {aiResult.suggested_power_limit_percent.toFixed(2)}（参考値）
               </span>
             </p>
-            <p className="text-xs text-purple-400/80 mt-0.5">{aiResult.reason}</p>
+            <p className="text-xs text-purple-400/70 mt-0.5">{aiResult.reason}</p>
           </div>
           {gpus.length > 0 && (
             <button
@@ -349,7 +357,7 @@ export function Hardware() {
                 }
               }}
               disabled={applyingIdx !== null}
-              className="shrink-0 text-xs px-3 py-1.5 rounded-md bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30 disabled:opacity-50 transition-colors"
+              className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30 disabled:opacity-50 transition-all active:scale-[0.97]"
             >
               {gpus.length > 1 ? "全GPUに適用" : "適用"}
             </button>
@@ -359,12 +367,12 @@ export function Hardware() {
 
       {/* AI / apply logs */}
       {aiLog && (
-        <div className={`rounded-lg border px-4 py-3 text-sm ${aiLog.ok ? "bg-purple-500/10 border-purple-500/30 text-purple-400" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
+        <div className={`rounded-xl border px-4 py-3 text-sm ${aiLog.ok ? "bg-purple-500/8 border-purple-500/25 text-purple-400" : "bg-red-500/8 border-red-500/25 text-red-400"}`}>
           {aiLog.msg}
         </div>
       )}
       {applyLog && (
-        <div className={`rounded-lg border px-4 py-3 text-sm ${applyLog.ok ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
+        <div className={`rounded-xl border px-4 py-3 text-sm ${applyLog.ok ? "bg-emerald-500/8 border-emerald-500/25 text-emerald-400" : "bg-red-500/8 border-red-500/25 text-red-400"}`}>
           {applyLog.msg}
         </div>
       )}
@@ -372,14 +380,16 @@ export function Hardware() {
       {/* GPU cards */}
       {loading ? (
         <div className="flex items-center justify-center flex-1 text-muted-foreground gap-2">
-          <Loader2 size={18} className="animate-spin" />
+          <Loader2 size={18} className="animate-spin text-cyan-400" />
           <span className="text-sm">GPU情報を取得中…</span>
         </div>
       ) : gpuError ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-3 text-muted-foreground">
-          <Cpu size={40} strokeWidth={1} />
+          <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/[0.06]">
+            <Cpu size={36} strokeWidth={1} className="text-muted-foreground/30" />
+          </div>
           <p className="text-sm text-center max-w-sm">{gpuError}</p>
-          <p className="text-xs text-muted-foreground/60 text-center">
+          <p className="text-xs text-muted-foreground/40 text-center">
             NVIDIA GPU搭載PCでのみ詳細情報が取得できます
           </p>
         </div>
@@ -401,7 +411,7 @@ export function Hardware() {
 
       {/* Note about admin */}
       {gpus.length > 0 && (
-        <p className="text-[11px] text-muted-foreground/60 text-center">
+        <p className="text-[11px] text-muted-foreground/30 text-center">
           電力制限の変更には管理者権限が必要な場合があります
         </p>
       )}

@@ -179,7 +179,7 @@ export function StorageCleanup() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+          <div className="p-2 bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/30 rounded-xl shadow-[0_0_12px_rgba(249,115,22,0.1)]">
             <HardDrive className="text-orange-400" size={24} />
           </div>
           <div>

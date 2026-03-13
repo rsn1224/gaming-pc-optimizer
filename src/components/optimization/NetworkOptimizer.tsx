@@ -818,7 +818,7 @@ export function NetworkOptimizer() {
     <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+        <div className="p-2 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 border border-blue-500/30 rounded-xl shadow-[0_0_12px_rgba(59,130,246,0.1)]">
           <Wifi className="text-blue-400" size={24} />
         </div>
         <div>

@@ -16,27 +16,63 @@ interface HealthCheck {
 }
 
 function HealthRing({ score }: { score: number }) {
-  const r = 36;
+  const r = 38;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
   const colorClass =
     score >= 75 ? "text-cyan-400" : score >= 50 ? "text-amber-400" : "text-red-400";
 
   return (
-    <div className="relative flex items-center justify-center w-24 h-24">
-      <svg width="96" height="96" className="-rotate-90">
-        <circle cx="48" cy="48" r={r} fill="none" stroke="currentColor" strokeWidth="8" className="text-secondary" />
+    <div className="relative flex items-center justify-center w-28 h-28 shrink-0">
+      <svg width="112" height="112" className="-rotate-90">
+        {/* Track */}
+        <circle cx="56" cy="56" r={r} fill="none" stroke="currentColor" strokeWidth="7" className="text-white/[0.05]" />
+        {/* Glow layer */}
+        <circle cx="56" cy="56" r={r} fill="none" stroke="currentColor" strokeWidth="11"
+          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+          className={`${colorClass} opacity-20 blur-[3px]`}
+        />
+        {/* Main progress */}
         <circle
-          cx="48" cy="48" r={r} fill="none"
-          stroke="currentColor" strokeWidth="8"
+          cx="56" cy="56" r={r} fill="none"
+          stroke="currentColor" strokeWidth="7"
           strokeDasharray={`${dash} ${circ}`}
           strokeLinecap="round"
           className={`${colorClass} [transition:stroke-dasharray_0.8s_ease]`}
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className={`text-2xl font-bold leading-none ${colorClass}`}>{score}</span>
-        <span className="text-[9px] text-muted-foreground mt-0.5">/ 100</span>
+        <span className={`text-3xl font-bold leading-none tabular-nums ${colorClass}`}>{score}</span>
+        <span className="text-[9px] text-muted-foreground/50 mt-1 tracking-widest uppercase">score</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Mini stat strip card ──────────────────────────────────────────────────────
+
+function MiniStat({
+  icon,
+  label,
+  value,
+  sub,
+  accent = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="flex-1 min-w-0 bg-[#05080c] border border-white/[0.08] rounded-xl px-4 py-3.5 flex items-center gap-3 card-glow transition-all">
+      <div className={`p-2 rounded-lg shrink-0 ${accent ? "bg-cyan-500/15 border border-cyan-500/25" : "bg-white/[0.05] border border-white/[0.06]"}`}>
+        <span className={accent ? "text-cyan-400" : "text-muted-foreground"}>{icon}</span>
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest leading-none mb-1.5">{label}</p>
+        <p className="text-sm font-bold text-foreground truncate">{value}</p>
+        {sub && <p className="text-[10px] text-muted-foreground/50 truncate mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -98,120 +134,168 @@ export function Dashboard() {
   if (!systemInfo) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground animate-pulse">システム情報を取得中...</div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 size={16} className="animate-spin text-cyan-400" />
+          <span className="text-sm">システム情報を取得中...</span>
+        </div>
       </div>
     );
   }
 
+  const gpuFirst = gpuList[0];
+
   return (
-    <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">ダッシュボード</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {systemInfo.os_name} {systemInfo.os_version}
+          <h1 className="text-xl font-bold text-foreground tracking-tight">ダッシュボード</h1>
+          <p className="text-xs text-muted-foreground/60 mt-0.5">
+            {systemInfo.os_name} · {systemInfo.os_version}
           </p>
         </div>
         {gameModeActive && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-sm font-medium text-green-400">ゲームモード ON</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full shadow-[0_0_12px_rgba(34,197,94,0.15)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.8)]" />
+            <span className="text-xs font-semibold text-emerald-400 tracking-wide">ゲームモード ON</span>
           </div>
         )}
       </div>
 
-      {/* Health Score */}
-      <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-4">
-        <div className="flex items-center gap-6">
-          <HealthRing score={healthScore} />
-          <div className="flex-1 flex flex-col gap-2">
-            <p className="text-sm font-semibold text-foreground">ゲーミング最適化スコア</p>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-              {healthChecks.map((c) => (
-                <button
-                  key={c.label}
-                  type="button"
-                  onClick={() => useAppStore.getState().setActivePage(c.page as never)}
-                  className="flex items-center gap-2 text-xs group text-left"
-                >
-                  <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${c.active ? "bg-green-400" : "bg-border"}`} />
-                  <span className={c.active ? "text-foreground" : "text-muted-foreground group-hover:text-foreground transition-colors"}>
-                    {c.label}
-                  </span>
-                  {!c.active && (
-                    <ChevronRight size={10} className="text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
-                  )}
-                </button>
-              ))}
+      {/* Top strip — mini stat cards */}
+      <div className="flex gap-3">
+        <MiniStat
+          icon={<Cpu size={14} />}
+          label="CPU"
+          value={`${systemInfo.cpu_usage.toFixed(1)}%`}
+          sub={`${systemInfo.cpu_name} · ${systemInfo.cpu_cores}コア`}
+          accent
+        />
+        <MiniStat
+          icon={<MemoryStick size={14} />}
+          label="Memory"
+          value={`${systemInfo.memory_percent.toFixed(1)}%`}
+          sub={`${formatMemory(systemInfo.memory_used_mb)} / ${formatMemory(systemInfo.memory_total_mb)}`}
+          accent
+        />
+        {gpuFirst && (
+          <MiniStat
+            icon={<MonitorCheck size={14} />}
+            label="GPU"
+            value={gpuFirst.vram_total_mb > 0 ? `${((gpuFirst.vram_used_mb / gpuFirst.vram_total_mb) * 100).toFixed(1)}%` : "—"}
+            sub={gpuFirst.vram_total_mb > 0 ? `${formatMemory(gpuFirst.vram_total_mb)} VRAM` : gpuFirst.name}
+            accent
+          />
+        )}
+        <MiniStat
+          icon={<Wifi size={14} />}
+          label="Network"
+          value={networkOptimized ? "最適化済み" : "通常"}
+          sub={networkOptimized ? "DNS・TCP/IP最適化" : "未最適化"}
+          accent={networkOptimized}
+        />
+      </div>
+
+      {/* Health Score + CTA */}
+      <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+        {/* Top accent bar */}
+        <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+        <div className="p-5 flex flex-col gap-4">
+          <div className="flex items-center gap-5">
+            <HealthRing score={healthScore} />
+            <div className="flex-1 flex flex-col gap-2">
+              <div>
+                <p className="text-sm font-semibold text-foreground">ゲーミング最適化スコア</p>
+                <p className="text-[11px] text-muted-foreground/50 mt-0.5">
+                  {healthChecks.filter(c => c.active).length} / {healthChecks.length} 項目が有効
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-x-5 gap-y-2">
+                {healthChecks.map((c) => (
+                  <button
+                    key={c.label}
+                    type="button"
+                    onClick={() => useAppStore.getState().setActivePage(c.page as never)}
+                    className="flex items-center gap-2 text-xs group text-left"
+                  >
+                    <span className={`w-2 h-2 rounded-full shrink-0 transition-all ${c.active ? "bg-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.6)]" : "bg-white/[0.10]"}`} />
+                    <span className={c.active ? "text-foreground" : "text-muted-foreground/60 group-hover:text-muted-foreground transition-colors"}>
+                      {c.label}
+                    </span>
+                    {!c.active && (
+                      <ChevronRight size={10} className="text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* All-in-one optimization CTA */}
-        {healthScore < 100 && !allOptResult && (
-          <button
-            type="button"
-            onClick={runAllOptimizations}
-            disabled={allOptRunning}
-            className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all border
-              ${allOptRunning
-                ? "bg-primary/20 text-primary/60 cursor-not-allowed border-primary/20"
-                : "bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] glow-cyan border-primary/20"
-              }`}
-          >
-            {allOptRunning ? (
-              <><Loader2 size={18} className="animate-spin" /> 全最適化実行中...</>
-            ) : (
-              <><Zap size={18} /> 今すぐ全最適化（プロセス・電源・Windows・ネットワーク）</>
-            )}
-          </button>
-        )}
-
-        {/* Result banner */}
-        {allOptResult && (
-          <div className={`rounded-lg px-4 py-3 flex flex-col gap-1.5 border ${allOptResult.errors.length > 0 && allOptResult.process_killed === 0 ? "bg-destructive/10 border-destructive/30" : "bg-green-500/10 border-green-500/30"}`}>
-            <div className="flex items-center gap-2">
-              {allOptResult.errors.length === 0 ? (
-                <CheckCircle2 size={15} className="text-green-400 shrink-0" />
+          {/* All-in-one optimization CTA */}
+          {healthScore < 100 && !allOptResult && (
+            <button
+              type="button"
+              onClick={runAllOptimizations}
+              disabled={allOptRunning}
+              className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all text-sm
+                ${allOptRunning
+                  ? "bg-cyan-500/10 text-cyan-400/50 cursor-not-allowed border border-cyan-500/15"
+                  : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110 active:scale-[0.97] glow-cyan"
+                }`}
+            >
+              {allOptRunning ? (
+                <><Loader2 size={16} className="animate-spin" /> 全最適化実行中...</>
               ) : (
-                <XCircle size={15} className="text-amber-400 shrink-0" />
+                <><Zap size={16} /> 今すぐ全最適化（プロセス・電源・Windows・ネットワーク）</>
               )}
-              <p className="text-sm font-medium text-green-400">全最適化完了</p>
+            </button>
+          )}
+
+          {/* Result banner */}
+          {allOptResult && (
+            <div className={`rounded-xl px-4 py-3 flex flex-col gap-1.5 border ${allOptResult.errors.length > 0 && allOptResult.process_killed === 0 ? "bg-red-500/10 border-red-500/25" : "bg-emerald-500/10 border-emerald-500/25"}`}>
+              <div className="flex items-center gap-2">
+                {allOptResult.errors.length === 0 ? (
+                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+                ) : (
+                  <XCircle size={14} className="text-amber-400 shrink-0" />
+                )}
+                <p className="text-sm font-semibold text-emerald-400">全最適化完了</p>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground pl-5">
+                <span>プロセス停止: <span className="text-foreground font-medium">{allOptResult.process_killed}件 ({allOptResult.process_freed_mb.toFixed(0)} MB解放)</span></span>
+                {allOptResult.power_plan_set && <span className="text-emerald-400">電源 ✓</span>}
+                {allOptResult.windows_applied && <span className="text-emerald-400">Windows ✓</span>}
+                {allOptResult.network_applied && <span className="text-emerald-400">ネットワーク ✓</span>}
+                {allOptResult.errors.map((e, i) => (
+                  <span key={i} className="text-amber-400">{e}</span>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground pl-5">
-              <span>プロセス停止: <span className="text-foreground">{allOptResult.process_killed}件 ({allOptResult.process_freed_mb.toFixed(0)} MB解放)</span></span>
-              {allOptResult.power_plan_set && <span className="text-foreground">電源✓</span>}
-              {allOptResult.windows_applied && <span className="text-foreground">Windows✓</span>}
-              {allOptResult.network_applied && <span className="text-foreground">ネットワーク✓</span>}
-              {allOptResult.errors.map((e, i) => (
-                <span key={i} className="text-amber-400">{e}</span>
-              ))}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* System Stats Grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <StatCard
           label="CPU 使用率"
           value={systemInfo.cpu_usage}
-          icon={<Cpu size={16} />}
+          icon={<Cpu size={14} />}
           subtitle={`${systemInfo.cpu_name} (${systemInfo.cpu_cores}コア)`}
         />
         <StatCard
           label="RAM 使用率"
           value={systemInfo.memory_percent}
-          icon={<MemoryStick size={16} />}
+          icon={<MemoryStick size={14} />}
           subtitle={`${formatMemory(systemInfo.memory_used_mb)} / ${formatMemory(systemInfo.memory_total_mb)}`}
         />
         {gpuList.map((gpu, i) => (
           <StatCard
             key={i}
-            label="GPU"
+            label="GPU VRAM"
             value={gpu.vram_used_mb > 0 ? (gpu.vram_used_mb / gpu.vram_total_mb) * 100 : 0}
-            icon={<MonitorCheck size={16} />}
+            icon={<MonitorCheck size={14} />}
             subtitle={gpu.vram_total_mb > 0
               ? `${gpu.name} · ${formatMemory(gpu.vram_total_mb)} VRAM`
               : gpu.name}
@@ -220,60 +304,65 @@ export function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-          クイックアクション
-        </h2>
-        <div className="grid grid-cols-3 gap-3">
-          <QuickActionButton
-            icon={<Monitor size={20} />}
-            label="ゲームモード"
-            description="不要プロセス停止"
-            onClick={() => useAppStore.getState().setActivePage("gamemode")}
-            active={gameModeActive}
-          />
-          <QuickActionButton
-            icon={<Zap size={20} />}
-            label="Windows設定"
-            description="視覚効果最適化"
-            onClick={() => useAppStore.getState().setActivePage("windows")}
-            active={windowsOptimized}
-          />
-          <QuickActionButton
-            icon={<Wifi size={20} />}
-            label="ネットワーク"
-            description="DNS・TCP/IP最適化"
-            onClick={() => useAppStore.getState().setActivePage("network")}
-            active={networkOptimized}
-          />
-          <QuickActionButton
-            icon={<HardDrive size={20} />}
-            label="ストレージ"
-            description="キャッシュ削除"
-            onClick={() => useAppStore.getState().setActivePage("storage")}
-          />
-          <QuickActionButton
-            icon={<Shield size={20} />}
-            label="アップデート"
-            description="アプリ・ドライバー"
-            onClick={() => useAppStore.getState().setActivePage("updates")}
-          />
-          <QuickActionButton
-            icon={<Cpu size={20} />}
-            label="ハードウェア"
-            description="GPU電力制御"
-            onClick={() => useAppStore.getState().setActivePage("hardware")}
-          />
+      <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+        <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+        <div className="p-4">
+          <h2 className="text-[10px] font-semibold text-muted-foreground/50 mb-3.5 uppercase tracking-widest">
+            クイックアクション
+          </h2>
+          <div className="grid grid-cols-3 gap-2.5">
+            <QuickActionButton
+              icon={<Monitor size={16} />}
+              label="ゲームモード"
+              description="不要プロセス停止"
+              onClick={() => useAppStore.getState().setActivePage("gamemode")}
+              active={gameModeActive}
+            />
+            <QuickActionButton
+              icon={<Zap size={16} />}
+              label="Windows設定"
+              description="視覚効果最適化"
+              onClick={() => useAppStore.getState().setActivePage("windows")}
+              active={windowsOptimized}
+            />
+            <QuickActionButton
+              icon={<Wifi size={16} />}
+              label="ネットワーク"
+              description="DNS・TCP/IP最適化"
+              onClick={() => useAppStore.getState().setActivePage("network")}
+              active={networkOptimized}
+            />
+            <QuickActionButton
+              icon={<HardDrive size={16} />}
+              label="ストレージ"
+              description="キャッシュ削除"
+              onClick={() => useAppStore.getState().setActivePage("storage")}
+            />
+            <QuickActionButton
+              icon={<Shield size={16} />}
+              label="アップデート"
+              description="アプリ・ドライバー"
+              onClick={() => useAppStore.getState().setActivePage("updates")}
+            />
+            <QuickActionButton
+              icon={<Cpu size={16} />}
+              label="ハードウェア"
+              description="GPU電力制御"
+              onClick={() => useAppStore.getState().setActivePage("hardware")}
+            />
+          </div>
         </div>
       </div>
 
       {/* Last Optimization Result */}
       {freedMemoryMb > 0 && (
-        <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 flex items-center gap-3">
-          <span className="text-green-400 text-xl">✓</span>
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            <CheckCircle2 size={14} className="text-emerald-400" />
+          </div>
           <div>
-            <p className="text-sm font-medium text-green-400">最適化完了</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm font-semibold text-emerald-400">最適化完了</p>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">
               {freedMemoryMb.toFixed(1)} MB のメモリを解放しました
             </p>
           </div>
@@ -308,24 +397,33 @@ function QuickActionButton({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={`
-        relative flex flex-col items-center gap-2 p-4 rounded-lg border transition-all text-center
+        relative flex flex-col items-center gap-2.5 p-3.5 rounded-xl border transition-all text-center group
         ${disabled
-          ? "border-border/50 opacity-40 cursor-not-allowed"
+          ? "border-white/[0.06] opacity-40 cursor-not-allowed"
           : active
-          ? "border-green-500/40 bg-green-500/10 hover:bg-green-500/20"
-          : "border-border hover:border-cyan-500/40 hover:bg-cyan-500/5 cursor-pointer"
+          ? "border-emerald-500/35 bg-emerald-500/8 hover:bg-emerald-500/12"
+          : "border-white/[0.07] hover:border-cyan-500/35 hover:bg-cyan-500/5 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.15)] cursor-pointer"
         }
       `}
     >
-      <span className={active ? "text-green-400" : "text-cyan-400"}>{icon}</span>
+      <div className={`p-2.5 rounded-xl transition-all ${
+        active
+          ? "bg-emerald-500/15 border border-emerald-500/25"
+          : "bg-white/[0.05] border border-white/[0.07] group-hover:bg-cyan-500/10 group-hover:border-cyan-500/20"
+      }`}>
+        <span className={active ? "text-emerald-400" : "text-muted-foreground/70 group-hover:text-cyan-400 transition-colors"}>{icon}</span>
+      </div>
       <div>
-        <p className="text-xs font-semibold">{label}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">{description}</p>
+        <p className="text-xs font-semibold leading-tight">{label}</p>
+        <p className="text-[10px] text-muted-foreground/50 mt-0.5 leading-tight">{description}</p>
       </div>
       {disabled && disabledLabel && (
-        <span className="absolute top-1 right-1 text-[9px] text-muted-foreground/60 bg-secondary px-1 rounded">
+        <span className="absolute top-1 right-1 text-[9px] text-muted-foreground/50 bg-white/5 px-1 rounded">
           {disabledLabel}
         </span>
+      )}
+      {active && (
+        <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.7)]" />
       )}
     </button>
   );

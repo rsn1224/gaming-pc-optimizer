@@ -3,26 +3,27 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── Dark theme (default) ── */
+  /* ── Gaming Dark theme (default) ── */
   :root {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --primary: 186 100% 42%;
-    --primary-foreground: 222 47% 8%;
-    --secondary: 222 47% 16%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 222 47% 16%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 186 100% 42%;
-    --accent-foreground: 222 47% 8%;
+    --background: 222 47% 3%;       /* #05070b near-black */
+    --foreground: 210 40% 96%;
+    --card: 220 50% 4%;             /* #05080c panel bg */
+    --card-foreground: 210 40% 96%;
+    --primary: 189 96% 52%;         /* cyan-400 #22d3ee */
+    --primary-foreground: 222 47% 5%;
+    --secondary: 222 40% 9%;
+    --secondary-foreground: 210 40% 80%;
+    --muted: 222 40% 9%;
+    --muted-foreground: 215 20% 52%;
+    --accent: 142 71% 45%;          /* emerald-500 #22c55e */
+    --accent-foreground: 222 47% 5%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 222 47% 18%;
-    --input: 222 47% 18%;
-    --ring: 186 100% 42%;
-    --radius: 0.5rem;
+    --border: 222 30% 12%;
+    --input: 222 30% 12%;
+    --ring: 189 96% 52%;
+    --radius: 0.75rem;
+    --sidebar: 240 50% 3%;          /* #050509 deep sidebar */
   }
 
   /* ── Light theme ── */
@@ -37,14 +38,15 @@
     --secondary-foreground: 222 47% 20%;
     --muted: 210 20% 90%;
     --muted-foreground: 215 16% 45%;
-    --accent: 186 80% 36%;
+    --accent: 142 60% 40%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --border: 210 20% 82%;
     --input: 210 20% 82%;
     --ring: 186 80% 36%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+    --sidebar: 210 20% 93%;
   }
 }
 
@@ -60,28 +62,137 @@
   }
 }
 
-/* Custom scrollbar */
+/* ── Custom scrollbar ── */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: rgba(34, 211, 238, 0.45);
 }
 
-/* Gaming glow effects */
+/* ── Gaming glow utilities ── */
 .glow-cyan {
-  box-shadow: 0 0 12px rgba(0, 212, 220, 0.3);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.4), 0 0 0 1px rgba(34, 211, 238, 0.3);
 }
 .glow-green {
-  box-shadow: 0 0 12px rgba(74, 222, 128, 0.3);
+  box-shadow: 0 0 24px rgba(34, 197, 94, 0.4), 0 0 0 1px rgba(34, 197, 94, 0.3);
 }
 .glow-red {
-  box-shadow: 0 0 12px rgba(248, 113, 113, 0.3);
+  box-shadow: 0 0 18px rgba(248, 113, 113, 0.3);
+}
+
+/* ── Card hover glow ── */
+.card-glow {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-glow:hover {
+  border-color: rgba(34, 211, 238, 0.35);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25), 0 4px 24px rgba(34, 211, 238, 0.06);
+}
+
+/* ── Sidebar active nav indicator ── */
+.nav-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(to bottom, #22d3ee, #22c55e);
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+}
+
+/* ── Sidebar dot grid pattern ── */
+.sidebar-dots {
+  background-image: radial-gradient(circle, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
+  background-size: 18px 18px;
+  background-position: 10px 10px;
+}
+
+/* ── Content area radial glow ── */
+.content-glow {
+  background-image: radial-gradient(
+    ellipse 80% 40% at 50% 0%,
+    rgba(34, 211, 238, 0.09) 0%,
+    transparent 70%
+  );
+}
+
+/* ── Subtle scanline texture overlay ── */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+}
+
+/* ── Gaming gradient border ── */
+.border-glow-cyan {
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35);
+}
+
+/* ── Section separator (gradient line) ── */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(34, 211, 238, 0.2), transparent);
+}
+
+/* ── Primary gradient button base ── */
+.btn-gaming {
+  background: linear-gradient(135deg, #22d3ee, #22c55e);
+  color: #020c10;
+  font-weight: 700;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+.btn-gaming:hover {
+  filter: brightness(1.12);
+}
+.btn-gaming:active {
+  transform: scale(0.97);
+}
+
+/* ── Animated gradient border on card ── */
+@keyframes border-flow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+.card-active-border {
+  border-color: rgba(34, 211, 238, 0.5);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 16px rgba(34, 211, 238, 0.1);
+}
+
+/* ── Sidebar active nav background ── */
+.nav-active-bg {
+  background: linear-gradient(to right, rgba(34, 211, 238, 0.12), rgba(34, 211, 238, 0.02));
+}
+
+/* ── Step number circle ── */
+.step-number {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
 }

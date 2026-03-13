@@ -27,20 +27,20 @@ const RISK_CONFIG: Record<
   safe_to_kill: {
     label: "停止OK",
     icon: <ShieldCheck size={10} />,
-    cls: "bg-green-500/15 text-green-400 border-green-500/30",
-    dotCls: "bg-green-400",
+    cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    dotCls: "bg-emerald-400 shadow-[0_0_5px_rgba(34,197,94,0.6)]",
   },
   caution: {
     label: "注意",
     icon: <AlertTriangle size={10} />,
     cls: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-    dotCls: "bg-amber-400",
+    dotCls: "bg-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.5)]",
   },
   keep: {
     label: "維持推奨",
     icon: <ShieldOff size={10} />,
-    cls: "bg-secondary text-muted-foreground border-border",
-    dotCls: "bg-muted-foreground",
+    cls: "bg-white/5 text-muted-foreground border-white/10",
+    dotCls: "bg-muted-foreground/40",
   },
 };
 
@@ -60,7 +60,7 @@ function RiskBadge({ level }: { level: ProcessRiskLevel }) {
 
 function ProcessRow({ proc }: { proc: AnnotatedProcess }) {
   const ann = proc.annotation;
-  const dotCls = ann ? RISK_CONFIG[ann.risk_level].dotCls : "bg-destructive";
+  const dotCls = ann ? RISK_CONFIG[ann.risk_level].dotCls : "bg-destructive/60";
 
   return (
     <motion.div
@@ -68,7 +68,7 @@ function ProcessRow({ proc }: { proc: AnnotatedProcess }) {
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 10 }}
-      className="flex flex-col px-4 py-2.5 gap-1"
+      className="flex flex-col px-4 py-2.5 gap-1 hover:bg-white/[0.025] transition-colors border-b border-white/[0.04] last:border-0"
     >
       {/* Top line: name + resources + badge */}
       <div className="flex items-center justify-between gap-2">
@@ -77,30 +77,28 @@ function ProcessRow({ proc }: { proc: AnnotatedProcess }) {
           <span className="text-sm font-medium truncate">
             {ann ? ann.display_name : proc.name}
           </span>
-          <span className="text-xs text-muted-foreground/70 shrink-0">PID {proc.pid}</span>
+          <span className="text-[10px] text-muted-foreground/40 shrink-0 font-mono">PID {proc.pid}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs text-muted-foreground tabular-nums">
+          <span className="text-xs text-muted-foreground/60 tabular-nums">
             {formatMemory(proc.memory_mb)}
           </span>
-          <span className="text-xs text-yellow-400 tabular-nums w-10 text-right">
+          <span className="text-xs text-amber-400/80 tabular-nums w-10 text-right">
             {proc.cpu_percent.toFixed(1)}%
           </span>
           {ann && <RiskBadge level={ann.risk_level} />}
         </div>
       </div>
-      {/* Bottom line: description + action */}
+      {/* Bottom line: description */}
       {ann && (
-        <div className="flex items-start gap-1 pl-3.5">
-          <p className="text-[11px] text-muted-foreground/70 leading-relaxed flex-1">
+        <div className="pl-3.5 flex flex-col gap-0.5">
+          <p className="text-[11px] text-muted-foreground/50 leading-relaxed">
             {ann.description}
           </p>
+          <p className="text-[11px] text-muted-foreground/40">
+            <span className="font-medium text-muted-foreground/60">推奨: </span>{ann.recommended_action}
+          </p>
         </div>
-      )}
-      {ann && (
-        <p className="text-[11px] text-muted-foreground pl-3.5 leading-none">
-          <span className="font-medium">推奨: </span>{ann.recommended_action}
-        </p>
       )}
     </motion.div>
   );
@@ -114,28 +112,23 @@ function ProcessSummary({ procs }: { procs: AnnotatedProcess[] }) {
   const unknown = procs.filter((p) => !p.annotation).length;
 
   return (
-    <div className="px-4 py-2 bg-secondary/40 border-t border-border flex items-center gap-3 flex-wrap">
-      <span className="text-xs text-muted-foreground">AI推奨:</span>
+    <div className="px-4 py-2.5 bg-white/[0.02] border-t border-white/[0.05] flex items-center gap-4 flex-wrap">
+      <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">AI推奨</span>
       {safe > 0 && (
-        <span className="flex items-center gap-1 text-xs text-green-400">
+        <span className="flex items-center gap-1.5 text-xs text-emerald-400">
           <ShieldCheck size={11} />
           停止OK {safe}件
         </span>
       )}
       {caution > 0 && (
-        <span className="flex items-center gap-1 text-xs text-amber-400">
+        <span className="flex items-center gap-1.5 text-xs text-amber-400">
           <AlertTriangle size={11} />
           注意 {caution}件
         </span>
       )}
       {unknown > 0 && (
-        <span className="text-xs text-muted-foreground/60">
+        <span className="text-xs text-muted-foreground/40">
           未分類 {unknown}件
-        </span>
-      )}
-      {safe > 0 && (
-        <span className="ml-auto text-xs text-muted-foreground/60">
-          「停止OK」のみを対象に一括停止できます
         </span>
       )}
     </div>
@@ -157,7 +150,6 @@ export function GameMode() {
   const [annotatedProcs, setAnnotatedProcs] = useState<AnnotatedProcess[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [prevPowerGuid, setPrevPowerGuid] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const [steps, setSteps] = useState<OptimizationStep[]>([
     {
@@ -245,9 +237,7 @@ export function GameMode() {
     // Step 2: Power plan
     updateStep("power", { status: "running" });
     try {
-      const ret = await invoke<string>("set_ultimate_performance");
-      const [, prevGuid] = ret.split("|");
-      if (prevGuid) setPrevPowerGuid(prevGuid);
+      await invoke<string>("set_ultimate_performance");
       updateStep("power", { status: "success", result: "Ultimate Performance に切り替えました" });
     } catch (e) {
       updateStep("power", { status: "error", result: String(e) });
@@ -279,9 +269,7 @@ export function GameMode() {
   const restoreOptimization = async () => {
     setIsRestoring(true);
     try {
-      // restore_all reverts Windows settings, network settings, and power plan
       await invoke("restore_all");
-      setPrevPowerGuid(null);
       setGameModeActive(false);
       setSteps((prev) => prev.map((s) => ({ ...s, status: "idle", result: undefined })));
     } catch (e) {
@@ -294,168 +282,181 @@ export function GameMode() {
   const totalMemory = bloatwareProcesses.reduce((sum, p) => sum + p.memory_mb, 0);
 
   return (
-    <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
-            <Gamepad2 className="text-cyan-400" size={24} />
+          <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-emerald-500/10 border border-cyan-500/30 rounded-xl shadow-[0_0_12px_rgba(34,211,238,0.1)]">
+            <Gamepad2 className="text-cyan-400" size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">ゲームモード</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl font-bold tracking-tight">ゲームモード</h1>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">
               不要プロセスを停止してリソースを最大化
             </p>
           </div>
         </div>
         {gameModeActive && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-sm font-medium text-green-400">有効</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full shadow-[0_0_12px_rgba(34,197,94,0.15)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.8)]" />
+            <span className="text-xs font-semibold text-emerald-400 tracking-wide">有効</span>
           </div>
         )}
       </div>
 
-      {/* Detected Processes */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Trash2 size={16} className="text-muted-foreground" />
-            <span className="text-sm font-semibold">検出されたプロセス</span>
-            {bloatwareProcesses.length > 0 && (
-              <span className="px-2 py-0.5 text-xs bg-destructive/20 text-destructive rounded-full font-medium">
-                {bloatwareProcesses.length} 件
-              </span>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={scanProcesses}
-            disabled={isScanning}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-muted-foreground rounded-md transition-colors"
-          >
-            <RefreshCw size={12} className={isScanning ? "animate-spin" : ""} />
-            スキャン
-          </button>
-        </div>
-
-        {isScanning ? (
-          <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
-            <Loader2 size={16} className="animate-spin" />
-            <span className="text-sm">スキャン中...</span>
-          </div>
-        ) : annotatedProcs.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
-            <CheckCircle2 size={16} className="text-green-400" />
-            <span className="text-sm">不要プロセスは検出されませんでした</span>
-          </div>
-        ) : (
-          <>
-            <div className="max-h-72 overflow-y-auto divide-y divide-border/50">
-              <AnimatePresence>
-                {annotatedProcs.map((proc) => (
-                  <ProcessRow key={proc.pid} proc={proc} />
-                ))}
-              </AnimatePresence>
-            </div>
-            <ProcessSummary procs={annotatedProcs} />
-            <div className="px-4 py-2 bg-destructive/5 border-t border-border flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                合計メモリ使用量: <span className="text-foreground font-medium">{formatMemory(totalMemory)}</span>
-              </span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Optimization Steps */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Zap size={16} className="text-muted-foreground" />
-            <span className="text-sm font-semibold">最適化ステップ</span>
-          </div>
-        </div>
-        <div className="divide-y divide-border/50">
-          {steps.map((step) => (
-            <div key={step.id} className="flex items-center gap-3 px-4 py-3">
-              <StepIcon status={step.status} />
-              <div className="flex-1">
-                <p className="text-sm font-medium">{step.label}</p>
-                <p className="text-xs text-muted-foreground">
-                  {step.result ?? step.description}
-                </p>
+      {/* 2-column layout for xl screens */}
+      <div className="flex-1 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]">
+        {/* Left — Detected Processes */}
+        <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden flex flex-col card-glow">
+          {/* Card header */}
+          <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-red-500/10 rounded-lg border border-red-500/20">
+                <Trash2 size={13} className="text-red-400/70" />
               </div>
-              {step.status === "running" && (
-                <div className="w-24">
-                  <ProgressBar value={50} colorByValue={false} showLabel={false} />
-                </div>
+              <span className="text-sm font-semibold">検出されたプロセス</span>
+              {bloatwareProcesses.length > 0 && (
+                <span className="px-2 py-0.5 text-[10px] bg-red-500/15 text-red-400 border border-red-500/25 rounded-full font-semibold">
+                  {bloatwareProcesses.length} 件
+                </span>
               )}
             </div>
-          ))}
-        </div>
-      </div>
+            <button
+              type="button"
+              onClick={scanProcesses}
+              disabled={isScanning}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground border border-white/[0.07] hover:border-white/15 rounded-lg transition-colors"
+            >
+              <RefreshCw size={11} className={isScanning ? "animate-spin" : ""} />
+              スキャン
+            </button>
+          </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={runOptimization}
-          disabled={isOptimizing || isRestoring}
-          className={`
-            flex-1 py-4 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-3
-            ${isOptimizing || isRestoring
-              ? "bg-primary/20 text-primary/60 cursor-not-allowed border border-primary/20"
-              : "bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] glow-cyan border border-primary/20"
-            }
-          `}
-        >
-          {isOptimizing ? (
-            <>
-              <Loader2 size={22} className="animate-spin" />
-              最適化中...
-            </>
+          {isScanning ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+              <Loader2 size={15} className="animate-spin text-cyan-400" />
+              <span className="text-sm">スキャン中...</span>
+            </div>
+          ) : annotatedProcs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
+              <CheckCircle2 size={20} className="text-emerald-400/60" />
+              <span className="text-sm">不要プロセスは検出されませんでした</span>
+            </div>
           ) : (
             <>
-              <Gamepad2 size={22} />
-              ワンクリック最適化
+              <div className="flex-1 overflow-y-auto">
+                <AnimatePresence>
+                  {annotatedProcs.map((proc) => (
+                    <ProcessRow key={proc.pid} proc={proc} />
+                  ))}
+                </AnimatePresence>
+              </div>
+              <ProcessSummary procs={annotatedProcs} />
+              <div className="px-4 py-2.5 bg-white/[0.02] border-t border-white/[0.05] flex items-center justify-between">
+                <span className="text-xs text-muted-foreground/50">
+                  合計メモリ: <span className="text-foreground font-medium">{formatMemory(totalMemory)}</span>
+                </span>
+              </div>
             </>
           )}
-        </button>
+        </div>
 
-        {gameModeActive && (
-          <button
-            type="button"
-            onClick={restoreOptimization}
-            disabled={isOptimizing || isRestoring}
-            className={`
-              px-5 py-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 border
-              ${isOptimizing || isRestoring
-                ? "opacity-40 cursor-not-allowed border-border text-muted-foreground"
-                : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
-              }
-            `}
-          >
-            {isRestoring ? <Loader2 size={18} className="animate-spin" /> : <RotateCcw size={18} />}
-            復元
-          </button>
-        )}
+        {/* Right — Steps + CTA */}
+        <div className="flex flex-col gap-4">
+          {/* Optimization Steps */}
+          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+            <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+            <div className="px-4 py-3 border-b border-white/[0.05]">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+                  <Zap size={13} className="text-cyan-400" />
+                </div>
+                <span className="text-sm font-semibold">最適化ステップ</span>
+              </div>
+            </div>
+            <div className="divide-y divide-white/[0.04]">
+              {steps.map((step, idx) => (
+                <div key={step.id} className="flex items-center gap-3 px-4 py-3.5">
+                  <StepIcon status={step.status} index={idx + 1} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{step.label}</p>
+                    <p className={`text-xs truncate mt-0.5 ${step.status === "success" ? "text-emerald-400/80" : step.status === "error" ? "text-red-400/80" : "text-muted-foreground/50"}`}>
+                      {step.result ?? step.description}
+                    </p>
+                  </div>
+                  {step.status === "running" && (
+                    <div className="w-16 shrink-0">
+                      <ProgressBar value={50} colorByValue={false} showLabel={false} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={runOptimization}
+              disabled={isOptimizing || isRestoring}
+              className={`
+                w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-3
+                ${isOptimizing || isRestoring
+                  ? "bg-cyan-500/8 text-cyan-400/40 cursor-not-allowed border border-cyan-500/10"
+                  : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110 active:scale-[0.97] glow-cyan"
+                }
+              `}
+            >
+              {isOptimizing ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  最適化中...
+                </>
+              ) : (
+                <>
+                  <Gamepad2 size={20} />
+                  ワンクリック最適化
+                </>
+              )}
+            </button>
+
+            {gameModeActive && (
+              <button
+                type="button"
+                onClick={restoreOptimization}
+                disabled={isOptimizing || isRestoring}
+                className={`
+                  w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 border
+                  ${isOptimizing || isRestoring
+                    ? "opacity-30 cursor-not-allowed border-white/[0.06] text-muted-foreground"
+                    : "border-white/[0.10] bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground hover:border-white/20"
+                  }
+                `}
+              >
+                {isRestoring ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />}
+                設定を復元
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function StepIcon({ status }: { status: StepStatus }) {
+function StepIcon({ status, index }: { status: StepStatus; index: number }) {
   switch (status) {
     case "running":
       return <Loader2 size={18} className="text-cyan-400 animate-spin shrink-0" />;
     case "success":
-      return <CheckCircle2 size={18} className="text-green-400 shrink-0" />;
+      return <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />;
     case "error":
       return <XCircle size={18} className="text-destructive shrink-0" />;
     default:
       return (
-        <div className="w-[18px] h-[18px] rounded-full border-2 border-border shrink-0" />
+        <div className="step-number shrink-0">{index}</div>
       );
   }
 }
