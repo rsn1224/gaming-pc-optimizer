@@ -104,7 +104,48 @@ export interface GameProfile {
   launcher?: string; // "steam" | "epic" | "battlenet" | "custom"
 }
 
-export type ActivePage = "dashboard" | "gamemode" | "windows" | "storage" | "network" | "profiles" | "games" | "settings";
+export interface AppUpdate {
+  id: string;
+  name: string;
+  current_version: string;
+  available_version: string;
+  source: string;
+}
+
+export interface AiUpdatePriority {
+  id: string;
+  priority: "critical" | "recommended" | "optional" | "skip";
+  reason: string;
+}
+
+export interface DriverInfo {
+  device_name: string;
+  provider: string;
+  driver_version: string;
+  driver_date: string;
+  device_class: string;
+}
+
+export interface GpuStatus {
+  name: string;
+  vram_total_mb: number;
+  vram_used_mb: number;
+  temperature_c: number;
+  power_draw_w: number;
+  power_limit_w: number;
+  power_limit_default_w: number;
+  fan_speed_percent: number;
+  utilization_percent: number;
+  driver_version: string;
+}
+
+export interface AiHardwareMode {
+  mode: "performance" | "balanced" | "efficiency";
+  reason: string;
+  suggested_power_limit_percent: number;
+}
+
+export type ActivePage = "dashboard" | "gamemode" | "windows" | "storage" | "network" | "profiles" | "games" | "settings" | "updates" | "hardware";
 
 // export_profiles_context response shape
 export interface ProfilesContextProfile {

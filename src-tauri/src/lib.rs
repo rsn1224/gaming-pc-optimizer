@@ -1,7 +1,8 @@
 mod commands;
 
 use commands::{
-    ai, network, power, process, profiles, steam, storage, system_info, watcher, windows_settings,
+    ai, hardware, network, power, process, profiles, steam, storage, system_info, updates, watcher,
+    windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -172,6 +173,15 @@ pub fn run() {
             ai::get_ai_api_key,
             ai::set_ai_api_key,
             ai::generate_ai_recommendations,
+            ai::get_ai_update_priorities,
+            ai::get_ai_hardware_mode,
+            // Updates
+            updates::check_app_updates,
+            updates::upgrade_apps,
+            updates::check_driver_info,
+            // Hardware
+            hardware::get_gpu_status,
+            hardware::set_gpu_power_limit,
             // Watcher / tray commands
             watcher::get_auto_start,
             watcher::set_auto_start,

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { Dashboard } from "@/components/dashboard/Dashboard";
@@ -11,6 +11,8 @@ import { NetworkOptimizer } from "@/components/optimization/NetworkOptimizer";
 import { Profiles } from "@/components/profiles/Profiles";
 import { GamesLibrary } from "@/components/games/GamesLibrary";
 import { Settings } from "@/components/settings/Settings";
+import { Updates } from "@/components/updates/Updates";
+import { Hardware } from "@/components/hardware/Hardware";
 import type { ActivePage } from "@/types";
 
 interface NavItem {
@@ -28,6 +30,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: "storage",   icon: <HardDrive size={18} />,       label: "ストレージ" },
   { id: "network",   icon: <Wifi size={18} />,            label: "ネットワーク" },
   { id: "profiles",  icon: <BookMarked size={18} />,      label: "プロファイル", phase: "詳細" },
+  { id: "updates",   icon: <Shield size={18} />,          label: "アップデート" },
+  { id: "hardware",  icon: <Cpu size={18} />,             label: "ハードウェア" },
   { id: "settings",  icon: <SettingsIcon size={18} />,    label: "設定" },
 ];
 
@@ -47,6 +51,10 @@ function PageContent({ page }: { page: ActivePage }) {
       return <Profiles />;
     case "games":
       return <GamesLibrary />;
+    case "updates":
+      return <Updates />;
+    case "hardware":
+      return <Hardware />;
     case "settings":
       return <Settings />;
   }
