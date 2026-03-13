@@ -7,7 +7,7 @@ import { GameCard } from "./GameCard";
 import { GameFilters } from "./GameFilters";
 
 export function GamesLibrary() {
-  const { activeProfileId, setActivePage } = useAppStore();
+  const { activeProfileId, setActivePage, setEditingProfileId } = useAppStore();
   const [profiles, setProfiles] = useState<GameProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [launchingId, setLaunchingId] = useState<string | null>(null);
@@ -26,12 +26,24 @@ export function GamesLibrary() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Auto-clear launch log after 5 seconds
+  useEffect(() => {
+    if (!launchLog) return;
+    const t = setTimeout(() => setLaunchLog(null), 5000);
+    return () => clearTimeout(t);
+  }, [launchLog]);
+
   // Collect all unique tags across profiles
   const allTags = useMemo(() => {
     const set = new Set<string>();
     profiles.forEach((p) => p.tags.forEach((t) => set.add(t)));
     return Array.from(set).sort();
   }, [profiles]);
+
+  const hasAnyMode = useMemo(
+    () => profiles.some((p) => p.recommended_mode != null),
+    [profiles]
+  );
 
   // Filtered profiles
   const filtered = useMemo(() => {
@@ -84,6 +96,7 @@ export function GamesLibrary() {
           selectedMode={selectedMode}
           onModeChange={setSelectedMode}
           allTags={allTags}
+          hasAnyMode={hasAnyMode}
         />
       )}
 
@@ -131,7 +144,10 @@ export function GamesLibrary() {
               isActive={activeProfileId === p.id}
               launching={launchingId === p.id}
               onLaunchOptimize={() => handleLaunchOptimize(p)}
-              onEdit={() => setActivePage("profiles")}
+              onEdit={() => {
+                setEditingProfileId(p.id);
+                setActivePage("profiles");
+              }}
             />
           ))}
         </div>

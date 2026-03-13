@@ -147,24 +147,18 @@ pub fn export_profiles_context() -> Result<String, String> {
     );
     sys.refresh_memory();
 
-    let cpu_name = {
+    let (cpu_name, cpu_cores) = {
         use sysinfo::CpuRefreshKind;
         let mut s2 = System::new_with_specifics(
             RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()),
         );
         s2.refresh_cpu_list(CpuRefreshKind::nothing());
-        s2.cpus()
+        let name = s2.cpus()
             .first()
             .map(|c| c.brand().to_string())
-            .unwrap_or_else(|| "Unknown".to_string())
-    };
-    let cpu_cores = {
-        use sysinfo::CpuRefreshKind;
-        let mut s2 = System::new_with_specifics(
-            RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()),
-        );
-        s2.refresh_cpu_list(CpuRefreshKind::nothing());
-        s2.cpus().len()
+            .unwrap_or_else(|| "Unknown".to_string());
+        let cores = s2.cpus().len();
+        (name, cores)
     };
 
     let system = SystemSnapshot {

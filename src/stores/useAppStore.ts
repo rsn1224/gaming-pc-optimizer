@@ -62,6 +62,9 @@ interface AppState {
   setActiveProfileId: (id: string | null) => void;
   autoOptimize: boolean;
   setAutoOptimize: (enabled: boolean) => void;
+  // Games library → Profiles page deep-link
+  editingProfileId: string | null;
+  setEditingProfileId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -104,4 +107,6 @@ export const useAppStore = create<AppState>((set) => ({
   setActiveProfileId: (id) => set({ activeProfileId: id }),
   autoOptimize: false,
   setAutoOptimize: (enabled) => set({ autoOptimize: enabled }),
+  editingProfileId: null,
+  setEditingProfileId: (id) => set({ editingProfileId: id }),
 }));

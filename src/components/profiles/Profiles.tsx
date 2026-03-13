@@ -464,7 +464,7 @@ function QuickDraftModal({ onSave, onClose }: QuickDraftProps) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function Profiles() {
-  const { activeProfileId } = useAppStore();
+  const { activeProfileId, editingProfileId, setEditingProfileId } = useAppStore();
   const [profiles, setProfiles] = useState<GameProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<Partial<GameProfile> | null>(null);
@@ -484,6 +484,16 @@ export function Profiles() {
   };
 
   useEffect(() => { reload(); }, []);
+
+  // Auto-open modal when navigating from My Games via editingProfileId
+  useEffect(() => {
+    if (!editingProfileId || profiles.length === 0 || modal !== null) return;
+    const p = profiles.find((x) => x.id === editingProfileId);
+    if (p) {
+      setModal(p);
+      setEditingProfileId(null);
+    }
+  }, [profiles, editingProfileId]); // modal intentionally excluded to avoid re-runs
 
   const handleDelete = async (id: string) => {
     if (!confirm("このプロファイルを削除しますか？")) return;

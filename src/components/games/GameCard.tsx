@@ -75,12 +75,16 @@ export function GameCard({ profile, isActive, launching, onLaunchOptimize, onEdi
               </span>
             )}
             {/* Recommended mode badge */}
-            {modeConfig && (
+            {modeConfig ? (
               <span
                 className={`inline-flex items-center text-[10px] border rounded-full px-2 py-0.5 shrink-0 font-medium ${modeConfig.className}`}
                 title={profile.recommended_reason}
               >
                 {modeConfig.label}
+              </span>
+            ) : (
+              <span className="inline-flex items-center text-[10px] bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 rounded-full px-2 py-0.5 shrink-0">
+                AI未設定
               </span>
             )}
             {/* Launcher badge */}

@@ -8,6 +8,7 @@ interface GameFiltersProps {
   selectedMode: string | null;
   onModeChange: (m: string | null) => void;
   allTags: string[];
+  hasAnyMode: boolean;
 }
 
 const MODE_LABELS: Record<string, string> = {
@@ -24,6 +25,7 @@ export function GameFilters({
   selectedMode,
   onModeChange,
   allTags,
+  hasAnyMode,
 }: GameFiltersProps) {
   const hasFilter = search || selectedTag || selectedMode;
 
@@ -51,7 +53,7 @@ export function GameFilters({
       </div>
 
       {/* Tag + Mode chips */}
-      {(allTags.length > 0 || true) && (
+      {(allTags.length > 0 || hasAnyMode) && (
         <div className="flex flex-wrap gap-1.5">
           {/* Tag filters */}
           {allTags.map((tag) => (
