@@ -14,7 +14,7 @@ pub struct SessionMetrics {
 }
 
 impl SessionMetrics {
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "reserved for Before/After comparison reporting")]
     pub fn delta_from(&self, before: &SessionMetrics) -> MetricsDelta {
         MetricsDelta {
             process_count_delta: self.process_count as i64 - before.process_count as i64,
@@ -25,7 +25,6 @@ impl SessionMetrics {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(dead_code)]
 pub struct MetricsDelta {
     pub process_count_delta: i64,
     pub memory_freed_mb: f64,

@@ -57,7 +57,6 @@ fn persist_log(log: &[ErrorEntry]) {
 }
 
 /// Called from other commands when an error should be recorded.
-#[allow(dead_code)]
 pub fn record_error(command: &str, message: &str, context: &str) {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)

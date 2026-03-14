@@ -8,7 +8,10 @@ use sysinfo::System;
 
 // ── Feature flag ─────────────────────────────────────────────────────────────
 
-#[allow(dead_code)]
+#[expect(
+    dead_code,
+    reason = "feature flag marker; callers must check before invoking suggestions"
+)]
 pub const ENABLE_HARDWARE_SUGGESTIONS: bool = true;
 
 // ── Types ─────────────────────────────────────────────────────────────────────

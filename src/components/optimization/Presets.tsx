@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { useSafetyStore } from "@/stores/useSafetyStore";
 import { toast } from "@/stores/useToastStore";
+import { toUserMessage } from "@/lib/errorMessages";
 import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
 import type { PresetInfo, PresetResult } from "@/types";
 
@@ -237,7 +238,6 @@ export function Presets() {
         );
       }
     } catch (e) {
-      const { toUserMessage } = await import("@/lib/errorMessages");
       toast.error(toUserMessage(e, `プリセット「${preset.name}」の適用に失敗しました。`));
       console.error("[Presets] apply_preset:", e);
     } finally {

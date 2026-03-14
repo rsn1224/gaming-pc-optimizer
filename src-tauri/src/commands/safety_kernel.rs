@@ -18,7 +18,7 @@ pub const ENABLE_SAFETY_KERNEL: bool = true;
 /// Safety Kernel が遷移するフェーズ（フロントエンド側の SafeApplyPhase と対応）
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
-#[allow(dead_code)]
+#[expect(dead_code, reason = "used in future SafetyKernel state machine")]
 pub enum SafeApplyPhase {
     Idle,
     Prechecking,

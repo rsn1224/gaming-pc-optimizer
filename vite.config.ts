@@ -12,6 +12,18 @@ export default defineConfig(async () => ({
     },
   },
   clearScreen: false,
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom"],
+          "vendor-motion": ["framer-motion"],
+          "vendor-charts": ["recharts"],
+          "vendor-ui": ["lucide-react", "zustand"],
+        },
+      },
+    },
+  },
   server: {
     port: 1420,
     strictPort: true,

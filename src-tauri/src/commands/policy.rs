@@ -164,7 +164,7 @@ pub struct EvalContext {
 }
 
 /// 評価結果: 発火したポリシーとスキップしたポリシー
-#[allow(dead_code)]
+#[expect(dead_code, reason = "reserved for structured policy eval reporting")]
 #[derive(Debug, Serialize)]
 pub struct EvalResult {
     pub fired: Vec<String>,

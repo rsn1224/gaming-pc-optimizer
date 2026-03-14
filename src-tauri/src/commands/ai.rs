@@ -790,7 +790,10 @@ pub async fn get_game_settings_advice(game_name: String) -> Result<GameSettingsA
 
 // ── S10-01: Performance Coach ─────────────────────────────────────────────────
 
-#[allow(dead_code)]
+#[expect(
+    dead_code,
+    reason = "feature flag marker; active flag is in watcher.rs"
+)]
 pub const ENABLE_PERFORMANCE_COACH: bool = true;
 
 /// セッション後のパフォーマンスコーチングレポート
@@ -932,7 +935,7 @@ pub async fn generate_performance_coaching(
 
 // ── S9-01: AI Profile Generator ───────────────────────────────────────────────
 
-#[allow(dead_code)]
+#[expect(dead_code, reason = "feature flag marker for AI profile generation")]
 pub const ENABLE_AI_PROFILE_GENERATOR: bool = true;
 
 /// ゲーム名から最適な GameProfile 設定を AI で生成して返す（保存はしない）。

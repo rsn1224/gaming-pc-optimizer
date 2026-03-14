@@ -188,7 +188,7 @@ pub fn default_graph() -> OptimizationGraph {
 
 impl OptimizationGraph {
     /// ノード ID → ノード の Map を返す
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "used in tests and reserved for graph inspection API")]
     pub fn node_map(&self) -> HashMap<&str, &OptimizationNode> {
         self.nodes.iter().map(|n| (n.id.as_str(), n)).collect()
     }
@@ -248,7 +248,7 @@ impl OptimizationGraph {
     }
 
     /// 循環依存チェック
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "used in tests and reserved for graph validation API")]
     pub fn is_cyclic(&self) -> bool {
         self.topological_sort().is_err()
     }
@@ -366,6 +366,16 @@ mod tests {
         assert!(plan.order.contains(&"kill_bloatware".to_string()));
         assert!(plan.order.contains(&"ultimate_power".to_string()));
         assert!(plan.conflicts.is_empty());
+    }
+
+    #[test]
+    fn node_map_contains_all_nodes() {
+        let g = default_graph();
+        let map = g.node_map();
+        assert_eq!(map.len(), g.nodes.len());
+        for node in &g.nodes {
+            assert!(map.contains_key(node.id.as_str()));
+        }
     }
 
     #[test]

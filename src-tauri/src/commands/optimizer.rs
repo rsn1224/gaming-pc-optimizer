@@ -205,6 +205,14 @@ pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> 
         Err(e) => result.errors.push(format!("ネットワーク(spawn): {}", e)),
     }
 
+    if !result.errors.is_empty() {
+        super::crash_report::record_error(
+            "apply_all_optimizations",
+            &result.errors.join("; "),
+            "optimizer",
+        );
+    }
+
     super::log_observation(
         "apply_all_optimizations",
         serde_json::json!({
