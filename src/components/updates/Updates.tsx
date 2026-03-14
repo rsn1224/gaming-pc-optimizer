@@ -12,6 +12,79 @@ import {
   Cpu,
 } from "lucide-react";
 import type { AppUpdate, AiUpdatePriority, DriverInfo } from "@/types";
+import { VendorIcon } from "@/lib/VendorIcon";
+import type { VendorKey } from "@/lib/VendorIcon";
+
+// ── App avatar — brand-colored by winget publisher prefix ───────────────────
+
+// Known publisher prefixes (winget ID: "Publisher.AppName") → Tailwind classes
+const PUBLISHER_BRAND: Record<string, string> = {
+  google:     "bg-[#4285F4] text-white",
+  mozilla:    "bg-[#FF7139] text-white",
+  microsoft:  "bg-[#00A4EF] text-white",
+  valve:      "bg-[#1b2838] text-[#c7d5e0]",
+  discord:    "bg-[#5865F2] text-white",
+  spotify:    "bg-[#1DB954] text-white",
+  brave:      "bg-[#FB542B] text-white",
+  adobe:      "bg-red-600 text-white",
+  github:     "bg-[#24292e] text-white",
+  git:        "bg-[#F05033] text-white",
+  jetbrains:  "bg-black text-[#FF318C]",
+  zoom:       "bg-[#2D8CFF] text-white",
+  slack:      "bg-[#4A154B] text-[#E01E5A]",
+  obsproject: "bg-[#302E31] text-[#a579fc]",
+  videolan:   "bg-[#FF8800] text-white",
+  "7zip":     "bg-[#2A5F94] text-white",
+  notepad:    "bg-[#90E59A] text-[#1e1e1e]",
+  python:     "bg-[#FFD43B] text-[#306998]",
+  openjs:     "bg-[#339933] text-white",
+  rustlang:   "bg-[#ce422b] text-white",
+  docker:     "bg-[#2496ED] text-white",
+  twitch:     "bg-[#9146FF] text-white",
+  rarlab:     "bg-[#8B0000] text-white",
+  epicgames:  "bg-[#2a2a2a] text-white",
+  teamviewer: "bg-[#0E8EE9] text-white",
+  autohotkey: "bg-[#334455] text-[#6dcfcf]",
+};
+
+const FALLBACK_CLASSES = [
+  "bg-cyan-700 text-white",
+  "bg-blue-700 text-white",
+  "bg-violet-700 text-white",
+  "bg-emerald-800 text-white",
+  "bg-amber-900 text-white",
+  "bg-rose-800 text-white",
+  "bg-indigo-700 text-white",
+  "bg-teal-700 text-white",
+];
+
+function resolveAppBrand(wingetId: string, name: string): { cls: string; letter: string } {
+  const publisher = wingetId.split(".")[0]?.toLowerCase() ?? "";
+  const letter = (name.trim()[0] ?? wingetId[0] ?? "?").toUpperCase();
+  if (PUBLISHER_BRAND[publisher]) return { cls: PUBLISHER_BRAND[publisher], letter };
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return { cls: FALLBACK_CLASSES[h % FALLBACK_CLASSES.length], letter };
+}
+
+function AppAvatar({ id, name }: { id: string; name: string }) {
+  const { cls, letter } = resolveAppBrand(id, name);
+  return (
+    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold shrink-0 ${cls}`}>
+      {letter}
+    </span>
+  );
+}
+
+// ── Driver vendor icon ──────────────────────────────────────────────────────
+
+function detectDriverVendor(provider: string, deviceName: string): VendorKey | null {
+  const s = `${provider} ${deviceName}`.toLowerCase();
+  if (s.includes("nvidia")) return "nvidia";
+  if (s.includes("amd") || s.includes("advanced micro") || s.includes("radeon")) return "amd";
+  if (s.includes("intel")) return "intel";
+  return null;
+}
 
 // ── Priority badge ─────────────────────────────────────────────────────────────
 
@@ -294,8 +367,13 @@ export function Updates() {
                         />
                       </td>
                       <td className="px-3 py-3">
-                        <p className="font-medium truncate max-w-[200px]">{update.name}</p>
-                        <p className="text-[10px] text-muted-foreground/60 font-mono mt-0.5">{update.id}</p>
+                        <div className="flex items-center gap-2.5">
+                          <AppAvatar id={update.id} name={update.name} />
+                          <div className="min-w-0">
+                            <p className="font-medium truncate max-w-[180px]">{update.name}</p>
+                            <p className="text-[10px] text-muted-foreground/60 font-mono mt-0.5">{update.id}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-3 py-3 hidden sm:table-cell">
                         <div className="flex items-center gap-1">
@@ -372,8 +450,20 @@ export function Updates() {
                 {drivers.map((d, i) => (
                   <tr key={i} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-3 py-2.5">
-                      <p className="font-medium truncate max-w-[180px]">{d.device_name}</p>
-                      <p className="text-[10px] text-muted-foreground/60">{d.device_class}</p>
+                      <div className="flex items-center gap-2.5">
+                        {(() => {
+                          const v = detectDriverVendor(d.provider, d.device_name);
+                          return v ? (
+                            <VendorIcon vendor={v} className="w-5 h-5 shrink-0" />
+                          ) : (
+                            <Cpu size={16} className="text-muted-foreground/50 shrink-0" />
+                          );
+                        })()}
+                        <div className="min-w-0">
+                          <p className="font-medium truncate max-w-[160px]">{d.device_name}</p>
+                          <p className="text-[10px] text-muted-foreground/60">{d.device_class}</p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-2.5 text-muted-foreground/70 hidden md:table-cell text-xs truncate max-w-[120px]">
                       {d.provider}

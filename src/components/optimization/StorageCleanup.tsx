@@ -10,10 +10,42 @@ import {
   AlertCircle,
   FolderOpen,
   Brain,
+  FolderClock,
+  Globe,
+  Image,
+  Zap,
+  Cpu,
+  Shield,
+  FileX,
+  Activity,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { StorageCategory, CleanResult, AiStorageItem } from "@/types";
 import { formatMemory } from "@/lib/utils";
+
+// ── Category icon map ────────────────────────────────────────────────────────
+
+const CATEGORY_ICON: Record<string, { icon: React.ReactNode; color: string }> = {
+  user_temp:      { icon: <FolderClock size={16} />, color: "text-orange-400" },
+  win_temp:       { icon: <FolderClock size={16} />, color: "text-orange-400" },
+  chrome_cache:   { icon: <Globe size={16} />,       color: "text-blue-400" },
+  edge_cache:     { icon: <Globe size={16} />,       color: "text-cyan-400" },
+  firefox_cache:  { icon: <Globe size={16} />,       color: "text-amber-400" },
+  windows_update: { icon: <Shield size={16} />,      color: "text-cyan-400" },
+  thumbnails:     { icon: <Image size={16} />,       color: "text-purple-400" },
+  nvidia_dx_cache:{ icon: <Cpu size={16} />,         color: "text-[#76B900]" },
+  nvidia_gl_cache:{ icon: <Cpu size={16} />,         color: "text-[#76B900]" },
+  prefetch:       { icon: <Zap size={16} />,         color: "text-yellow-400" },
+  recycle_bin:    { icon: <Trash2 size={16} />,      color: "text-red-400" },
+  log_files:      { icon: <Activity size={16} />,    color: "text-slate-400" },
+  crash_dumps:    { icon: <FileX size={16} />,       color: "text-red-400" },
+};
+
+function getCategoryIcon(id: string) {
+  const cfg = CATEGORY_ICON[id];
+  if (!cfg) return { icon: <HardDrive size={16} />, color: "text-muted-foreground" };
+  return cfg;
+}
 
 // ── Checkbox ────────────────────────────────────────────────────────────────
 
@@ -353,6 +385,10 @@ export function StorageCleanup() {
                         onChange={() => toggleSelect(cat.id)}
                         disabled={!canSelect || isBusy}
                       />
+                      {/* Category icon */}
+                      <span className={`shrink-0 ${getCategoryIcon(cat.id).color}`}>
+                        {getCategoryIcon(cat.id).icon}
+                      </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium truncate">{cat.name}</p>

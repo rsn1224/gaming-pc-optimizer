@@ -170,6 +170,30 @@ No logic, state management, props types, or Tauri invoke calls were changed.
 
 ---
 
+---
+
+## プレデプロイ最終コードレビュー — 2026-03-14
+
+全 Rust コマンドファイル（16 ファイル / 約 3,500 行）と TypeScript コンポーネント（28 ファイル）をレビューし、以下を修正・整備した。
+
+### 修正した問題（2件）
+
+1. `src-tauri/src/commands/icons.rs` — PowerShell スクリプトに EXE パスを埋め込む前に、改行文字・ヌルバイトを含む異常パスを早期拒否するバリデーションを追加（exe_path は sysinfo 経由の OS 由来値だが念のため）。
+2. `src-tauri/tauri.conf.json` — `bundle.icon` に存在しない `icon.icns`（macOS 用）が参照されており、Windows ビルド時に警告・エラーの原因になりうるため削除。
+
+### 問題なしと確認した主要項目
+
+- Rust 構造体 ↔ TypeScript interface のフィールド整合（`AppUpdate`, `DriverInfo`, `GameProfile`, `StorageCategory`, `ProcessInfo` 等）: 一致
+- `#[serde(default)]` 漏れ: 主要フィールドはすべて `Option<T>` またはデフォルト値付き
+- 外部コマンド（winget / powershell / netsh / nvidia-smi）へのユーザー入力直接渡し: ドライバー名・DNS プリセットはホワイトリスト検証済み
+- デバッグコード残骸 (`console.log` 等): デスクトップアプリの範囲で許容可能なレベル
+- `std::process::exit(0)` in lib.rs: トレイ「終了」操作専用で意図的
+- Close-to-tray 動作: `CloseRequested` イベントをキャンセルし `w.hide()` する実装で正しい
+
+### 作成したドキュメント
+
+- `TESTPLAN.md` — 起動/終了・全主要機能・AI キー未設定・ビルド検証の手動テストチェックリスト（12 セクション）
+
 ## Not Changed
 
 - All logic, state management, Zustand store

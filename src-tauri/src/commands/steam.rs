@@ -181,6 +181,21 @@ pub fn discover_steam_games() -> Result<Vec<DiscoveredGame>, String> {
                 Some(v) => v,
                 None => continue,
             };
+
+            // Skip non-game entries (redistributables, runtimes, SDKs, dedicated servers)
+            {
+                let lname = name.to_lowercase();
+                if lname.contains("redistributable")
+                    || lname.contains("runtime")
+                    || lname.contains("dedicated server")
+                    || lname.contains("sdk")
+                    || lname.contains("steamworks")
+                    || lname.contains("directx")
+                    || lname.contains("vcredist")
+                {
+                    continue;
+                }
+            }
             let installdir = match vdf_value(&content, "installdir") {
                 Some(v) => v,
                 None => continue,
@@ -211,17 +226,22 @@ pub fn discover_and_create_steam_drafts() -> Result<Vec<GameProfile>, String> {
     let mut added = 0usize;
 
     for game in discovered {
-        // Skip games already in the profile list
-        let exists = if let Some(ref exe) = game.exe_path {
-            profiles.iter().any(|p| !p.exe_path.is_empty() && p.exe_path == *exe)
+        // Find a matching existing profile (by exe_path or by name+launcher)
+        let existing_idx = if let Some(ref exe) = game.exe_path {
+            profiles.iter().position(|p| !p.exe_path.is_empty() && p.exe_path == *exe)
         } else {
-            profiles.iter().any(|p| {
+            profiles.iter().position(|p| {
                 p.name.to_lowercase() == game.name.to_lowercase()
                     && p.launcher.as_deref() == Some("steam")
             })
         };
 
-        if exists {
+        if let Some(idx) = existing_idx {
+            // Backfill steam_app_id into existing profiles that are missing it
+            if profiles[idx].steam_app_id.is_none() {
+                profiles[idx].steam_app_id = Some(game.app_id);
+                added += 1;
+            }
             continue;
         }
 
@@ -239,6 +259,7 @@ pub fn discover_and_create_steam_drafts() -> Result<Vec<GameProfile>, String> {
             recommended_mode: None,
             recommended_reason: None,
             launcher: Some("steam".to_string()),
+            steam_app_id: Some(game.app_id),
         });
 
         added += 1;

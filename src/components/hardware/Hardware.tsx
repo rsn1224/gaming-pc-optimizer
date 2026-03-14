@@ -11,9 +11,41 @@ import {
   Loader2,
   Wind,
   CheckCircle2,
+  Server,
+  Layers,
 } from "lucide-react";
-import type { GpuStatus, AiHardwareMode } from "@/types";
+import type { GpuStatus, AiHardwareMode, MotherboardInfo, CpuDetailedInfo } from "@/types";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { getGpuVendorLogo, getCpuVendorLogo, VENDOR_ICON_BOX, DEFAULT_ICON_BOX, detectMbVendor, MB_VENDOR_CONFIG } from "@/lib/hardwareIcons";
+import { VendorIcon, MbVendorIcon } from "@/lib/VendorIcon";
+
+// ── Brand detection ───────────────────────────────────────────────────────────
+
+function detectBrand(name: string): "nvidia" | "amd" | "intel" | "unknown" {
+  const n = name.toLowerCase();
+  if (n.includes("nvidia") || n.includes("geforce") || n.includes("quadro") || n.includes("rtx") || n.includes("gtx")) return "nvidia";
+  if (n.includes("amd") || n.includes("radeon") || n.includes("rx ") || n.includes("vega")) return "amd";
+  if (n.includes("intel") || n.includes("arc ") || n.includes("uhd") || n.includes("iris")) return "intel";
+  return "unknown";
+}
+
+const BRAND_CONFIG = {
+  nvidia: { label: "NVIDIA", cls: "bg-green-500/15 text-green-400 border-green-500/30" },
+  amd:    { label: "AMD",    cls: "bg-red-500/15 text-red-400 border-red-500/30" },
+  intel:  { label: "Intel",  cls: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
+  unknown:{ label: "",       cls: "" },
+} as const;
+
+function BrandBadge({ name }: { name: string }) {
+  const brand = detectBrand(name);
+  if (brand === "unknown") return null;
+  const { label, cls } = BRAND_CONFIG[brand];
+  return (
+    <span className={`inline-flex items-center text-[9px] font-bold uppercase tracking-wider border rounded px-1.5 py-0.5 ${cls}`}>
+      {label}
+    </span>
+  );
+}
 
 // ── Mode config ───────────────────────────────────────────────────────────────
 
@@ -90,6 +122,8 @@ function GpuCard({
   onApplyMode: (mode: GpuMode) => void;
 }) {
   const vramPct = gpu.vram_total_mb > 0 ? (gpu.vram_used_mb / gpu.vram_total_mb) * 100 : 0;
+  const gpuLogo = getGpuVendorLogo(gpu.name);
+  const iconBoxCls = gpuLogo ? VENDOR_ICON_BOX[gpuLogo.vendor] : DEFAULT_ICON_BOX;
 
   return (
     <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden flex flex-col card-glow">
@@ -99,11 +133,18 @@ function GpuCard({
       <div className="p-5 flex flex-col gap-4">
         {/* GPU name */}
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/25 rounded-xl shadow-[0_0_10px_rgba(34,211,238,0.1)]">
-            <Cpu size={16} className="text-cyan-400" />
+          <div className={`p-2 rounded-xl border ${iconBoxCls}`}>
+            {gpuLogo ? (
+              <VendorIcon vendor={gpuLogo.vendor} className="w-4 h-4" />
+            ) : (
+              <Cpu size={16} className="text-cyan-400" />
+            )}
           </div>
-          <div>
-            <p className="font-semibold text-sm leading-tight">{gpu.name}</p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-sm leading-tight truncate">{gpu.name}</p>
+              <BrandBadge name={gpu.name} />
+            </div>
             <p className="text-[10px] text-muted-foreground/50 font-mono mt-0.5">
               Driver {gpu.driver_version} · GPU #{index}
             </p>
@@ -205,6 +246,91 @@ function GpuCard({
   );
 }
 
+// ── CPU info card ─────────────────────────────────────────────────────────────
+
+function CpuInfoCard({ info }: { info: CpuDetailedInfo }) {
+  const clockGhz = info.max_clock_mhz > 0 ? (info.max_clock_mhz / 1000).toFixed(2) : "—";
+  const cpuLogo = getCpuVendorLogo(`${info.name} ${info.manufacturer}`);
+  const iconBoxCls = cpuLogo ? VENDOR_ICON_BOX[cpuLogo.vendor] : DEFAULT_ICON_BOX;
+  return (
+    <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+      <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+      <div className="p-5 flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-xl border ${iconBoxCls}`}>
+            {cpuLogo ? (
+              <VendorIcon vendor={cpuLogo.vendor} className="w-4 h-4" />
+            ) : (
+              <Cpu size={16} className="text-cyan-400" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-sm leading-tight truncate">{info.name || "不明"}</p>
+              <BrandBadge name={`${info.name} ${info.manufacturer}`} />
+            </div>
+            <p className="text-[10px] text-muted-foreground/50 font-mono mt-0.5">
+              {info.manufacturer} · {info.socket} · {info.architecture}
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <StatCell icon={<Cpu size={12} />} label="物理コア" value={info.cores || "—"} />
+          <StatCell icon={<Activity size={12} />} label="論理プロセッサ" value={info.logical_processors || "—"} />
+          <StatCell icon={<Zap size={12} />} label="最大クロック" value={clockGhz} unit="GHz" />
+          <StatCell icon={<Layers size={12} />} label="L2キャッシュ" value={info.l2_cache_kb > 0 ? `${info.l2_cache_kb}` : "—"} unit={info.l2_cache_kb > 0 ? "KB" : undefined} />
+          <StatCell icon={<Layers size={12} />} label="L3キャッシュ" value={info.l3_cache_kb > 0 ? `${(info.l3_cache_kb / 1024).toFixed(1)}` : "—"} unit={info.l3_cache_kb > 0 ? "MB" : undefined} />
+          <StatCell icon={<Server size={12} />} label="ソケット" value={info.socket || "—"} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MB info card ──────────────────────────────────────────────────────────────
+
+function MbInfoCard({ info }: { info: MotherboardInfo }) {
+  const mbVendor = detectMbVendor(info.manufacturer);
+  const mbCfg = mbVendor ? MB_VENDOR_CONFIG[mbVendor] : null;
+
+  return (
+    <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+      <div className="h-[1px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+      <div className="p-5 flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-xl border ${mbCfg ? `${mbCfg.box} shadow-[0_0_10px_rgba(0,0,0,0.15)]` : "bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 border-emerald-500/25 shadow-[0_0_10px_rgba(34,197,94,0.1)]"}`}>
+            {mbVendor ? (
+              <MbVendorIcon vendor={mbVendor} className="w-4 h-4" />
+            ) : (
+              <Server size={16} className="text-emerald-400" />
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-sm leading-tight">{info.product || "不明"}</p>
+              {mbCfg && (
+                <span className={`inline-flex items-center text-[9px] font-bold uppercase tracking-wider border rounded px-1.5 py-0.5 ${mbCfg.box} ${mbCfg.text}`}>
+                  {mbCfg.label}
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground/50 font-mono mt-0.5">
+              {info.manufacturer}{info.version ? ` · Rev ${info.version}` : ""}
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <StatCell icon={<Server size={12} />} label="メーカー" value={info.manufacturer || "—"} />
+          <StatCell icon={<Layers size={12} />} label="リビジョン" value={info.version || "—"} />
+        </div>
+        {info.serial_number && info.serial_number.toLowerCase() !== "to be filled by o.e.m." && (
+          <p className="text-[10px] text-muted-foreground/30 font-mono">S/N: {info.serial_number}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function Hardware() {
@@ -212,6 +338,9 @@ export function Hardware() {
   const [gpuError, setGpuError]       = useState<string | null>(null);
   const [loading, setLoading]         = useState(true);
   const [refreshing, setRefreshing]   = useState(false);
+
+  const [cpuInfo, setCpuInfo]         = useState<CpuDetailedInfo | null>(null);
+  const [mbInfo, setMbInfo]           = useState<MotherboardInfo | null>(null);
 
   const [aiResult, setAiResult]       = useState<AiHardwareMode | null>(null);
   const [loadingAi, setLoadingAi]     = useState(false);
@@ -250,6 +379,15 @@ export function Hardware() {
   }, []);
 
   useEffect(() => { fetchGpus(); }, [fetchGpus]);
+
+  useEffect(() => {
+    invoke<CpuDetailedInfo>("get_cpu_detailed_info")
+      .then(setCpuInfo)
+      .catch(() => {});
+    invoke<MotherboardInfo>("get_motherboard_info")
+      .then(setMbInfo)
+      .catch(() => {});
+  }, []);
 
   const handleAiRecommend = async () => {
     setLoadingAi(true);
@@ -306,7 +444,7 @@ export function Hardware() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">ハードウェア</h1>
-            <p className="text-xs text-muted-foreground/60 mt-0.5">GPU状態モニタリングと電力最適化</p>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">CPU・マザーボード・GPU状態モニタリングと電力最適化</p>
           </div>
         </div>
 
@@ -376,6 +514,21 @@ export function Hardware() {
           {applyLog.msg}
         </div>
       )}
+
+      {/* CPU + MB info */}
+      {(cpuInfo || mbInfo) && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {cpuInfo && <CpuInfoCard info={cpuInfo} />}
+          {mbInfo && <MbInfoCard info={mbInfo} />}
+        </div>
+      )}
+
+      {/* GPU section label */}
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+        <span className="text-[10px] text-muted-foreground/40 uppercase tracking-widest font-medium">GPU</span>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+      </div>
 
       {/* GPU cards */}
       {loading ? (

@@ -56,11 +56,55 @@ function RiskBadge({ level }: { level: ProcessRiskLevel }) {
   );
 }
 
+// ── Process icon ──────────────────────────────────────────────────────────────
+
+const PROC_ICON_COLORS = [
+  "bg-cyan-500/20 text-cyan-400",
+  "bg-emerald-500/20 text-emerald-400",
+  "bg-violet-500/20 text-violet-400",
+  "bg-amber-500/20 text-amber-400",
+  "bg-blue-500/20 text-blue-400",
+  "bg-rose-500/20 text-rose-400",
+  "bg-orange-500/20 text-orange-400",
+  "bg-teal-500/20 text-teal-400",
+] as const;
+
+function procIconColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return PROC_ICON_COLORS[Math.abs(hash) % PROC_ICON_COLORS.length];
+}
+
+// ── Exe icon cache (shared across rows, avoids repeated PowerShell calls) ──────
+
+const exeIconCache = new Map<string, string | null>();
+
 // ── Process row ───────────────────────────────────────────────────────────────
 
 function ProcessRow({ proc }: { proc: AnnotatedProcess }) {
   const ann = proc.annotation;
   const dotCls = ann ? RISK_CONFIG[ann.risk_level].dotCls : "bg-destructive/60";
+  const letter = (proc.name[0] ?? "?").toUpperCase();
+
+  const [icon, setIcon] = useState<string | null>(
+    proc.exe_path ? (exeIconCache.get(proc.exe_path) ?? undefined) ?? null : null
+  );
+
+  useEffect(() => {
+    if (!proc.exe_path) return;
+    if (exeIconCache.has(proc.exe_path)) {
+      setIcon(exeIconCache.get(proc.exe_path) ?? null);
+      return;
+    }
+    invoke<string>("get_exe_icon_base64", { exePath: proc.exe_path })
+      .then((b64) => {
+        exeIconCache.set(proc.exe_path, b64);
+        setIcon(b64);
+      })
+      .catch(() => {
+        exeIconCache.set(proc.exe_path, null);
+      });
+  }, [proc.exe_path]);
 
   return (
     <motion.div
@@ -68,11 +112,24 @@ function ProcessRow({ proc }: { proc: AnnotatedProcess }) {
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 10 }}
-      className="flex flex-col px-4 py-2.5 gap-1 hover:bg-white/[0.025] transition-colors border-b border-white/[0.04] last:border-0"
+      className="flex flex-col px-3 py-2.5 gap-1 hover:bg-white/[0.025] transition-colors border-b border-white/[0.04] last:border-0"
     >
       {/* Top line: name + resources + badge */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
+          {/* Exe icon or letter avatar fallback */}
+          {icon ? (
+            <img
+              src={`data:image/png;base64,${icon}`}
+              alt=""
+              aria-hidden
+              className="w-6 h-6 rounded-md shrink-0 object-contain"
+            />
+          ) : (
+            <span className={`w-6 h-6 rounded-md shrink-0 flex items-center justify-center text-[10px] font-bold ${procIconColor(proc.name)}`}>
+              {letter}
+            </span>
+          )}
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotCls}`} />
           <span className="text-sm font-medium truncate">
             {ann ? ann.display_name : proc.name}
@@ -304,65 +361,10 @@ export function GameMode() {
         )}
       </div>
 
-      {/* 2-column layout for xl screens */}
-      <div className="flex-1 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]">
-        {/* Left — Detected Processes */}
-        <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden flex flex-col card-glow">
-          {/* Card header */}
-          <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-red-500/10 rounded-lg border border-red-500/20">
-                <Trash2 size={13} className="text-red-400/70" />
-              </div>
-              <span className="text-sm font-semibold">検出されたプロセス</span>
-              {bloatwareProcesses.length > 0 && (
-                <span className="px-2 py-0.5 text-[10px] bg-red-500/15 text-red-400 border border-red-500/25 rounded-full font-semibold">
-                  {bloatwareProcesses.length} 件
-                </span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={scanProcesses}
-              disabled={isScanning}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground border border-white/[0.07] hover:border-white/15 rounded-lg transition-colors"
-            >
-              <RefreshCw size={11} className={isScanning ? "animate-spin" : ""} />
-              スキャン
-            </button>
-          </div>
+      {/* 2-column layout for xl screens — Left: Steps+CTA, Right: Processes */}
+      <div className="flex-1 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)]">
 
-          {isScanning ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
-              <Loader2 size={15} className="animate-spin text-cyan-400" />
-              <span className="text-sm">スキャン中...</span>
-            </div>
-          ) : annotatedProcs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
-              <CheckCircle2 size={20} className="text-emerald-400/60" />
-              <span className="text-sm">不要プロセスは検出されませんでした</span>
-            </div>
-          ) : (
-            <>
-              <div className="flex-1 overflow-y-auto">
-                <AnimatePresence>
-                  {annotatedProcs.map((proc) => (
-                    <ProcessRow key={proc.pid} proc={proc} />
-                  ))}
-                </AnimatePresence>
-              </div>
-              <ProcessSummary procs={annotatedProcs} />
-              <div className="px-4 py-2.5 bg-white/[0.02] border-t border-white/[0.05] flex items-center justify-between">
-                <span className="text-xs text-muted-foreground/50">
-                  合計メモリ: <span className="text-foreground font-medium">{formatMemory(totalMemory)}</span>
-                </span>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Right — Steps + CTA */}
+        {/* Left — Steps + CTA */}
         <div className="flex flex-col gap-4">
           {/* Optimization Steps */}
           <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
@@ -381,7 +383,7 @@ export function GameMode() {
                   <StepIcon status={step.status} index={idx + 1} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{step.label}</p>
-                    <p className={`text-xs truncate mt-0.5 ${step.status === "success" ? "text-emerald-400/80" : step.status === "error" ? "text-red-400/80" : "text-muted-foreground/50"}`}>
+                    <p className={`text-xs truncate mt-0.5 ${step.status === "success" ? "text-emerald-400" : step.status === "error" ? "text-red-400" : "text-muted-foreground"}`}>
                       {step.result ?? step.description}
                     </p>
                   </div>
@@ -440,6 +442,62 @@ export function GameMode() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Right — Detected Processes */}
+        <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden flex flex-col card-glow">
+          {/* Card header */}
+          <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-red-500/10 rounded-lg border border-red-500/20">
+                <Trash2 size={13} className="text-red-400/70" />
+              </div>
+              <span className="text-sm font-semibold">検出されたプロセス</span>
+              {bloatwareProcesses.length > 0 && (
+                <span className="px-2 py-0.5 text-[10px] bg-red-500/15 text-red-400 border border-red-500/25 rounded-full font-semibold">
+                  {bloatwareProcesses.length} 件
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={scanProcesses}
+              disabled={isScanning}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-white/[0.07] hover:border-white/15 rounded-lg transition-colors"
+            >
+              <RefreshCw size={11} className={isScanning ? "animate-spin" : ""} />
+              スキャン
+            </button>
+          </div>
+
+          {isScanning ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+              <Loader2 size={15} className="animate-spin text-cyan-400" />
+              <span className="text-sm">スキャン中...</span>
+            </div>
+          ) : annotatedProcs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
+              <CheckCircle2 size={20} className="text-emerald-400/60" />
+              <span className="text-sm">不要プロセスは検出されませんでした</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 overflow-y-auto">
+                <AnimatePresence>
+                  {annotatedProcs.map((proc) => (
+                    <ProcessRow key={proc.pid} proc={proc} />
+                  ))}
+                </AnimatePresence>
+              </div>
+              <ProcessSummary procs={annotatedProcs} />
+              <div className="px-4 py-2.5 bg-white/[0.02] border-t border-white/[0.05] flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  合計メモリ: <span className="text-foreground font-medium">{formatMemory(totalMemory)}</span>
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

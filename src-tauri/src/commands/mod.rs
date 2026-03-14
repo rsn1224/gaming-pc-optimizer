@@ -1,5 +1,6 @@
 pub mod ai;
 pub mod hardware;
+pub mod icons;
 pub mod network;
 pub mod optimizer;
 pub mod power;

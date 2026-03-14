@@ -77,6 +77,94 @@ pub(crate) fn fetch_gpu_status_sync() -> Result<Vec<GpuStatus>, String> {
     Ok(gpus)
 }
 
+// ── Motherboard info ──────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct MotherboardInfo {
+    pub manufacturer: String,
+    pub product: String,
+    pub serial_number: String,
+    pub version: String,
+}
+
+#[tauri::command]
+pub async fn get_motherboard_info() -> Result<MotherboardInfo, String> {
+    tokio::task::spawn_blocking(|| {
+        let script = r#"
+$b = Get-WmiObject Win32_BaseBoard
+Write-Output ($b.Manufacturer + '|' + $b.Product + '|' + $b.SerialNumber + '|' + $b.Version)
+"#;
+        let output = Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", script])
+            .output()
+            .map_err(|e| format!("PowerShell実行エラー: {}", e))?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let parts: Vec<&str> = stdout.splitn(4, '|').collect();
+
+        Ok(MotherboardInfo {
+            manufacturer: parts.first().unwrap_or(&"").trim().to_string(),
+            product: parts.get(1).unwrap_or(&"").trim().to_string(),
+            serial_number: parts.get(2).unwrap_or(&"").trim().to_string(),
+            version: parts.get(3).unwrap_or(&"").trim().to_string(),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+// ── CPU detailed info ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct CpuDetailedInfo {
+    pub name: String,
+    pub manufacturer: String,
+    pub socket: String,
+    pub max_clock_mhz: u32,
+    pub cores: u32,
+    pub logical_processors: u32,
+    pub l2_cache_kb: u32,
+    pub l3_cache_kb: u32,
+    pub architecture: String,
+}
+
+#[tauri::command]
+pub async fn get_cpu_detailed_info() -> Result<CpuDetailedInfo, String> {
+    tokio::task::spawn_blocking(|| {
+        let script = r#"
+$c = Get-WmiObject Win32_Processor | Select-Object -First 1
+$arch = switch ($c.Architecture) {
+    0 { 'x86' } 1 { 'MIPS' } 2 { 'Alpha' } 3 { 'PowerPC' }
+    5 { 'ARM' } 6 { 'ia64' } 9 { 'x64' } default { 'Unknown' }
+}
+Write-Output ($c.Name + '|' + $c.Manufacturer + '|' + $c.SocketDesignation + '|' +
+    $c.MaxClockSpeed + '|' + $c.NumberOfCores + '|' + $c.NumberOfLogicalProcessors + '|' +
+    $c.L2CacheSize + '|' + $c.L3CacheSize + '|' + $arch)
+"#;
+        let output = Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", script])
+            .output()
+            .map_err(|e| format!("PowerShell実行エラー: {}", e))?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let parts: Vec<&str> = stdout.splitn(9, '|').collect();
+
+        Ok(CpuDetailedInfo {
+            name: parts.first().unwrap_or(&"").trim().to_string(),
+            manufacturer: parts.get(1).unwrap_or(&"").trim().to_string(),
+            socket: parts.get(2).unwrap_or(&"").trim().to_string(),
+            max_clock_mhz: parts.get(3).unwrap_or(&"0").trim().parse().unwrap_or(0),
+            cores: parts.get(4).unwrap_or(&"0").trim().parse().unwrap_or(0),
+            logical_processors: parts.get(5).unwrap_or(&"0").trim().parse().unwrap_or(0),
+            l2_cache_kb: parts.get(6).unwrap_or(&"0").trim().parse().unwrap_or(0),
+            l3_cache_kb: parts.get(7).unwrap_or(&"0").trim().parse().unwrap_or(0),
+            architecture: parts.get(8).unwrap_or(&"").trim().to_string(),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 // ── Tauri commands ────────────────────────────────────────────────────────────
 
 #[tauri::command]

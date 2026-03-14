@@ -14,7 +14,7 @@
     --secondary: 222 40% 9%;
     --secondary-foreground: 210 40% 80%;
     --muted: 222 40% 9%;
-    --muted-foreground: 215 20% 52%;
+    --muted-foreground: 215 18% 62%;  /* brighter for readability */
     --accent: 142 71% 45%;          /* emerald-500 #22c55e */
     --accent-foreground: 222 47% 5%;
     --destructive: 0 84% 60%;
@@ -26,27 +26,27 @@
     --sidebar: 240 50% 3%;          /* #050509 deep sidebar */
   }
 
-  /* ── Light theme ── */
+  /* ── Dim (light) theme — muted slate, not blinding white ── */
   html.light {
-    --background: 210 20% 96%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 186 80% 36%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 90%;
-    --secondary-foreground: 222 47% 20%;
-    --muted: 210 20% 90%;
-    --muted-foreground: 215 16% 45%;
-    --accent: 142 60% 40%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
+    --background: 220 22% 16%;      /* slate-ish dark, much less harsh */
+    --foreground: 210 40% 90%;
+    --card: 220 20% 20%;
+    --card-foreground: 210 40% 90%;
+    --primary: 189 90% 48%;
+    --primary-foreground: 222 47% 5%;
+    --secondary: 220 18% 25%;
+    --secondary-foreground: 210 35% 78%;
+    --muted: 220 18% 25%;
+    --muted-foreground: 215 18% 60%;
+    --accent: 142 65% 42%;
+    --accent-foreground: 222 47% 5%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 20% 82%;
-    --input: 210 20% 82%;
-    --ring: 186 80% 36%;
+    --border: 220 18% 28%;
+    --input: 220 18% 28%;
+    --ring: 189 90% 48%;
     --radius: 0.75rem;
-    --sidebar: 210 20% 93%;
+    --sidebar: 220 25% 12%;
   }
 }
 

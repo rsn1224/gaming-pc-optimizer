@@ -7,6 +7,7 @@ pub struct ProcessInfo {
     pub name: String,
     pub memory_mb: f64,
     pub cpu_percent: f32,
+    pub exe_path: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -73,6 +74,7 @@ pub async fn get_running_processes() -> Result<Vec<ProcessInfo>, String> {
             name: p.name().to_string_lossy().to_string(),
             memory_mb: p.memory() as f64 / 1024.0 / 1024.0,
             cpu_percent: p.cpu_usage(),
+            exe_path: p.exe().map(|e| e.to_string_lossy().to_string()).unwrap_or_default(),
         })
         .collect();
 

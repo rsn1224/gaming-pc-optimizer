@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Loader2, Play, Tag, Zap } from "lucide-react";
 import type { GameProfile } from "@/types";
 
@@ -44,6 +45,36 @@ const MODE_BADGE_CLASS: Record<string, string> = {
   quality:     "bg-purple-500/10 text-purple-400 border-purple-500/30",
 };
 
+// ── Game art placeholder ──────────────────────────────────────────────────────
+
+// 8 dark gradient classes derived deterministically from game name
+const GRAD_CLASSES = [
+  "bg-gradient-to-br from-slate-900 to-blue-950",
+  "bg-gradient-to-br from-purple-950 to-violet-900",
+  "bg-gradient-to-br from-emerald-950 to-teal-900",
+  "bg-gradient-to-br from-red-950 to-rose-900",
+  "bg-gradient-to-br from-green-950 to-lime-900",
+  "bg-gradient-to-br from-teal-950 to-cyan-900",
+  "bg-gradient-to-br from-orange-950 to-amber-900",
+  "bg-gradient-to-br from-blue-950 to-indigo-900",
+] as const;
+
+function gameGradientCls(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return GRAD_CLASSES[Math.abs(hash) % GRAD_CLASSES.length];
+}
+
+function gameInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface GameCardProps {
@@ -66,6 +97,16 @@ export function GameCard({
   const launcher =
     profile.launcher ?? (profile.exe_path ? detectLauncher(profile.exe_path) : "custom");
 
+  // Try header.jpg first, then capsule as fallback, then give up
+  const [imgAttempt, setImgAttempt] = useState<0 | 1 | 2>(0);
+  const STEAM_URLS = profile.steam_app_id
+    ? [
+        `https://cdn.akamai.steamstatic.com/steam/apps/${profile.steam_app_id}/header.jpg`,
+        `https://cdn.akamai.steamstatic.com/steam/apps/${profile.steam_app_id}/capsule_616x353.jpg`,
+      ]
+    : [];
+  const steamArtUrl = STEAM_URLS[imgAttempt] ?? null;
+
   return (
     <div
       className={`bg-[#05080c] border rounded-xl overflow-hidden flex flex-col transition-all ${
@@ -74,8 +115,36 @@ export function GameCard({
           : "border-white/[0.08] hover:border-cyan-500/30 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_4px_20px_rgba(34,211,238,0.05)]"
       }`}
     >
-      {/* Top accent line */}
-      <div className={`h-[1px] ${isActive ? "bg-gradient-to-r from-cyan-500/50 via-emerald-500/50 to-transparent" : "bg-gradient-to-r from-transparent via-white/[0.06] to-transparent"}`} />
+      {/* Steam artwork header */}
+      {steamArtUrl ? (
+        <div className="relative w-full overflow-hidden aspect-[460/215]">
+          <img
+            src={steamArtUrl}
+            alt={profile.name}
+            onError={() => setImgAttempt((a) => (a + 1) as 0 | 1 | 2)}
+            className="w-full h-full object-cover"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#05080c]" />
+          {isActive && (
+            <div className="absolute inset-0 border-b-2 border-cyan-500/40 pointer-events-none" />
+          )}
+        </div>
+      ) : profile.steam_app_id ? (
+        /* Gradient placeholder for Steam games without artwork yet */
+        <div className={`relative w-full aspect-[460/215] flex items-center justify-center overflow-hidden ${gameGradientCls(profile.name)}`}>
+          <span className="text-3xl font-black text-white/20 select-none tracking-tight">
+            {gameInitials(profile.name)}
+          </span>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#05080c]" />
+          {isActive && (
+            <div className="absolute inset-0 border-b-2 border-cyan-500/40 pointer-events-none" />
+          )}
+        </div>
+      ) : (
+        /* Top accent line for non-Steam games */
+        <div className={`h-[1px] ${isActive ? "bg-gradient-to-r from-cyan-500/50 via-emerald-500/50 to-transparent" : "bg-gradient-to-r from-transparent via-white/[0.06] to-transparent"}`} />
+      )}
 
       <div className="p-4 flex flex-col gap-3 flex-1">
         {/* Header: title + launcher badge */}

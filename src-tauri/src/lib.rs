@@ -1,7 +1,7 @@
 mod commands;
 
 use commands::{
-    ai, hardware, network, optimizer, power, process, profiles, self_improve, steam, storage,
+    ai, hardware, icons, network, optimizer, power, process, profiles, self_improve, steam, storage,
     system_info, updates, watcher, windows_settings,
 };
 use tauri::{
@@ -132,6 +132,7 @@ pub fn run() {
             // Process
             process::get_running_processes,
             process::kill_bloatware,
+            icons::get_exe_icon_base64,
             // Power
             power::get_current_power_plan,
             power::set_ultimate_performance,
@@ -194,6 +195,8 @@ pub fn run() {
             // Hardware
             hardware::get_gpu_status,
             hardware::set_gpu_power_limit,
+            hardware::get_motherboard_info,
+            hardware::get_cpu_detailed_info,
             // Watcher / tray commands
             watcher::get_auto_start,
             watcher::set_auto_start,

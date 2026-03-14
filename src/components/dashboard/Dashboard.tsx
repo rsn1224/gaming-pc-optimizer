@@ -6,6 +6,8 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useSystemInfo } from "@/hooks/useSystemInfo";
 import { formatMemory } from "@/lib/utils";
 import type { GpuInfo, NetworkSettings, AllOptimizationResult } from "@/types";
+import { getCpuVendorLogo, getGpuVendorLogo } from "@/lib/hardwareIcons";
+import { VendorIcon } from "@/lib/VendorIcon";
 
 // ── Health Score ─────────────────────────────────────────────────────────────
 
@@ -143,6 +145,8 @@ export function Dashboard() {
   }
 
   const gpuFirst = gpuList[0];
+  const cpuLogo = getCpuVendorLogo(systemInfo.cpu_name);
+  const gpuLogo = gpuFirst ? getGpuVendorLogo(gpuFirst.name) : null;
 
   return (
     <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
@@ -165,7 +169,7 @@ export function Dashboard() {
       {/* Top strip — mini stat cards */}
       <div className="flex gap-3">
         <MiniStat
-          icon={<Cpu size={14} />}
+          icon={cpuLogo ? <VendorIcon vendor={cpuLogo.vendor} className="w-3.5 h-3.5" /> : <Cpu size={14} />}
           label="CPU"
           value={`${systemInfo.cpu_usage.toFixed(1)}%`}
           sub={`${systemInfo.cpu_name} · ${systemInfo.cpu_cores}コア`}
@@ -180,7 +184,7 @@ export function Dashboard() {
         />
         {gpuFirst && (
           <MiniStat
-            icon={<MonitorCheck size={14} />}
+            icon={gpuLogo ? <VendorIcon vendor={gpuLogo.vendor} className="w-3.5 h-3.5" /> : <MonitorCheck size={14} />}
             label="GPU"
             value={gpuFirst.vram_total_mb > 0 ? `${((gpuFirst.vram_used_mb / gpuFirst.vram_total_mb) * 100).toFixed(1)}%` : "—"}
             sub={gpuFirst.vram_total_mb > 0 ? `${formatMemory(gpuFirst.vram_total_mb)} VRAM` : gpuFirst.name}
@@ -281,7 +285,7 @@ export function Dashboard() {
         <StatCard
           label="CPU 使用率"
           value={systemInfo.cpu_usage}
-          icon={<Cpu size={14} />}
+          icon={cpuLogo ? <VendorIcon vendor={cpuLogo.vendor} className="w-3.5 h-3.5" /> : <Cpu size={14} />}
           subtitle={`${systemInfo.cpu_name} (${systemInfo.cpu_cores}コア)`}
         />
         <StatCard
@@ -290,17 +294,20 @@ export function Dashboard() {
           icon={<MemoryStick size={14} />}
           subtitle={`${formatMemory(systemInfo.memory_used_mb)} / ${formatMemory(systemInfo.memory_total_mb)}`}
         />
-        {gpuList.map((gpu, i) => (
-          <StatCard
-            key={i}
-            label="GPU VRAM"
-            value={gpu.vram_used_mb > 0 ? (gpu.vram_used_mb / gpu.vram_total_mb) * 100 : 0}
-            icon={<MonitorCheck size={14} />}
-            subtitle={gpu.vram_total_mb > 0
-              ? `${gpu.name} · ${formatMemory(gpu.vram_total_mb)} VRAM`
-              : gpu.name}
-          />
-        ))}
+        {gpuList.map((gpu, i) => {
+          const logo = getGpuVendorLogo(gpu.name);
+          return (
+            <StatCard
+              key={i}
+              label="GPU VRAM"
+              value={gpu.vram_used_mb > 0 ? (gpu.vram_used_mb / gpu.vram_total_mb) * 100 : 0}
+              icon={logo ? <VendorIcon vendor={logo.vendor} className="w-3.5 h-3.5" /> : <MonitorCheck size={14} />}
+              subtitle={gpu.vram_total_mb > 0
+                ? `${gpu.name} · ${formatMemory(gpu.vram_total_mb)} VRAM`
+                : gpu.name}
+            />
+          );
+        })}
       </div>
 
       {/* Quick Actions */}

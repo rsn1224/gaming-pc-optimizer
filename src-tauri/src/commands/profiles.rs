@@ -30,6 +30,8 @@ pub struct GameProfile {
     pub recommended_reason: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub launcher: Option<String>, // "steam" | "epic" | "battlenet" | "custom"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub steam_app_id: Option<String>,
 }
 
 impl Default for GameProfile {
@@ -48,6 +50,7 @@ impl Default for GameProfile {
             recommended_mode: None,
             recommended_reason: None,
             launcher: None,
+            steam_app_id: None,
         }
     }
 }

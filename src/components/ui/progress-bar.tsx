@@ -20,14 +20,14 @@ export function ProgressBar({
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
         <div
           className={cn("h-full rounded-full transition-all duration-500", barColor)}
           style={{ width: `${clamped}%` }}
         />
       </div>
       {showLabel && (
-        <span className="text-xs text-muted-foreground w-10 text-right tabular-nums">
+        <span className="text-xs text-muted-foreground/70 w-10 text-right tabular-nums">
           {clamped.toFixed(1)}%
         </span>
       )}

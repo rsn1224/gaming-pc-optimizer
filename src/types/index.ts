@@ -45,6 +45,7 @@ export interface ProcessInfo {
   name: string;
   memory_mb: number;
   cpu_percent: number;
+  exe_path: string;
 }
 
 export interface KillResult {
@@ -148,6 +149,7 @@ export interface GameProfile {
   recommended_mode?: "competitive" | "balanced" | "quality";
   recommended_reason?: string;
   launcher?: string; // "steam" | "epic" | "battlenet" | "custom"
+  steam_app_id?: string;
 }
 
 export interface AppUpdate {
@@ -183,6 +185,25 @@ export interface GpuStatus {
   fan_speed_percent: number;
   utilization_percent: number;
   driver_version: string;
+}
+
+export interface MotherboardInfo {
+  manufacturer: string;
+  product: string;
+  serial_number: string;
+  version: string;
+}
+
+export interface CpuDetailedInfo {
+  name: string;
+  manufacturer: string;
+  socket: string;
+  max_clock_mhz: number;
+  cores: number;
+  logical_processors: number;
+  l2_cache_kb: number;
+  l3_cache_kb: number;
+  architecture: string;
 }
 
 export interface AiHardwareMode {
