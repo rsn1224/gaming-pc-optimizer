@@ -17,10 +17,18 @@ pub struct SystemRunner;
 
 impl CommandRunner for SystemRunner {
     fn run(&self, program: &str, args: &[&str]) -> Result<CmdOutput, String> {
-        let out = std::process::Command::new(program)
-            .args(args)
-            .output()
-            .map_err(|e| e.to_string())?;
+        #[allow(unused_mut)]
+        let mut cmd = std::process::Command::new(program);
+        cmd.args(args);
+
+        // Windows: コンソールウィンドウを表示しない (CREATE_NO_WINDOW = 0x08000000)
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000);
+        }
+
+        let out = cmd.output().map_err(|e| e.to_string())?;
         Ok((
             out.status.code().unwrap_or(-1),
             String::from_utf8_lossy(&out.stdout).into_owned(),
