@@ -26,9 +26,10 @@ export function UpdateChecker() {
         setStatus({ kind: "up_to_date" });
         toast.success("最新版をご利用中です");
       }
-    } catch {
+    } catch (e) {
       setStatus({ kind: "idle" });
-      toast.error("アップデート確認に失敗しました（ネットワークを確認してください）");
+      console.error("[UpdateChecker] check() failed:", e);
+      toast.error(`アップデート確認に失敗しました: ${e}`);
     }
   };
 
