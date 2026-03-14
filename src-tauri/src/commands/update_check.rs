@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-const CURRENT_VERSION: &str = "1.0.0";
+/// Cargo.toml の version フィールドと自動同期（手動更新不要）
+const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct UpdateInfo {
@@ -59,11 +60,11 @@ fn compare_versions(current: &str, latest: &str) -> bool {
 pub async fn check_for_updates() -> Result<UpdateInfo, String> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(5))
-        .user_agent("gaming-pc-optimizer/1.0.0")
+        .user_agent(format!("gaming-pc-optimizer/{}", CURRENT_VERSION))
         .build()
         .map_err(|e| e.to_string())?;
 
-    let url = "https://api.github.com/repos/your-username/gaming-pc-optimizer/releases/latest";
+    let url = "https://api.github.com/repos/rsn1224/gaming-pc-optimizer/releases/latest";
 
     let resp = match client.get(url).send().await {
         Ok(r) => r,
@@ -106,9 +107,22 @@ pub async fn check_for_updates() -> Result<UpdateInfo, String> {
 
 #[tauri::command]
 pub fn open_release_url(url: String) -> Result<(), String> {
-    std::process::Command::new("cmd")
-        .args(["/c", "start", &url])
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        std::process::Command::new("cmd")
+            .args(["/c", "start", "", &url])
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
 }
