@@ -2,6 +2,22 @@ mod commands;
 mod error;
 pub use error::AppError;
 
+/// Windows でコンソールウィンドウを表示せずに外部プロセスを起動するマクロ。
+/// `std::process::Command::new(program)` の代わりに使う。
+#[macro_export]
+macro_rules! win_cmd {
+    ($program:expr) => {{
+        #[allow(unused_mut)]
+        let mut _cmd = std::process::Command::new($program);
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            _cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
+        _cmd
+    }};
+}
+
 use commands::{
     ai, app_settings, audit_log, backup, bandwidth, benchmark, benchmark_history, clipboard_opt,
     cpu_affinity, display_optimizer, frametime_monitor, launcher,

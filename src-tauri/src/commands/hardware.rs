@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+
 
 // ── Data types ────────────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ pub struct GpuStatus {
 pub(crate) fn fetch_gpu_status_sync() -> Result<Vec<GpuStatus>, String> {
     let query = "name,memory.total,memory.used,temperature.gpu,power.draw,power.limit,power.default_limit,fan.speed,utilization.gpu,driver_version";
 
-    let output = Command::new("nvidia-smi")
+    let output = crate::win_cmd!("nvidia-smi")
         .args(["--query-gpu", query, "--format", "csv,noheader,nounits"])
         .output()
         .map_err(|_| "NVIDIA GPUが見つかりません（nvidia-smiが利用できません）".to_string())?;
@@ -89,7 +89,7 @@ pub async fn get_motherboard_info() -> Result<MotherboardInfo, String> {
 $b = Get-WmiObject Win32_BaseBoard
 Write-Output ($b.Manufacturer + '|' + $b.Product + '|' + $b.SerialNumber + '|' + $b.Version)
 "#;
-        let output = Command::new("powershell")
+        let output = crate::win_cmd!("powershell")
             .args(["-NoProfile", "-NonInteractive", "-Command", script])
             .output()
             .map_err(|e| format!("PowerShell実行エラー: {}", e))?;
@@ -136,7 +136,7 @@ Write-Output ($c.Name + '|' + $c.Manufacturer + '|' + $c.SocketDesignation + '|'
     $c.MaxClockSpeed + '|' + $c.NumberOfCores + '|' + $c.NumberOfLogicalProcessors + '|' +
     $c.L2CacheSize + '|' + $c.L3CacheSize + '|' + $arch)
 "#;
-        let output = Command::new("powershell")
+        let output = crate::win_cmd!("powershell")
             .args(["-NoProfile", "-NonInteractive", "-Command", script])
             .output()
             .map_err(|e| format!("PowerShell実行エラー: {}", e))?;
@@ -197,7 +197,7 @@ pub async fn get_temperature_snapshot() -> Result<TempSnapshot, String> {
 
         // CPU temperature via WMI MSAcpi_ThermalZoneTemperature (in tenths of Kelvin)
         let cpu_temp_c = {
-            let output = Command::new("powershell")
+            let output = crate::win_cmd!("powershell")
                 .args([
                     "-NoProfile",
                     "-NonInteractive",
@@ -237,7 +237,7 @@ pub struct GpuPowerLimit {
 
 #[tauri::command]
 pub fn get_gpu_power_info() -> Result<GpuPowerLimit, String> {
-    let output = Command::new("nvidia-smi")
+    let output = crate::win_cmd!("nvidia-smi")
         .args([
             "--query-gpu=power.limit,power.default_limit,power.min_limit,power.max_limit",
             "--format=csv,noheader,nounits",
@@ -280,7 +280,7 @@ pub async fn reset_gpu_power_limit() -> Result<(), String> {
 
     let default_w = info.default_w;
     tokio::task::spawn_blocking(move || {
-        let output = Command::new("nvidia-smi")
+        let output = crate::win_cmd!("nvidia-smi")
             .args(["--power-limit", &default_w.to_string()])
             .output()
             .map_err(|e| format!("nvidia-smiの実行に失敗しました: {}", e))?;
@@ -305,7 +305,7 @@ pub async fn set_gpu_fan_speed(percent: Option<u32>) -> Result<(), String> {
         match percent {
             None => {
                 // Auto mode: enable persistence + auto boost
-                let r1 = Command::new("nvidia-smi")
+                let r1 = crate::win_cmd!("nvidia-smi")
                     .args(["-pm", "1"])
                     .output()
                     .map_err(|e| format!("nvidia-smiの実行に失敗しました: {}", e))?;
@@ -313,14 +313,14 @@ pub async fn set_gpu_fan_speed(percent: Option<u32>) -> Result<(), String> {
                     let stderr = String::from_utf8_lossy(&r1.stderr).to_string();
                     return Err(format!("NVIDIA GPUが見つかりません: {}", stderr));
                 }
-                Command::new("nvidia-smi")
+                crate::win_cmd!("nvidia-smi")
                     .args(["--auto-boost-default=0"])
                     .output()
                     .map_err(|e| format!("nvidia-smiの実行に失敗しました: {}", e))?;
                 Ok(())
             }
             Some(n) => {
-                let output = Command::new("nvidia-smi")
+                let output = crate::win_cmd!("nvidia-smi")
                     .args(["-fan", &n.to_string()])
                     .output()
                     .map_err(|e| format!("nvidia-smiの実行に失敗しました: {}", e))?;
@@ -346,7 +346,7 @@ pub async fn set_gpu_fan_speed(percent: Option<u32>) -> Result<(), String> {
 #[tauri::command]
 pub async fn set_gpu_power_limit(gpu_index: u32, watts: u32) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
-        let output = Command::new("nvidia-smi")
+        let output = crate::win_cmd!("nvidia-smi")
             .args([
                 "-i",
                 &gpu_index.to_string(),

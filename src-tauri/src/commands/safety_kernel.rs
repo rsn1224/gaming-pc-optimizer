@@ -232,7 +232,7 @@ pub fn run_safety_prechecks() -> PreCheckResult {
 
 fn is_elevated() -> bool {
     // Windows: `net session` が成功すれば管理者
-    std::process::Command::new("net")
+    crate::win_cmd!("net")
         .args(["session"])
         .output()
         .map(|o| o.status.success())
@@ -241,7 +241,7 @@ fn is_elevated() -> bool {
 
 fn is_on_battery() -> bool {
     // WMIC で BatteryStatus を確認 (AC = 2)
-    let out = std::process::Command::new("wmic")
+    let out = crate::win_cmd!("wmic")
         .args(["path", "win32_battery", "get", "BatteryStatus"])
         .output();
     match out {
@@ -257,7 +257,7 @@ fn is_on_battery() -> bool {
 fn get_free_disk_mb() -> f64 {
     let appdata = std::env::var("APPDATA").unwrap_or_else(|_| "C:\\".to_string());
     let drive = appdata.chars().take(3).collect::<String>(); // "C:\"
-    let out = std::process::Command::new("wmic")
+    let out = crate::win_cmd!("wmic")
         .args([
             "LogicalDisk",
             "where",

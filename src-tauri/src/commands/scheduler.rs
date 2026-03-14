@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::os::windows::process::CommandExt;
-use std::process::Command;
+
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
@@ -89,7 +89,7 @@ Register-ScheduledTask -TaskName '{name}' -Action $action -Trigger $trigger -Set
         name = TASK_NAME,
     );
 
-    let output = Command::new("powershell")
+    let output = crate::win_cmd!("powershell")
         .args(["-NoProfile", "-NonInteractive", "-Command", &script])
         .creation_flags(CREATE_NO_WINDOW)
         .output()
@@ -109,7 +109,7 @@ Register-ScheduledTask -TaskName '{name}' -Action $action -Trigger $trigger -Set
 
 #[tauri::command]
 pub fn delete_schedule() -> Result<(), String> {
-    let output = Command::new("schtasks")
+    let output = crate::win_cmd!("schtasks")
         .args(["/delete", "/tn", TASK_NAME, "/f"])
         .creation_flags(CREATE_NO_WINDOW)
         .output()
@@ -135,7 +135,7 @@ pub fn delete_schedule() -> Result<(), String> {
 
 #[tauri::command]
 pub fn get_schedule() -> Result<Option<ScheduledTask>, String> {
-    let output = Command::new("schtasks")
+    let output = crate::win_cmd!("schtasks")
         .args(["/query", "/tn", TASK_NAME, "/fo", "CSV", "/v"])
         .creation_flags(CREATE_NO_WINDOW)
         .output()

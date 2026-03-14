@@ -13,7 +13,7 @@ pub async fn relaunch_as_admin() -> Result<(), String> {
     let exe_path = exe.to_string_lossy().to_string();
 
     // PowerShell で Start-Process -Verb RunAs を実行して管理者昇格
-    let status = std::process::Command::new("powershell")
+    let status = crate::win_cmd!("powershell")
         .args([
             "-NoProfile",
             "-NonInteractive",

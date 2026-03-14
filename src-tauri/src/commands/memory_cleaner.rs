@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::os::windows::process::CommandExt;
-use std::process::Command;
+
 use sysinfo::{ProcessesToUpdate, System};
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -88,13 +88,13 @@ pub async fn clean_memory() -> Result<MemoryCleanResult, String> {
 
     // 2. Run EmptyWorkingSet via PowerShell (CREATE_NO_WINDOW)
     let ews_script = r#"Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public class Mem{[DllImport("psapi.dll")]public static extern bool EmptyWorkingSet(IntPtr p);}'; Get-Process | ForEach-Object { try { [Mem]::EmptyWorkingSet($_.Handle) } catch {} }"#;
-    let _ = Command::new("powershell")
+    let _ = crate::win_cmd!("powershell")
         .args(["-NoProfile", "-NonInteractive", "-Command", ews_script])
         .creation_flags(CREATE_NO_WINDOW)
         .output();
 
     // 3. Also trigger .NET GC
-    let _ = Command::new("powershell")
+    let _ = crate::win_cmd!("powershell")
         .args([
             "-NoProfile",
             "-NonInteractive",

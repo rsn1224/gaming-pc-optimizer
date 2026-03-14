@@ -22,7 +22,7 @@ fn run_ps1(script_content: &str) -> Result<String, String> {
     std::fs::write(&ps1_path, script_content)
         .map_err(|e| format!("スクリプト書き込み失敗: {}", e))?;
 
-    let output = std::process::Command::new("powershell")
+    let output = crate::win_cmd!("powershell")
         .args([
             "-NoProfile",
             "-NonInteractive",

@@ -77,7 +77,7 @@ fn now_epoch() -> i64 {
 /// Returns (util%, vram_used_mb, vram_total_mb, temp_c)
 /// nvidia-smi が存在しない場合は (-1.0, 0, 0, -1) を返す。
 fn query_nvidia_smi() -> (f32, u64, u64, i32) {
-    let out = std::process::Command::new("nvidia-smi")
+    let out = crate::win_cmd!("nvidia-smi")
         .args([
             "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu",
             "--format=csv,noheader,nounits",

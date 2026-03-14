@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+
 use winreg::{enums::*, RegKey};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -96,7 +96,7 @@ pub async fn uninstall_app(uninstall_string: String) -> Result<(), String> {
         return Err("アンインストール文字列が空です".to_string());
     }
 
-    Command::new("cmd")
+    crate::win_cmd!("cmd")
         .args(["/c", &uninstall_string])
         .spawn()
         .map_err(|e| format!("アンインストーラーの起動に失敗しました: {}", e))?;

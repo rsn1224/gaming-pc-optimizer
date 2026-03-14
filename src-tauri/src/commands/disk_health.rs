@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::os::windows::process::CommandExt;
-use std::process::Command;
+
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
@@ -59,7 +59,7 @@ $disks = Get-PhysicalDisk | Select-Object FriendlyName, MediaType, HealthStatus,
 $disks | ConvertTo-Json -Compress
 "#;
 
-    let output = Command::new("powershell")
+    let output = crate::win_cmd!("powershell")
         .args(["-NoProfile", "-NonInteractive", "-Command", script])
         .creation_flags(CREATE_NO_WINDOW)
         .output()
@@ -117,7 +117,7 @@ $disks | ConvertTo-Json -Compress
 
 /// WMIC fallback
 fn fetch_disks_wmic() -> Vec<DiskInfo> {
-    let output = Command::new("wmic")
+    let output = crate::win_cmd!("wmic")
         .args([
             "diskdrive",
             "get",

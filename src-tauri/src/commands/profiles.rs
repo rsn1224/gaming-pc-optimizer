@@ -289,7 +289,7 @@ fn unix_to_ymd_hms(secs: u64) -> (u64, u64, u64, u64, u64, u64) {
 pub fn launch_game(exe_path: String) -> Result<(), String> {
     let path = std::path::Path::new(&exe_path);
     let dir = path.parent().unwrap_or_else(|| std::path::Path::new("."));
-    std::process::Command::new(&exe_path)
+    crate::win_cmd!(&exe_path)
         .current_dir(dir)
         .spawn()
         .map(|_| ())
@@ -372,7 +372,7 @@ async fn apply_profile_with(profile: GameProfile) -> Result<String, String> {
             if let Some(guid) = super::power::get_current_power_guid() {
                 super::power::save_power_backup(&guid);
             }
-            let out = std::process::Command::new("powercfg")
+            let out = crate::win_cmd!("powercfg")
                 .args(["/setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"])
                 .output()
                 .map_err(|e| format!("[電源プランエラー] {}", e))?;

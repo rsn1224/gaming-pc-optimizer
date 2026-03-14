@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -13,7 +13,7 @@ pub struct GpuInfo {
 #[tauri::command]
 pub fn get_gpu_info() -> Vec<GpuInfo> {
     // PowerShell で Win32_VideoController を照会 (nvml-wrapper 不要)
-    let out = Command::new("powershell")
+    let out = crate::win_cmd!("powershell")
         .args([
             "-NoProfile",
             "-Command",

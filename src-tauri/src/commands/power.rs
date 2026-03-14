@@ -1,6 +1,6 @@
 use super::runner::{CommandRunner, SystemRunner};
 use std::path::PathBuf;
-use std::process::Command;
+
 
 /// Extract the active power scheme GUID from `powercfg /getactivescheme` output.
 /// Returns the raw GUID string (e.g. "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c").
@@ -35,12 +35,12 @@ pub async fn get_current_power_plan() -> Result<String, String> {
 pub async fn set_ultimate_performance() -> Result<String, String> {
     tokio::task::spawn_blocking(|| {
         // Ultimate Performance プランを有効化 (GUID: e9a42b02-d5df-448d-aa00-03f14749eb61)
-        let duplicate = Command::new("powercfg")
+        let duplicate = crate::win_cmd!("powercfg")
             .args(["-duplicatescheme", "e9a42b02-d5df-448d-aa00-03f14749eb61"])
             .output()
             .map_err(|e| e.to_string())?;
 
-        let list_output = Command::new("powercfg")
+        let list_output = crate::win_cmd!("powercfg")
             .args(["/list"])
             .output()
             .map_err(|e| e.to_string())?;
@@ -62,13 +62,13 @@ pub async fn set_ultimate_performance() -> Result<String, String> {
         let guid =
             ultimate_guid.unwrap_or_else(|| "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c".to_string());
 
-        let set_output = Command::new("powercfg")
+        let set_output = crate::win_cmd!("powercfg")
             .args(["/setactive", &guid])
             .output()
             .map_err(|e| e.to_string())?;
 
         let previous_guid = {
-            let prev_out = Command::new("powercfg")
+            let prev_out = crate::win_cmd!("powercfg")
                 .args(["/getactivescheme"])
                 .output()
                 .ok()
@@ -78,7 +78,7 @@ pub async fn set_ultimate_performance() -> Result<String, String> {
         };
 
         if set_output.status.success() {
-            Command::new("powercfg")
+            crate::win_cmd!("powercfg")
                 .args([
                     "/SETACVALUEINDEX",
                     "SCHEME_CURRENT",
@@ -88,7 +88,7 @@ pub async fn set_ultimate_performance() -> Result<String, String> {
                 ])
                 .output()
                 .ok();
-            Command::new("powercfg")
+            crate::win_cmd!("powercfg")
                 .args([
                     "/SETACVALUEINDEX",
                     "SCHEME_CURRENT",
@@ -98,7 +98,7 @@ pub async fn set_ultimate_performance() -> Result<String, String> {
                 ])
                 .output()
                 .ok();
-            Command::new("powercfg")
+            crate::win_cmd!("powercfg")
                 .args(["/SETACTIVE", "SCHEME_CURRENT"])
                 .output()
                 .ok();
@@ -133,7 +133,7 @@ pub async fn restore_power_plan(previous_guid: String) -> Result<(), String> {
             return Err(format!("無効な GUID 形式です: {}", guid));
         }
 
-        let out = Command::new("powercfg")
+        let out = crate::win_cmd!("powercfg")
             .args(["/setactive", &guid])
             .output()
             .map_err(|e| e.to_string())?;
@@ -162,7 +162,7 @@ fn power_backup_path() -> PathBuf {
 
 /// Get the currently active power plan GUID.
 pub fn get_current_power_guid() -> Option<String> {
-    let out = Command::new("powercfg")
+    let out = crate::win_cmd!("powercfg")
         .args(["/getactivescheme"])
         .output()
         .ok()?;
@@ -203,7 +203,7 @@ pub fn restore_power_plan_internal(guid: &str) -> Result<(), String> {
     if !valid {
         return Err(format!("無効な GUID 形式: {}", guid));
     }
-    let out = Command::new("powercfg")
+    let out = crate::win_cmd!("powercfg")
         .args(["/setactive", guid])
         .output()
         .map_err(|e| e.to_string())?;
@@ -268,7 +268,7 @@ fn parse_power_plan_list(output: &str) -> Vec<PowerPlanInfo> {
 #[tauri::command]
 pub fn list_power_plans() -> Result<Vec<PowerPlanInfo>, String> {
     use std::os::windows::process::CommandExt;
-    let output = Command::new("powercfg")
+    let output = crate::win_cmd!("powercfg")
         .args(["/list"])
         .creation_flags(0x08000000) // CREATE_NO_WINDOW
         .output()
@@ -291,7 +291,7 @@ pub fn set_power_plan_by_guid(guid: String) -> Result<(), String> {
         return Err(format!("無効な GUID 形式です: {}", guid));
     }
 
-    let out = Command::new("powercfg")
+    let out = crate::win_cmd!("powercfg")
         .args(["/setactive", &guid])
         .creation_flags(0x08000000) // CREATE_NO_WINDOW
         .output()
@@ -315,7 +315,7 @@ pub fn set_power_plan_by_guid(guid: String) -> Result<(), String> {
 #[tauri::command]
 pub fn get_power_plan() -> Result<String, String> {
     use std::os::windows::process::CommandExt;
-    let out = Command::new("powercfg")
+    let out = crate::win_cmd!("powercfg")
         .args(["/getactivescheme"])
         .creation_flags(0x08000000)
         .output()

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::os::windows::process::CommandExt;
-use std::process::Command;
+
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -25,7 +25,7 @@ pub struct ClipboardCleanResult {
 #[tauri::command]
 pub fn get_clipboard_status() -> Result<ClipboardStatus, String> {
     // Query clipboard formats via PowerShell
-    let output = Command::new("powershell")
+    let output = crate::win_cmd!("powershell")
         .args([
             "-NoProfile",
             "-NonInteractive",
@@ -139,7 +139,7 @@ fn scan_clipboard_temps_size() -> (f64, u32) {
 /// Clear the Windows clipboard using PowerShell
 #[tauri::command]
 pub fn clear_clipboard() -> Result<(), String> {
-    Command::new("powershell")
+    crate::win_cmd!("powershell")
         .args([
             "-NoProfile",
             "-NonInteractive",
@@ -214,7 +214,7 @@ pub fn clean_clipboard_temps() -> Result<ClipboardCleanResult, String> {
     let temp_freed_mb = total_freed_bytes as f64 / (1024.0 * 1024.0);
 
     // Also clear the clipboard itself for convenience
-    let clipboard_cleared = Command::new("powershell")
+    let clipboard_cleared = crate::win_cmd!("powershell")
         .args([
             "-NoProfile",
             "-NonInteractive",

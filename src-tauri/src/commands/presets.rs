@@ -1,6 +1,6 @@
 use super::rollback::{self, ChangeRecord, RiskLevel, SessionMode};
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -82,7 +82,7 @@ pub fn get_preset_infos() -> Vec<PresetInfo> {
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 fn set_power_plan_by_guid(guid: &str) -> Result<(), String> {
-    let out = Command::new("powercfg")
+    let out = crate::win_cmd!("powercfg")
         .args(["/setactive", guid])
         .output()
         .map_err(|e| e.to_string())?;

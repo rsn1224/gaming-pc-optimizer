@@ -7,7 +7,7 @@
 ///
 /// Feature flag: ENABLE_HAGS_DISPLAY_OPTIMIZER = false
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+
 use winreg::enums::*;
 use winreg::RegKey;
 
@@ -100,7 +100,7 @@ try {
     Write-Output '[]'
 }
 "#;
-    let out = Command::new("powershell")
+    let out = crate::win_cmd!("powershell")
         .args(["-NoProfile", "-NonInteractive", "-Command", ps_script])
         .output();
 
@@ -154,7 +154,7 @@ try {
     Write-Output '[]'
 }
 "#;
-    let out = Command::new("powershell")
+    let out = crate::win_cmd!("powershell")
         .args(["-NoProfile", "-NonInteractive", "-Command", ps_script])
         .output();
 
@@ -251,7 +251,7 @@ pub async fn add_defender_exclusion(path: String) -> Result<Vec<String>, String>
             "Add-MpPreference -ExclusionPath '{}' -ErrorAction Stop",
             path_clone.replace('\'', "''") // escape single quotes
         );
-        let out = Command::new("powershell")
+        let out = crate::win_cmd!("powershell")
             .args(["-NoProfile", "-NonInteractive", "-Command", &script])
             .output()
             .map_err(|e| e.to_string())?;
@@ -278,7 +278,7 @@ pub async fn remove_defender_exclusion(path: String) -> Result<Vec<String>, Stri
             "Remove-MpPreference -ExclusionPath '{}' -ErrorAction Stop",
             path_clone.replace('\'', "''")
         );
-        let out = Command::new("powershell")
+        let out = crate::win_cmd!("powershell")
             .args(["-NoProfile", "-NonInteractive", "-Command", &script])
             .output()
             .map_err(|e| e.to_string())?;

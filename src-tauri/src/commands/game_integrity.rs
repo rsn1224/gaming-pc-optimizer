@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct GameIntegrityResult {
@@ -130,7 +130,7 @@ pub async fn verify_game_files(
     game_name: String,
 ) -> Result<GameIntegrityResult, String> {
     let url = format!("steam://validate/{}", app_id);
-    Command::new("cmd")
+    crate::win_cmd!("cmd")
         .args(["/c", "start", "", &url])
         .spawn()
         .map_err(|e| format!("Steamの起動に失敗しました: {}", e))?;
