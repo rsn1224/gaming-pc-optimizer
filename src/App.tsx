@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { getVersion } from "@tauri-apps/api/app";
 import { listen } from "@tauri-apps/api/event";
 import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, TrendingDown, Loader2, X, Thermometer, Zap, Bot, GitGraph, Info } from "lucide-react";
 import type { AppearanceSettings, OptimizationScore, TempSnapshot, GpuPowerLimit, OptimizationSession } from "@/types";
@@ -489,6 +490,11 @@ export default function App() {
 
   const { activePage, setActivePage, gameModeActive, setHasApiKey } = useAppStore();
   const { activeProfileId, setActiveProfileId, setAutoOptimize } = useWatcherStore();
+  const [appVersion, setAppVersion] = useState("...");
+
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => {});
+  }, []);
 
   // Load saved appearance on mount
   useEffect(() => {
@@ -598,7 +604,7 @@ export default function App() {
               <span className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-60" />
               <span className="relative w-1.5 h-1.5 rounded-full bg-cyan-400 block" />
             </div>
-            <p className="text-[10px] text-muted-foreground/50 tracking-widest uppercase">v1.1.0 · AI搭載</p>
+            <p className="text-[10px] text-muted-foreground/50 tracking-widest uppercase">v{appVersion} · AI搭載</p>
           </div>
         </div>
       </aside>
