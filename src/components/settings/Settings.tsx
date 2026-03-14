@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check, Copy, FlaskConical, BarChart3, Zap } from "lucide-react";
+import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check, Copy, FlaskConical, BarChart3, Zap, Loader2, WifiOff, CheckCircle2, XCircle } from "lucide-react";
 import { RecommendationMetricsPanel } from "@/components/recommendation/RecommendationMetricsPanel";
 import { HagsDisplayOptimizer } from "@/components/optimization/HagsDisplayOptimizer";
 
@@ -32,26 +32,42 @@ export function Settings() {
   const [autoStart, setAutoStartLocal] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
-  const [apiKeySaved, setApiKeySaved] = useState(false);
+  const [apiProvider, setApiProvider] = useState<"anthropic" | "openai">("anthropic");
   const [selfImproveCopied, setSelfImproveCopied] = useState(false);
   const [selfImproveError, setSelfImproveError] = useState("");
+
+  type ConnStatus =
+    | { state: "none" }
+    | { state: "checking" }
+    | { state: "ok"; label: string }
+    | { state: "error"; message: string };
+  const [connStatus, setConnStatus] = useState<ConnStatus>({ state: "none" });
 
   // Load initial values from Rust
   useEffect(() => {
     invoke<boolean>("get_auto_start").then(setAutoStartLocal).catch(() => {});
     invoke<boolean>("get_auto_optimize").then(setAutoOptimize).catch(() => {});
     invoke<string>("get_ai_api_key").then(setApiKey).catch(() => {});
+    invoke<string>("get_ai_provider")
+      .then((p) => setApiProvider(p === "openai" ? "openai" : "anthropic"))
+      .catch(() => {});
   }, [setAutoOptimize]);
 
-  const handleSaveApiKey = async () => {
+  const handleSaveAndValidate = async () => {
+    setConnStatus({ state: "checking" });
     try {
+      await invoke("set_ai_provider", { provider: apiProvider });
       await invoke("set_ai_api_key", { key: apiKey });
-      setApiKeySaved(true);
-      setTimeout(() => setApiKeySaved(false), 2000);
+      const label = await invoke<string>("validate_ai_api_key", {
+        provider: apiProvider,
+        key: apiKey,
+      });
+      setConnStatus({ state: "ok", label });
     } catch (e) {
-      alert("API キーの保存に失敗しました: " + e);
+      setConnStatus({ state: "error", message: String(e) });
     }
   };
+
 
   const handleAutoStart = async (enabled: boolean) => {
     try {
@@ -179,41 +195,113 @@ export function Settings() {
         <div className={headerCls}>
           <Bot size={15} className="text-cyan-400" />
           <span className="text-sm font-semibold">AI プロファイル生成</span>
+          {/* 接続ステータスバッジ */}
+          {connStatus.state === "ok" && (
+            <span className="ml-auto flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
+              <CheckCircle2 size={10} /> 接続済み · {connStatus.label}
+            </span>
+          )}
+          {connStatus.state === "error" && (
+            <span className="ml-auto flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-full px-2 py-0.5">
+              <XCircle size={10} /> 接続エラー
+            </span>
+          )}
+          {connStatus.state === "none" && apiKey && (
+            <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-400/70 bg-amber-500/5 border border-amber-500/10 rounded-full px-2 py-0.5">
+              <WifiOff size={10} /> 未確認
+            </span>
+          )}
         </div>
         <div className="p-4 flex flex-col gap-3">
-          <p className="text-xs text-muted-foreground/70">
-            Anthropic API キーを登録すると、プロファイルページの「AI推薦を生成」ボタンでドラフトプロファイルの設定を自動補完できます。
-          </p>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <input
-                type={apiKeyVisible ? "text" : "password"}
-                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500/50 font-mono pr-10 transition-colors"
-                placeholder="sk-ant-..."
-                value={apiKey}
-                onChange={(e) => { setApiKey(e.target.value); setApiKeySaved(false); }}
-              />
+          {/* Provider selector */}
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[11px] text-muted-foreground/60">AIプロバイダー</p>
+            <div className="flex gap-2">
+              {(["anthropic", "openai"] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => { setApiProvider(p); setConnStatus({ state: "none" }); }}
+                  className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                    apiProvider === p
+                      ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-300"
+                      : "bg-white/[0.03] border-white/[0.08] text-muted-foreground hover:border-white/20 hover:text-foreground"
+                  }`}
+                >
+                  <span className="text-base leading-none">
+                    {p === "anthropic" ? "🟠" : "🟢"}
+                  </span>
+                  <span>{p === "anthropic" ? "Anthropic" : "OpenAI"}</span>
+                </button>
+              ))}
               <button
                 type="button"
-                onClick={() => setApiKeyVisible((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={apiKeyVisible ? "非表示" : "表示"}
+                disabled
+                className="flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium bg-white/[0.02] border-white/[0.05] text-muted-foreground/30 cursor-not-allowed"
               >
-                {apiKeyVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                <span className="text-base leading-none">🔵</span>
+                <span>Google</span>
+                <span className="text-[9px] text-muted-foreground/25">coming soon</span>
               </button>
             </div>
-            <button
-              type="button"
-              onClick={handleSaveApiKey}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                apiKeySaved
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                  : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110 active:scale-[0.97]"
-              }`}
-            >
-              {apiKeySaved ? <><Check size={14} /> 保存済み</> : "保存"}
-            </button>
           </div>
+
+          {/* Key input */}
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[11px] text-muted-foreground/60">API キー</p>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={apiKeyVisible ? "text" : "password"}
+                  className="w-full bg-white/[0.04] border border-white/[0.10] rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500/50 font-mono pr-10 transition-colors"
+                  placeholder={apiProvider === "openai" ? "sk-..." : "sk-ant-..."}
+                  value={apiKey}
+                  onChange={(e) => { setApiKey(e.target.value); setConnStatus({ state: "none" }); }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setApiKeyVisible((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={apiKeyVisible ? "非表示" : "表示"}
+                >
+                  {apiKeyVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveAndValidate}
+                disabled={connStatus.state === "checking" || !apiKey.trim()}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 ${
+                  connStatus.state === "ok"
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                    : connStatus.state === "error"
+                    ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
+                    : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110 active:scale-[0.97]"
+                }`}
+              >
+                {connStatus.state === "checking" ? (
+                  <><Loader2 size={13} className="animate-spin" /> 確認中…</>
+                ) : connStatus.state === "ok" ? (
+                  <><Check size={13} /> 接続済み</>
+                ) : connStatus.state === "error" ? (
+                  <><XCircle size={13} /> 再試行</>
+                ) : (
+                  "保存・接続テスト"
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Error detail */}
+          {connStatus.state === "error" && (
+            <p className="text-[11px] text-rose-400/80 bg-rose-500/5 border border-rose-500/10 rounded-lg px-3 py-2">
+              {connStatus.message}
+            </p>
+          )}
+
+          <p className="text-[10px] text-muted-foreground/40 leading-relaxed">
+            キーを保存すると接続テストを実行します。成功するとプロファイルページの「AI推薦を生成」が使えるようになります。
+          </p>
         </div>
       </div>
 

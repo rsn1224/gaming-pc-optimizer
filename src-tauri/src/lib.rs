@@ -213,6 +213,9 @@ pub fn run() {
             // AI
             ai::get_ai_api_key,
             ai::set_ai_api_key,
+            ai::get_ai_provider,
+            ai::set_ai_provider,
+            ai::validate_ai_api_key,
             ai::generate_ai_recommendations,
             ai::get_ai_update_priorities,
             ai::get_ai_hardware_mode,

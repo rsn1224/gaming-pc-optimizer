@@ -21,38 +21,62 @@ pub enum ImpactLevel {
 // ── Keyring constants ─────────────────────────────────────────────────────────
 
 const KEYRING_SERVICE: &str = "gaming-pc-optimizer";
-const KEYRING_USER: &str = "anthropic_api_key";
+const KEYRING_USER: &str = "ai_api_key";
 
 fn keyring_entry() -> Result<keyring::Entry, String> {
     keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
         .map_err(|e| format!("認証情報マネージャーへのアクセスに失敗しました: {}", e))
 }
 
-// ── Legacy plaintext config (migration only) ──────────────────────────────────
-// Used solely to read the old plaintext key and migrate it to the keyring.
-// No new data is ever written to this struct.
+// ── App config (config.json) ──────────────────────────────────────────────────
+// Stores non-secret preferences (e.g. ai_provider).
+// The API key is stored exclusively in Windows Credential Manager (keyring).
 
-fn legacy_config_path() -> PathBuf {
+fn config_path() -> PathBuf {
     let appdata = std::env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(appdata)
         .join("gaming-pc-optimizer")
         .join("config.json")
 }
 
-#[derive(Serialize, Deserialize, Default)]
-struct LegacyConfig {
-    #[serde(default)]
-    ai_api_key: String,
+fn default_provider() -> String {
+    "anthropic".to_string()
 }
 
-/// Read-only: retrieve the old plaintext key from config.json if it exists.
-fn read_legacy_key() -> Option<String> {
-    let path = legacy_config_path();
+#[derive(Serialize, Deserialize, Default)]
+struct AppConfig {
+    /// Legacy field — plaintext key used before keyring migration.
+    /// After migration this is erased; never written by new code.
+    #[serde(default)]
+    ai_api_key: String,
+    /// Selected AI provider: "anthropic" | "openai"
+    #[serde(default = "default_provider")]
+    ai_provider: String,
+}
+
+fn load_app_config() -> AppConfig {
+    let path = config_path();
     if !path.exists() {
-        return None;
+        return AppConfig::default();
     }
-    let raw = std::fs::read_to_string(&path).ok()?;
-    let cfg: LegacyConfig = serde_json::from_str(&raw).ok()?;
+    std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|s| serde_json::from_str::<AppConfig>(&s).ok())
+        .unwrap_or_default()
+}
+
+fn save_app_config(cfg: &AppConfig) -> Result<(), String> {
+    let path = config_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let json = serde_json::to_string_pretty(cfg).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())
+}
+
+/// Read-only: retrieve the old plaintext key for one-time migration.
+fn read_legacy_key() -> Option<String> {
+    let cfg = load_app_config();
     if cfg.ai_api_key.is_empty() {
         None
     } else {
@@ -60,21 +84,12 @@ fn read_legacy_key() -> Option<String> {
     }
 }
 
-/// Erase the plaintext key from config.json after successful migration.
+/// Erase the plaintext key field after successful keyring migration.
 fn erase_legacy_key() {
-    let path = legacy_config_path();
-    if !path.exists() {
-        return;
-    }
-    if let Ok(raw) = std::fs::read_to_string(&path) {
-        if let Ok(mut val) = serde_json::from_str::<serde_json::Value>(&raw) {
-            if let Some(obj) = val.as_object_mut() {
-                obj.remove("ai_api_key");
-                if let Ok(clean) = serde_json::to_string_pretty(&val) {
-                    std::fs::write(&path, clean).ok();
-                }
-            }
-        }
+    let mut cfg = load_app_config();
+    if !cfg.ai_api_key.is_empty() {
+        cfg.ai_api_key = String::new();
+        save_app_config(&cfg).ok();
     }
 }
 
@@ -126,12 +141,98 @@ pub fn set_ai_api_key(key: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Return the currently selected AI provider ("anthropic" | "openai").
+#[tauri::command]
+pub fn get_ai_provider() -> String {
+    let cfg = load_app_config();
+    if cfg.ai_provider.is_empty() {
+        "anthropic".to_string()
+    } else {
+        cfg.ai_provider
+    }
+}
+
+/// Persist the selected AI provider.
+#[tauri::command]
+pub fn set_ai_provider(provider: String) -> Result<(), String> {
+    let mut cfg = load_app_config();
+    cfg.ai_provider = provider;
+    save_app_config(&cfg)
+}
+
+/// Test whether the given key is valid for the given provider.
+/// Returns "Provider (model-name)" on success, Err with detail on failure.
+#[tauri::command]
+pub async fn validate_ai_api_key(provider: String, key: String) -> Result<String, String> {
+    if key.is_empty() {
+        return Err("API キーが空です".to_string());
+    }
+    match provider.as_str() {
+        "openai" => {
+            let client = reqwest::Client::new();
+            let body = serde_json::json!({
+                "model": "gpt-4o-mini",
+                "messages": [{"role": "user", "content": "hi"}],
+                "max_tokens": 1
+            });
+            let resp = client
+                .post("https://api.openai.com/v1/chat/completions")
+                .header("Authorization", format!("Bearer {}", key))
+                .header("content-type", "application/json")
+                .json(&body)
+                .send()
+                .await
+                .map_err(|e| format!("接続失敗: {}", e))?;
+            if !resp.status().is_success() {
+                let status = resp.status().as_u16();
+                let text = resp.text().await.unwrap_or_default();
+                let hint = if status == 401 {
+                    "APIキーが無効です".to_string()
+                } else {
+                    format!("HTTP {} — {}", status, text.chars().take(120).collect::<String>())
+                };
+                return Err(hint);
+            }
+            Ok("OpenAI (gpt-4o-mini)".to_string())
+        }
+        _ => {
+            // Default: Anthropic
+            let client = reqwest::Client::new();
+            let body = serde_json::json!({
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 1,
+                "messages": [{"role": "user", "content": "hi"}]
+            });
+            let resp = client
+                .post("https://api.anthropic.com/v1/messages")
+                .header("x-api-key", &key)
+                .header("anthropic-version", "2023-06-01")
+                .header("content-type", "application/json")
+                .json(&body)
+                .send()
+                .await
+                .map_err(|e| format!("接続失敗: {}", e))?;
+            if !resp.status().is_success() {
+                let status = resp.status().as_u16();
+                let text = resp.text().await.unwrap_or_default();
+                let hint = if status == 401 {
+                    "APIキーが無効です（401 Unauthorized）".to_string()
+                } else {
+                    format!("HTTP {} — {}", status, text.chars().take(120).collect::<String>())
+                };
+                return Err(hint);
+            }
+            Ok("Anthropic (claude-haiku-4-5-20251001)".to_string())
+        }
+    }
+}
+
 /// Internal helper used by AI commands — returns Err with a user-friendly
 /// Japanese message when the key is missing.
 pub(crate) fn load_api_key() -> Result<String, String> {
     let key = get_ai_api_key();
     if key.is_empty() {
-        Err("Anthropic API キーが設定されていません。設定ページで入力してください。".to_string())
+        Err("API キーが設定されていません。設定ページで入力してください。".to_string())
     } else {
         Ok(key)
     }
@@ -139,7 +240,21 @@ pub(crate) fn load_api_key() -> Result<String, String> {
 
 // ── Shared Claude API helper ──────────────────────────────────────────────────
 
+/// Route an AI chat request to the configured provider (Anthropic or OpenAI).
+/// All existing AI commands call this function.
 async fn call_claude_api(api_key: &str, prompt: &str, max_tokens: u32) -> Result<String, String> {
+    let provider = get_ai_provider();
+    match provider.as_str() {
+        "openai" => call_openai_api(api_key, prompt, max_tokens).await,
+        _ => call_anthropic_api(api_key, prompt, max_tokens).await,
+    }
+}
+
+async fn call_anthropic_api(
+    api_key: &str,
+    prompt: &str,
+    max_tokens: u32,
+) -> Result<String, String> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
         "model": "claude-haiku-4-5-20251001",
@@ -168,12 +283,48 @@ async fn call_claude_api(api_key: &str, prompt: &str, max_tokens: u32) -> Result
         .await
         .map_err(|e| format!("レスポンスパース失敗: {}", e))?;
 
-    let content_text = resp_json["content"][0]["text"]
+    resp_json["content"][0]["text"]
         .as_str()
-        .ok_or("レスポンス形式が不正です")?
-        .to_string();
+        .ok_or("レスポンス形式が不正です".to_string())
+        .map(|s| s.to_string())
+}
 
-    Ok(content_text)
+async fn call_openai_api(
+    api_key: &str,
+    prompt: &str,
+    max_tokens: u32,
+) -> Result<String, String> {
+    let client = reqwest::Client::new();
+    let body = serde_json::json!({
+        "model": "gpt-4o-mini",
+        "max_tokens": max_tokens,
+        "messages": [{"role": "user", "content": prompt}]
+    });
+
+    let resp = client
+        .post("https://api.openai.com/v1/chat/completions")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("API リクエスト失敗: {}", e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let text = resp.text().await.unwrap_or_default();
+        return Err(format!("API エラー {}: {}", status, text));
+    }
+
+    let resp_json: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| format!("レスポンスパース失敗: {}", e))?;
+
+    resp_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or("レスポンス形式が不正です".to_string())
+        .map(|s| s.to_string())
 }
 
 fn extract_json_array(text: &str) -> &str {
