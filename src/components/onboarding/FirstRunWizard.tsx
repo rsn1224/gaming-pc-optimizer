@@ -67,7 +67,15 @@ function StepWelcome({ onNext }: WizardStepProps) {
 
 // ─── Step 1: API Key ──────────────────────────────────────────────────────────
 
+type ApiProvider = "anthropic" | "openai";
+
+const PROVIDERS: { id: ApiProvider; label: string; emoji: string; placeholder: string }[] = [
+  { id: "anthropic", label: "Anthropic", emoji: "🟠", placeholder: "sk-ant-..." },
+  { id: "openai",    label: "OpenAI",    emoji: "🟢", placeholder: "sk-..."     },
+];
+
 function StepApiKey({ onNext, onBack }: WizardStepProps) {
+  const [provider, setProvider] = useState<ApiProvider>("anthropic");
   const [key, setKey] = useState("");
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -77,7 +85,8 @@ function StepApiKey({ onNext, onBack }: WizardStepProps) {
     if (!key.trim()) { onNext(); return; }
     setSaving(true);
     try {
-      await invoke("save_api_key", { key: key.trim() });
+      await invoke("set_ai_provider", { provider });
+      await invoke("set_ai_api_key", { key: key.trim() });
       setStatus("ok");
       setTimeout(onNext, 800);
     } catch {
@@ -87,6 +96,8 @@ function StepApiKey({ onNext, onBack }: WizardStepProps) {
     }
   };
 
+  const currentProvider = PROVIDERS.find((p) => p.id === provider)!;
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-3">
@@ -95,21 +106,45 @@ function StepApiKey({ onNext, onBack }: WizardStepProps) {
         </div>
         <div>
           <h2 className="text-lg font-bold">AI 機能の設定</h2>
-          <p className="text-xs text-muted-foreground/60">OpenAI API キーを登録すると AI 推奨が有効になります</p>
+          <p className="text-xs text-muted-foreground/60">API キーを登録すると AI 推奨が有効になります（任意）</p>
         </div>
       </div>
 
-      <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 space-y-3">
-        <label className="text-xs font-medium text-muted-foreground/70">
-          OpenAI API キー <span className="text-muted-foreground/55">（任意）</span>
-        </label>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+      <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 space-y-4">
+        {/* Provider selector */}
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs font-medium text-muted-foreground/70">AI プロバイダー</p>
+          <div className="flex gap-2">
+            {PROVIDERS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => { setProvider(p.id); setKey(""); setStatus("idle"); }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-medium transition-all",
+                  provider === p.id
+                    ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-300"
+                    : "bg-white/[0.03] border-white/[0.10] text-muted-foreground hover:border-white/20 hover:text-foreground"
+                )}
+              >
+                <span>{p.emoji}</span>
+                <span>{p.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Key input */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-muted-foreground/70">
+            {currentProvider.label} API キー
+          </label>
+          <div className="relative">
             <input
               type={show ? "text" : "password"}
               value={key}
               onChange={(e) => { setKey(e.target.value); setStatus("idle"); }}
-              placeholder="sk-..."
+              placeholder={currentProvider.placeholder}
               className="w-full bg-white/[0.04] border border-white/[0.12] rounded-lg px-3 py-2 text-sm font-mono pr-9 outline-none focus:border-cyan-500/40 transition-colors"
             />
             <button
@@ -121,6 +156,7 @@ function StepApiKey({ onNext, onBack }: WizardStepProps) {
             </button>
           </div>
         </div>
+
         {status === "ok" && (
           <p className="text-xs text-emerald-400 flex items-center gap-1.5">
             <CheckCircle2 size={11} /> 保存しました
@@ -130,7 +166,6 @@ function StepApiKey({ onNext, onBack }: WizardStepProps) {
           <p className="text-xs text-red-400">保存に失敗しました。後で設定から再登録できます。</p>
         )}
         <p className="text-[11px] text-muted-foreground/55 leading-relaxed">
-          キーはシステムキーチェーンに安全に保存されます。
           スキップして後で「設定 → AI 設定」から登録することもできます。
         </p>
       </div>
