@@ -7,8 +7,9 @@ import { OsdSettings } from "./OsdSettings";
 import { BackupRestore } from "./BackupRestore";
 import { PerformanceReport } from "./PerformanceReport";
 import { CrashReport } from "./CrashReport";
+import { AuditLogTab, ENABLE_AUDIT_LOG } from "./AuditLogTab";
 
-const TABS = [
+const BASE_TABS = [
   { id: "settings", label: "一般" },
   { id: "theme", label: "外観" },
   { id: "hotkeys", label: "ホットキー" },
@@ -16,6 +17,10 @@ const TABS = [
   { id: "backup", label: "バックアップ" },
   { id: "report", label: "レポート" },
 ];
+
+const TABS = ENABLE_AUDIT_LOG
+  ? [...BASE_TABS, { id: "audit", label: "監査ログ" }]
+  : BASE_TABS;
 
 export function SettingsHub() {
   const [tab, setTab] = useState("settings");
@@ -37,6 +42,7 @@ export function SettingsHub() {
             <CrashReport />
           </div>
         )}
+        {tab === "audit" && ENABLE_AUDIT_LOG && <AuditLogTab />}
       </div>
     </div>
   );

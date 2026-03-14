@@ -672,6 +672,71 @@ export interface UpdateInfo {
   checked_at: number;
 }
 
+// ── V2: Safety Kernel ─────────────────────────────────────────────────────────
+
+/** Safety Kernel が遷移するフェーズ */
+export type SafeApplyPhase =
+  | "idle"
+  | "prechecking"
+  | "applying"
+  | "verifying"
+  | "done"
+  | "rolled_back";
+
+export interface PreCheckResult {
+  passed: boolean;
+  blockers: string[];
+  warnings: string[];
+  on_battery: boolean;
+  is_admin: boolean;
+  free_disk_mb: number;
+}
+
+export interface VerifyResult {
+  passed: boolean;
+  score_after: number;
+  score_delta: number;
+  confirmed_changes: string[];
+  unconfirmed_changes: string[];
+  recommend_rollback: boolean;
+}
+
+// ── V2: Audit Log ─────────────────────────────────────────────────────────────
+
+export type AuditActor = "user" | "policy_engine" | "safety_kernel" | "watcher";
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  actor: AuditActor;
+  /** 実行したアクションの識別子 */
+  action: string;
+  /** "success" | "failure" | "skipped" */
+  result: string;
+  detail: Record<string, unknown>;
+  session_id: string | null;
+}
+
+// ── V2: Telemetry ─────────────────────────────────────────────────────────────
+
+export type TelemetryPhase = "before" | "t1_30s" | "t2_5min";
+
+export interface TelemetryRecord {
+  id: number | null;
+  session_id: string;
+  phase: TelemetryPhase;
+  timestamp: string;
+  score_overall: number;
+  score_process: number;
+  score_power: number;
+  score_windows: number;
+  score_network: number;
+  memory_used_mb: number;
+  memory_percent: number;
+  cpu_usage: number;
+  process_count: number;
+}
+
 // ── Profile Share ─────────────────────────────────────────────────────────────
 
 export interface SharedProfile {

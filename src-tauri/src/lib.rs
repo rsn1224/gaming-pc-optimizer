@@ -3,11 +3,12 @@ mod error;
 pub use error::AppError;
 
 use commands::{
-    ai, app_settings, backup, bandwidth, benchmark, clipboard_opt, cpu_affinity, crash_report,
-    disk_health, event_log, fps, game_integrity, game_log, hardware, hotkeys, icons,
+    ai, app_settings, audit_log, backup, bandwidth, benchmark, clipboard_opt, cpu_affinity,
+    crash_report, disk_health, event_log, fps, game_integrity, game_log, hardware, hotkeys, icons,
     memory_cleaner, metrics, network, optimizer, osd, power, presets, process, profile_share,
-    profiles, registry_opt, report, rollback, scheduler, self_improve, startup, steam, storage,
-    system_info, uninstaller, update_check, updates, watcher, windows_settings,
+    profiles, registry_opt, report, rollback, safety_kernel, scheduler, self_improve, startup,
+    steam, storage, system_info, telemetry, uninstaller, update_check, updates, watcher,
+    windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -211,6 +212,14 @@ pub fn run() {
             optimizer::simulate_all_optimizations,
             optimizer::get_optimization_score,
             optimizer::get_score_history,
+            // Safety Kernel (Sprint 1 / ENABLE_SAFETY_KERNEL=false)
+            safety_kernel::safe_apply_optimizations,
+            safety_kernel::run_safety_prechecks,
+            // Audit Log (Sprint 1 / ENABLE_AUDIT_LOG=false)
+            audit_log::get_audit_log,
+            audit_log::clear_audit_log,
+            // Telemetry (Sprint 1 / ENABLE_TELEMETRY=false)
+            telemetry::get_telemetry_for_session,
             // Benchmark
             benchmark::run_benchmark,
             // Event Log

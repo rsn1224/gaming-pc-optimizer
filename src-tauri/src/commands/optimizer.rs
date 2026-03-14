@@ -1,4 +1,5 @@
 use super::rollback::{self, ChangeRecord, RiskLevel, SessionMode};
+use super::telemetry;
 use serde::{Deserialize, Serialize};
 use sysinfo::{ProcessesToUpdate, System};
 
@@ -141,6 +142,28 @@ fn analyze_what_would_change(snapshot: &rollback::SystemSnapshot) -> Vec<Preview
 /// so a failure in one does not abort the rest.
 #[tauri::command]
 pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> {
+    // ── T0: Telemetry — capture before-state (flag-guarded) ──────────────────
+    let telemetry_session_id: Option<String> = if telemetry::ENABLE_TELEMETRY {
+        let maybe = tokio::task::spawn_blocking(|| rollback::begin_session(SessionMode::Real, None))
+            .await
+            .ok();
+        // We capture T0 alongside the rollback session; share session_id where possible.
+        maybe.map(|s| s.id)
+    } else {
+        None
+    };
+
+    if telemetry::ENABLE_TELEMETRY {
+        if let Some(ref sid) = telemetry_session_id {
+            let sid_clone = sid.clone();
+            tokio::task::spawn_blocking(move || {
+                telemetry::capture_and_insert(&sid_clone, telemetry::TelemetryPhase::Before).ok();
+            })
+            .await
+            .ok();
+        }
+    }
+
     // ── Phase 1: Rollback — capture before-state ──────────────────────────────
     let session_id: Option<String> = if rollback::ROLLBACK_CONFIG.enabled {
         let maybe =
@@ -279,6 +302,21 @@ pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> 
     })
     .await
     .ok();
+
+    // ── T1: Telemetry — capture 30 s after apply (flag-guarded) ─────────────
+    if telemetry::ENABLE_TELEMETRY {
+        if let Some(sid) = telemetry_session_id {
+            // Fire-and-forget: sleep 30 s then capture T1
+            tokio::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+                tokio::task::spawn_blocking(move || {
+                    telemetry::capture_and_insert(&sid, telemetry::TelemetryPhase::T1_30s).ok();
+                })
+                .await
+                .ok();
+            });
+        }
+    }
 
     // Log the optimization event
     super::event_log::add_event_internal(
