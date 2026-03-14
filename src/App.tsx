@@ -386,8 +386,7 @@ const NAV_ITEMS: NavEntry[] = [
   { id: "home",        icon: <LayoutDashboard size={17} />, label: "ホーム" },       // [Phase D] 司令塔（dashboard/dashboardv2 吸収）
 
   { type: "section", label: "最適化" },
-  { id: "optimize",   icon: <Gamepad2 size={17} />,         label: "最適化" },      // [Phase D] GameMode改称
-  { id: "gamemode",   icon: <Gamepad2 size={17} />,         label: "ゲームモード" },
+  { id: "optimize",   icon: <Gamepad2 size={17} />,         label: "最適化" },      // [Phase D] gamemode 吸収
   { id: "presets",    icon: <SlidersHorizontal size={17} />, label: "プリセット" },
   { id: "process",    icon: <Activity size={17} />,         label: "プロセス管理" },
   { id: "windows",    icon: <Monitor size={17} />,          label: "Windows最適化" },

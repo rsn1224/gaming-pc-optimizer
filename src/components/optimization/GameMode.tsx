@@ -4,6 +4,7 @@ import { Gamepad2, Zap, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Rotat
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/stores/useAppStore";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { toast } from "@/stores/useToastStore";
 import type { ProcessInfo, KillResult, AnnotatedProcess, ProcessRiskLevel, SystemInfo, SessionMetrics } from "@/types";
 import { formatMemory } from "@/lib/utils";
 import { findAnnotation } from "@/data/process_knowledge";
@@ -363,7 +364,7 @@ export function GameMode() {
       setGameModeActive(false);
       setSteps((prev) => prev.map((s) => ({ ...s, status: "idle", result: undefined })));
     } catch (e) {
-      console.error("Failed to restore:", e);
+      toast.error("復元に失敗しました: " + String(e));
     } finally {
       setIsRestoring(false);
     }

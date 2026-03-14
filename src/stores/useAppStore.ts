@@ -61,7 +61,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  activePage: "dashboard",
+  activePage: "home",
   setActivePage: (page) => set({ activePage: page }),
 
   bloatwareProcesses: [],

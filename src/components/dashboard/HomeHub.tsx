@@ -16,12 +16,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  Loader2, Zap, Cpu, Wifi, HardDrive,
+  Zap, Cpu, Wifi, HardDrive,
   Activity, Gauge, MemoryStick, MonitorCheck, AlertTriangle, Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMemory } from "@/lib/utils";
-import { toast } from "@/stores/useToastStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
 import type {
@@ -88,7 +87,6 @@ export function HomeHub() {
   const [events, setEvents] = useState<EventEntry[]>([]);
   const [activeProfile, setActiveProfile] = useState<string | null>(null);
   const [firstLoad, setFirstLoad] = useState(true);
-  const [optimizing, setOptimizing] = useState(false);
 
   const fetchAll = useCallback(async () => {
     const results = await Promise.allSettled([
@@ -117,20 +115,6 @@ export function HomeHub() {
     const id = setInterval(fetchAll, 3000);
     return () => clearInterval(id);
   }, [fetchAll]);
-
-  const handleQuickOptimize = async () => {
-    if (optimizing) return;
-    setOptimizing(true);
-    try {
-      await invoke("apply_all_optimizations");
-      toast.success("全最適化を実行しました");
-      fetchAll();
-    } catch (e) {
-      toast.error("最適化に失敗しました: " + String(e));
-    } finally {
-      setOptimizing(false);
-    }
-  };
 
   const healthScore = score?.overall ?? 0;
   const isCritical = !firstLoad && healthScore < 50;
@@ -378,21 +362,7 @@ export function HomeHub() {
               className="w-full py-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110 active:scale-[0.97] transition-all"
             >
               <Zap size={11} />
-              最適化へ
-            </button>
-            <button
-              type="button"
-              onClick={handleQuickOptimize}
-              disabled={optimizing}
-              className={cn(
-                "w-full py-1.5 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all border",
-                optimizing
-                  ? "border-white/[0.06] text-muted-foreground/40 cursor-not-allowed"
-                  : "border-white/[0.08] text-muted-foreground/70 hover:text-slate-200 hover:bg-white/[0.04]"
-              )}
-            >
-              {optimizing ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
-              即時最適化
+              最適化ページへ →
             </button>
           </div>
         </Widget>
