@@ -215,6 +215,8 @@ pub fn run() {
             ai::get_ai_windows_recommendation,
             ai::get_ai_storage_recommendation,
             ai::get_game_settings_advice,
+            // S9-01: AI Profile Generator
+            ai::generate_ai_profile,
             // Self-improvement
             self_improve::export_self_improve_context,
             // Optimizer

@@ -680,3 +680,93 @@ pub async fn get_game_settings_advice(game_name: String) -> Result<GameSettingsA
 
     Ok(advice)
 }
+
+// ── S9-01: AI Profile Generator ───────────────────────────────────────────────
+
+pub const ENABLE_AI_PROFILE_GENERATOR: bool = true;
+
+/// ゲーム名から最適な GameProfile 設定を AI で生成して返す（保存はしない）。
+/// フロントエンドでプレビュー → 保存 の 2 ステップフローを想定。
+#[tauri::command]
+pub async fn generate_ai_profile(
+    game_name: String,
+    exe_path: Option<String>,
+) -> Result<GameProfile, String> {
+    let api_key = load_api_key()?;
+    let exe_hint = exe_path.as_deref().unwrap_or("不明");
+
+    let prompt = format!(
+        r#"あなたは Windows ゲーミング PC の最適化エキスパートです。
+以下のゲームに最適な GameProfile 設定を JSON で返してください。
+
+ゲーム名: {game_name}
+実行ファイル: {exe_hint}
+
+以下の JSON スキーマに厳密に従って、オブジェクト1つだけを返してください（マークダウン・説明不要）:
+{{
+  "kill_bloatware": true/false,
+  "power_plan": "none"|"ultimate"|"high_performance",
+  "windows_preset": "none"|"gaming"|"default",
+  "storage_mode": "none"|"light"|"deep",
+  "network_mode": "none"|"gaming",
+  "dns_preset": "none"|"google"|"cloudflare"|"opendns"|"dhcp",
+  "recommended_mode": "competitive"|"balanced"|"quality",
+  "recommended_reason": "日本語で80字以内の理由",
+  "recommended_confidence": 0から100の整数,
+  "tags": ["タグ1","タグ2"]
+}}
+
+判断基準:
+- FPS/競技系 (Apex, Valorant, CS2, Fortnite 等) → kill_bloatware:true, power_plan:ultimate, network_mode:gaming, dns_preset:cloudflare, recommended_mode:competitive
+- オープンワールド/RPG (Elden Ring, Witcher 等) → power_plan:high_performance, storage_mode:light, recommended_mode:quality
+- MMO/オンライン (FF14, WoW 等) → power_plan:high_performance, network_mode:gaming, recommended_mode:balanced
+- インディー/軽量 → power_plan:none, recommended_mode:balanced, confidence は低め
+- ネット対戦あり → dns_preset:cloudflare
+- ストレージ負荷高 (大型オープンワールド) → storage_mode:light"#,
+        game_name = game_name,
+        exe_hint = exe_hint
+    );
+
+    let raw = call_claude_api(&api_key, &prompt, 600).await?;
+    let json_str = extract_json_object(&raw);
+
+    #[derive(Deserialize)]
+    struct AiProfileDraft {
+        #[serde(default)] kill_bloatware: Option<bool>,
+        #[serde(default)] power_plan: Option<String>,
+        #[serde(default)] windows_preset: Option<String>,
+        #[serde(default)] storage_mode: Option<String>,
+        #[serde(default)] network_mode: Option<String>,
+        #[serde(default)] dns_preset: Option<String>,
+        #[serde(default)] recommended_mode: Option<String>,
+        #[serde(default)] recommended_reason: Option<String>,
+        #[serde(default)] recommended_confidence: Option<u8>,
+        #[serde(default)] tags: Vec<String>,
+    }
+
+    let ai: AiProfileDraft = serde_json::from_str(json_str)
+        .map_err(|e| format!("AI レスポンスの解析に失敗しました: {} (raw: {})", e, &raw[..raw.len().min(300)]))?;
+
+    let mut tags = if ai.tags.is_empty() { vec!["AI生成".to_string()] } else { ai.tags };
+    if !tags.contains(&"AI生成".to_string()) {
+        tags.push("AI生成".to_string());
+    }
+
+    Ok(GameProfile {
+        id: uuid::Uuid::new_v4().to_string(),
+        name: format!("{} (AI生成)", game_name),
+        exe_path: exe_path.unwrap_or_default(),
+        tags,
+        kill_bloatware: ai.kill_bloatware.unwrap_or(false),
+        power_plan: ai.power_plan.unwrap_or_else(|| "high_performance".to_string()),
+        windows_preset: ai.windows_preset.unwrap_or_else(|| "gaming".to_string()),
+        storage_mode: ai.storage_mode.unwrap_or_else(|| "none".to_string()),
+        network_mode: ai.network_mode.unwrap_or_else(|| "none".to_string()),
+        dns_preset: ai.dns_preset.unwrap_or_else(|| "none".to_string()),
+        recommended_mode: ai.recommended_mode,
+        recommended_reason: ai.recommended_reason,
+        recommended_confidence: ai.recommended_confidence,
+        launcher: None,
+        steam_app_id: None,
+    })
+}
