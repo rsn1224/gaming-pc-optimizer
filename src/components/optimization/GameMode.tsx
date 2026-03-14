@@ -12,13 +12,7 @@ import { BeforeAfterCard } from "@/components/ui/BeforeAfterCard";
 import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
 import { PreCheckPanel } from "@/components/ui/PreCheckPanel";
 import type { OptimizationScore, PreCheckResult, ApplyPlan } from "@/types";
-import { ENABLE_SAFETY_KERNEL_UI } from "@/components/ui/SafeApplyButton";
-
-// ── Feature flags ──────────────────────────────────────────────────────────────
-// [Phase D] Show BeforeAfterCard + RollbackEntryPoint after optimization.
-const ENABLE_OPTIMIZE_RESULT_CARD = true;
-// [Sprint 2 / S2-07] Show verify score delta banner after optimization.
-const ENABLE_VERIFY_BANNER = true;
+import { ENABLE_SAFETY_KERNEL_UI, ENABLE_OPTIMIZE_RESULT_CARD, ENABLE_VERIFY_BANNER } from "@/config/features";
 
 // ── Optimization Graph nodes used by GameMode ─────────────────────────────────
 const GAME_MODE_NODES = ["kill_bloatware", "ultimate_power", "gaming_windows", "network_gaming"];

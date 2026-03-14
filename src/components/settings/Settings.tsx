@@ -4,8 +4,7 @@ import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check, Copy, Flask
 import { RecommendationMetricsPanel } from "@/components/recommendation/RecommendationMetricsPanel";
 import { HagsDisplayOptimizer } from "@/components/optimization/HagsDisplayOptimizer";
 
-// HAGS / Display Hz / Defender 除外 (mirrors Rust ENABLE_HAGS_DISPLAY_OPTIMIZER)
-const ENABLE_HAGS_DISPLAY_OPTIMIZER = false;
+import { ENABLE_HAGS_DISPLAY_OPTIMIZER } from "@/config/features";
 import { useAppStore, type Theme } from "@/stores/useAppStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
 import { Toggle } from "@/components/ui/toggle";

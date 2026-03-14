@@ -9,11 +9,14 @@ import { GameCard } from "./GameCard";
 import { GameFilters } from "./GameFilters";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import {
-  ENABLE_LAUNCH_MONITORING,
-  ENABLE_HARDWARE_SUGGESTIONS,
   ENABLE_PROFILE_SSOT,
   ENABLE_MULTI_LAUNCHER,
 } from "@/config/features";
+
+// GamesLibrary-specific flags: これらは GamesLibrary 内の実装が未完成のため false に固定。
+// HomeHub の同名フラグ（true）とは別機能を指す。
+const ENABLE_LAUNCH_MONITORING = false;
+const ENABLE_HARDWARE_SUGGESTIONS = false;
 
 // ── Hardware suggestion helpers ────────────────────────────────────────────────
 

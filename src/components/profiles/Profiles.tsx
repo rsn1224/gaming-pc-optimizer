@@ -7,11 +7,7 @@ import { useWatcherStore } from "@/stores/useWatcherStore";
 import { RiskSummary } from "@/components/ui/RiskSummary";
 import { toast } from "@/stores/useToastStore";
 import type { GameProfile, SimulationResult, PreviewChange, RiskLevel } from "@/types";
-
-// ── Feature flag ──────────────────────────────────────────────────────────────
-// Set to `true` to show a simulation preview before applying any profile.
-// Default: false — handleApply behaves exactly as before when false.
-const ENABLE_PROFILE_PREVIEW = false;
+import { ENABLE_PROFILE_PREVIEW } from "@/config/features";
 
 // ── Apply Preview Modal ───────────────────────────────────────────────────────
 

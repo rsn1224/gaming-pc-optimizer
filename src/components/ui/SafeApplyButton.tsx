@@ -18,8 +18,8 @@ import { PreCheckPanel } from "./PreCheckPanel";
 import { useOptimizeStore } from "@/stores/useOptimizeStore";
 import { toast } from "@/stores/useToastStore";
 
-// ── Feature flag (mirrors Rust) ───────────────────────────────────────────────
-export const ENABLE_SAFETY_KERNEL_UI = true;
+import { ENABLE_SAFETY_KERNEL_UI } from "@/config/features";
+export { ENABLE_SAFETY_KERNEL_UI };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

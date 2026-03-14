@@ -41,14 +41,11 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { RiskSummary } from "@/components/ui/RiskSummary";
 import type { ActivePage } from "@/types";
 
-// ── [Phase D] HomeHub feature flag ────────────────────────────────────────────
-// Set to `true` to activate the HomeHub 司令塔 as the "home" page.
-// Default: false — DashboardV2 is used as fallback.
-const ENABLE_HOME_HUB = true;
+import { ENABLE_HOME_HUB, ENABLE_GLOBAL_ROLLBACK_HEADER } from "@/config/features";
 
 // ── Synergy #3: Score Regression Watcher ──────────────────────────────────────
-// Feature flag — set to `true` to enable background score monitoring.
-// Default: false — no polling, no UI changes.
+// App-level background watcher — HomeHub には別途インライン実装あり。
+// 二重実行防止のため false のまま固定。
 const ENABLE_SCORE_REGRESSION_WATCH = false;
 
 /** Score drop ≥ this many points triggers the regression alert */
@@ -268,8 +265,7 @@ function ThermalWatcher() {
 
 // ── Phase 2F: Global Rollback Header ─────────────────────────────────────────
 // Feature flag — set to `true` to show a persistent rollback/result/risk strip
-// at the top of every screen. Default: false — no visible change.
-const ENABLE_GLOBAL_ROLLBACK_HEADER = false;
+// ENABLE_GLOBAL_ROLLBACK_HEADER は @/config/features から import 済み
 
 function GlobalRollbackHeader() {
   const { sessions, setSessions } = useSafetyStore();

@@ -4,9 +4,7 @@ import { Gauge, Loader2, Cpu, MemoryStick, HardDrive, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BenchmarkHistoryChart } from "./BenchmarkHistoryChart";
 import type { BenchmarkResult, BenchmarkRecord } from "@/types";
-
-// History feature flag (mirrors Rust ENABLE_BENCHMARK_HISTORY)
-const ENABLE_BENCHMARK_HISTORY = false;
+import { ENABLE_BENCHMARK_HISTORY } from "@/config/features";
 
 // ── Score rating ──────────────────────────────────────────────────────────────
 

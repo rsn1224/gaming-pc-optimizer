@@ -5,10 +5,7 @@ import { BandwidthMonitor } from "./BandwidthMonitor";
 import { NetworkSettingsPanel } from "./NetworkSettingsPanel";
 import { NetworkDiagnosticsPanel } from "./NetworkDiagnosticsPanel";
 
-// ── Feature flag ──────────────────────────────────────────────────────────────
-// Set to `true` to split NetworkOptimizer into "設定変更" and "診断" tabs.
-// When false: existing NetworkOptimizer is rendered unchanged (default).
-const ENABLE_NETWORK_TAB_SPLIT = true;
+import { ENABLE_NETWORK_TAB_SPLIT } from "@/config/features";
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 

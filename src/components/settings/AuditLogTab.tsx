@@ -11,9 +11,8 @@ import { RefreshCw, Trash2, ShieldCheck, Bot, User, Rss } from "lucide-react";
 import type { AuditLogEntry, AuditActor } from "@/types";
 import { toast } from "@/stores/useToastStore";
 
-// ── Feature flag ──────────────────────────────────────────────────────────────
-// Sprint 3 で true に切り替え済み
-export const ENABLE_AUDIT_LOG = true;
+// ENABLE_AUDIT_LOG は @/config/features から re-export（後方互換のため維持）
+export { ENABLE_AUDIT_LOG } from "@/config/features";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
