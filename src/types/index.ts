@@ -248,7 +248,7 @@ export type ActivePage =
   | "games" | "profiles" | "gamelog" | "advisor" | "gameintegrity"
   | "hardware" | "benchmark"
   | "startup" | "scheduler" | "uninstaller" | "updates" | "rollback"
-  | "notifications" | "settings";
+  | "notifications" | "settings" | "about";
 
 /**
  * ActionStatus — UI アクション状態の統一型

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, TrendingDown, Loader2, X, Thermometer, Zap, Bot, GitGraph } from "lucide-react";
+import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, TrendingDown, Loader2, X, Thermometer, Zap, Bot, GitGraph, Info } from "lucide-react";
 import type { AppearanceSettings, OptimizationScore, TempSnapshot, GpuPowerLimit, OptimizationSession } from "@/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
@@ -34,7 +34,9 @@ import { EventLog } from "@/components/notifications/EventLog";
 import { SettingsHub } from "@/components/settings/SettingsHub";
 import { PolicyManager } from "@/components/policies/PolicyManager";
 import { OptimizationGraphView } from "@/components/graph/OptimizationGraphView";
+import { AboutPage } from "@/components/about/AboutPage";
 import { OsdOverlay } from "@/components/osd/OsdOverlay";
+import { FirstRunWizard } from "@/components/onboarding/FirstRunWizard";
 import { ToastContainer } from "@/components/ui/Toast";
 import { RiskSummary } from "@/components/ui/RiskSummary";
 import type { ActivePage } from "@/types";
@@ -418,6 +420,7 @@ const NAV_ITEMS: NavEntry[] = [
   { type: "section", label: "その他" },
   { id: "notifications", icon: <Bell size={17} />,          label: "通知センター" },
   { id: "settings",   icon: <SettingsIcon size={17} />,     label: "設定" },
+  { id: "about",      icon: <Info size={17} />,             label: "About" },
 ];
 
 function PageContent({ page }: { page: ActivePage }) {
@@ -477,6 +480,8 @@ function PageContent({ page }: { page: ActivePage }) {
       return <EventLog />;
     case "settings":
       return <SettingsHub />;
+    case "about":
+      return <AboutPage />;
   }
 }
 
@@ -592,7 +597,7 @@ export default function App() {
               <span className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-60" />
               <span className="relative w-1.5 h-1.5 rounded-full bg-cyan-400 block" />
             </div>
-            <p className="text-[10px] text-muted-foreground/50 tracking-widest uppercase">v1.0.0 · AI搭載</p>
+            <p className="text-[10px] text-muted-foreground/50 tracking-widest uppercase">v1.1.0 · AI搭載</p>
           </div>
         </div>
       </aside>
@@ -614,6 +619,8 @@ export default function App() {
       {ENABLE_SCORE_REGRESSION_WATCH && <ScoreRegressionWatcher />}
       {/* [THERMAL] Background GPU temperature watcher — only mounts when flag is ON */}
       {ENABLE_THERMAL_AUTO_REDUCTION && <ThermalWatcher />}
+      {/* [S7-04] First-run wizard — mounts once, dismissed to localStorage */}
+      <FirstRunWizard />
     </div>
   );
 }

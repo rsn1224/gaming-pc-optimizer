@@ -9,7 +9,7 @@ import { useEffect, useCallback, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   Plus, Trash2, Play, ToggleLeft, ToggleRight,
-  RefreshCw, Bot, Zap, ShieldCheck, Settings2,
+  RefreshCw, Bot, Zap, ShieldCheck, Settings2, Library, X, Download,
 } from "lucide-react";
 import type { Policy, PolicyTrigger, PolicyAction } from "@/types";
 import { usePolicyStore } from "@/stores/usePolicyStore";
@@ -42,6 +42,149 @@ const TRIGGER_COLOR: Record<string, string> = {
   on_schedule:    "bg-blue-500/10 text-blue-300 border-blue-500/20",
   on_manual:      "bg-zinc-500/10 text-zinc-300 border-zinc-500/20",
 };
+
+// ── Built-in policy templates (S7-01) ────────────────────────────────────────
+
+interface PolicyTemplate {
+  id: string;
+  name: string;
+  description: string;
+  tag: string;
+  tagColor: string;
+  trigger: PolicyTrigger;
+  action: PolicyAction;
+  priority: number;
+}
+
+const POLICY_TEMPLATES: PolicyTemplate[] = [
+  {
+    id: "tpl_game_start_all",
+    name: "ゲーム起動時 全最適化",
+    description: "ゲームプロセスを検知したら即座に全最適化を実行。FPS 最大化に最適。",
+    tag: "ゲーム",
+    tagColor: "bg-violet-500/15 text-violet-300 border-violet-500/25",
+    trigger: { kind: "on_game_start" },
+    action: { kind: "apply_all", params: {} },
+    priority: 5,
+  },
+  {
+    id: "tpl_score_drop",
+    name: "スコア低下時 自動最適化",
+    description: "最適化スコアが 50 を下回ったら自動で全最適化を実行。",
+    tag: "自動",
+    tagColor: "bg-amber-500/15 text-amber-300 border-amber-500/25",
+    trigger: { kind: "on_score_below", threshold: 50 },
+    action: { kind: "apply_all", params: {} },
+    priority: 10,
+  },
+  {
+    id: "tpl_nightly_clean",
+    name: "深夜2時 ブロートウェア停止",
+    description: "毎日深夜2時にバックグラウンドで不要プロセスを停止。翌朝の起動を快適に。",
+    tag: "スケジュール",
+    tagColor: "bg-blue-500/15 text-blue-300 border-blue-500/25",
+    trigger: { kind: "on_schedule", cron: "0 2 * * *" },
+    action: { kind: "kill_bloatware", params: {} },
+    priority: 30,
+  },
+  {
+    id: "tpl_weekly_power",
+    name: "週次 電源プラン最適化",
+    description: "毎週月曜朝9時に Ultimate Performance に切り替え。週の始まりを高速に。",
+    tag: "スケジュール",
+    tagColor: "bg-blue-500/15 text-blue-300 border-blue-500/25",
+    trigger: { kind: "on_schedule", cron: "0 9 * * 1" },
+    action: { kind: "set_power_plan", params: { plan: "ultimate" } },
+    priority: 30,
+  },
+  {
+    id: "tpl_manual_network",
+    name: "手動 ネットワーク最適化",
+    description: "ボタン1つでネットワーク + DNS を同時最適化。対戦前の一発チューン。",
+    tag: "手動",
+    tagColor: "bg-zinc-500/15 text-zinc-300 border-zinc-500/25",
+    trigger: { kind: "on_manual" },
+    action: { kind: "apply_graph_nodes", params: { node_ids: "network_gaming,dns_gaming" } },
+    priority: 50,
+  },
+  {
+    id: "tpl_game_start_network",
+    name: "ゲーム起動時 ネットワーク優先",
+    description: "ゲーム起動を検知したら eスポーツ向けプリセットを適用。",
+    tag: "ゲーム",
+    tagColor: "bg-violet-500/15 text-violet-300 border-violet-500/25",
+    trigger: { kind: "on_game_start" },
+    action: { kind: "apply_preset", params: { preset_id: "esports" } },
+    priority: 5,
+  },
+];
+
+function PolicyTemplateGallery({
+  onImport,
+  onClose,
+}: {
+  onImport: (tpl: PolicyTemplate) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-violet-500/20 bg-[#07090e] p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Library size={15} className="text-violet-400" />
+          <span className="text-sm font-semibold text-white">テンプレートライブラリ</span>
+          <span className="text-[10px] text-muted-foreground/40">{POLICY_TEMPLATES.length} 件</span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted-foreground/50 hover:text-white transition-colors"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Template grid */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {POLICY_TEMPLATES.map((tpl) => (
+          <div
+            key={tpl.id}
+            className="flex flex-col gap-2 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:border-violet-500/25 transition-colors"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-semibold text-white leading-tight">{tpl.name}</p>
+                <p className="text-[10px] text-muted-foreground/50 mt-0.5 leading-relaxed">{tpl.description}</p>
+              </div>
+              <span className={`shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${tpl.tagColor}`}>
+                {tpl.tag}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-1">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${TRIGGER_COLOR[tpl.trigger.kind] ?? TRIGGER_COLOR.on_manual}`}>
+                  {triggerLabel(tpl.trigger)}
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                  {actionLabel(tpl.action)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onImport(tpl)}
+                className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium
+                           bg-violet-600/80 hover:bg-violet-500 text-white transition-colors"
+              >
+                <Download size={10} />
+                使う
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ── Default new policy template ───────────────────────────────────────────────
 
@@ -333,6 +476,7 @@ function PolicyEditPanel({
 export function PolicyManager() {
   const { policies, setPolicies, updatePolicy, removePolicy, loading, setLoading,
           editingPolicy, setEditingPolicy } = usePolicyStore();
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -379,6 +523,27 @@ export function PolicyManager() {
     }
   };
 
+  const handleImportTemplate = async (tpl: PolicyTemplate) => {
+    const policy: Policy = {
+      id: crypto.randomUUID(),
+      name: tpl.name,
+      enabled: false,
+      priority: tpl.priority,
+      trigger: tpl.trigger,
+      action: tpl.action,
+      last_fired_at: null,
+      fire_count: 0,
+    };
+    try {
+      await invoke("save_policy", { policy });
+      updatePolicy(policy);
+      setShowTemplates(false);
+      toast.success(`「${tpl.name}」をインポートしました`);
+    } catch (e) {
+      toast.error(String(e));
+    }
+  };
+
   const handleSave = async (policy: Policy) => {
     updatePolicy(policy);
     setEditingPolicy(null);
@@ -411,18 +576,37 @@ export function PolicyManager() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button
-            onClick={() => setEditingPolicy(newPolicyTemplate())}
+            onClick={() => { setShowTemplates(v => !v); setEditingPolicy(null); }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+              ${showTemplates
+                ? "bg-violet-500/20 border border-violet-500/30 text-violet-300"
+                : "border border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.06]"
+              }`}
+          >
+            <Library className="w-4 h-4" />
+            テンプレート
+          </button>
+          <button
+            onClick={() => { setEditingPolicy(newPolicyTemplate()); setShowTemplates(false); }}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium
                        bg-violet-600 hover:bg-violet-500 text-white transition-colors"
           >
             <Plus className="w-4 h-4" />
-            新規ポリシー
+            新規
           </button>
         </div>
       </div>
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        {/* Template gallery */}
+        {showTemplates && (
+          <PolicyTemplateGallery
+            onImport={handleImportTemplate}
+            onClose={() => setShowTemplates(false)}
+          />
+        )}
+
         {/* New/Edit panel */}
         {editingPolicy && (
           <PolicyEditPanel
