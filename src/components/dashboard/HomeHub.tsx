@@ -15,22 +15,57 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import {
   Zap, Cpu, Wifi, HardDrive,
   Activity, Gauge, MemoryStick, MonitorCheck, AlertTriangle, Home,
-  Bot, CheckCircle2, Circle,
+  Bot, CheckCircle2, Circle, Flame, TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMemory } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
+import { toast } from "@/stores/useToastStore";
 import type {
   OptimizationScore, SystemInfo, GpuStatus,
-  FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry, Policy,
+  FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry, Policy, ScoreSnapshot,
 } from "@/types";
 
 // S4-05: Policy engine feature flag (mirrors Rust ENABLE_POLICY_ENGINE)
 const ENABLE_POLICY_ENGINE = true;
+// S6: monitoring feature flags (mirror Rust)
+const ENABLE_SCORE_REGRESSION_WATCH = true;
+const ENABLE_THERMAL_AUTO_REDUCTION  = true;
+
+// ── S6-01: Score sparkline ────────────────────────────────────────────────────
+
+function ScoreSparkline({ snapshots }: { snapshots: ScoreSnapshot[] }) {
+  if (snapshots.length < 2) return null;
+  const last10 = snapshots.slice(-10);
+  const scores = last10.map(s => s.overall);
+  const min = Math.max(0,  Math.min(...scores) - 5);
+  const max = Math.min(100, Math.max(...scores) + 5);
+  const W = 80, H = 28;
+  const toX = (i: number) => (i / (scores.length - 1)) * W;
+  const toY = (v: number) => H - ((v - min) / (max - min || 1)) * H;
+  const pts = scores.map((v, i) => `${toX(i)},${toY(v)}`).join(" ");
+  const latest = scores[scores.length - 1];
+  const prev    = scores[scores.length - 2];
+  const trend   = latest - prev;
+  const color   = trend >= 0 ? "#34d399" : "#f87171";
+
+  return (
+    <div className="flex items-center gap-2">
+      <svg width={W} height={H} className="overflow-visible">
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+        <circle cx={toX(scores.length - 1)} cy={toY(latest)} r="2.5" fill={color} />
+      </svg>
+      <span className={`text-[10px] font-semibold tabular-nums ${trend >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+        {trend >= 0 ? "+" : ""}{trend}
+      </span>
+    </div>
+  );
+}
 
 // ── Helper: compact widget card ───────────────────────────────────────────────
 
@@ -91,6 +126,11 @@ export function HomeHub() {
   const [events, setEvents] = useState<EventEntry[]>([]);
   const [activeProfile, setActiveProfile] = useState<string | null>(null);
   const [policies, setPolicies] = useState<Policy[]>([]);
+  // S6-01
+  const [scoreSnapshots, setScoreSnapshots] = useState<ScoreSnapshot[]>([]);
+  const [regressionScore, setRegressionScore] = useState<number | null>(null);
+  // S6-02
+  const [thermalThrottled, setThermalThrottled] = useState(false);
   const [firstLoad, setFirstLoad] = useState(true);
 
   const fetchAll = useCallback(async () => {
@@ -104,6 +144,7 @@ export function HomeHub() {
       invoke<EventEntry[]>("get_event_log"),
       invoke<string | null>("get_active_profile"),
       invoke<Policy[]>("list_policies"),
+      invoke<ScoreSnapshot[]>("get_score_history"),
     ]);
     if (results[0].status === "fulfilled") setScore(results[0].value);
     if (results[1].status === "fulfilled") setSysInfo(results[1].value);
@@ -114,6 +155,7 @@ export function HomeHub() {
     if (results[6].status === "fulfilled") setEvents(results[6].value);
     if (results[7].status === "fulfilled") setActiveProfile(results[7].value);
     if (results[8].status === "fulfilled") setPolicies(results[8].value);
+    if (results[9].status === "fulfilled") setScoreSnapshots(results[9].value);
     setFirstLoad(false);
   }, []);
 
@@ -122,6 +164,27 @@ export function HomeHub() {
     const id = setInterval(fetchAll, 3000);
     return () => clearInterval(id);
   }, [fetchAll]);
+
+  // S6-01: listen for score regression events from watcher
+  useEffect(() => {
+    if (!ENABLE_SCORE_REGRESSION_WATCH) return;
+    let unlisten: (() => void) | undefined;
+    listen<number>("score_regression", (event) => {
+      setRegressionScore(event.payload);
+      toast.info(`スコア急落: ${event.payload} pts — 最適化を推奨します`);
+    }).then(fn => { unlisten = fn; });
+    return () => { unlisten?.(); };
+  }, []);
+
+  // S6-02: listen for thermal throttle events from watcher
+  useEffect(() => {
+    if (!ENABLE_THERMAL_AUTO_REDUCTION) return;
+    let unlisten: (() => void) | undefined;
+    listen<boolean>("thermal_throttle_changed", (event) => {
+      setThermalThrottled(event.payload);
+    }).then(fn => { unlisten = fn; });
+    return () => { unlisten?.(); };
+  }, []);
 
   const healthScore = score?.overall ?? 0;
   const isCritical = !firstLoad && healthScore < 50;
@@ -201,6 +264,37 @@ export function HomeHub() {
         </div>
       )}
 
+      {/* ── S6-01: Score regression banner ───────────────────────────── */}
+      {ENABLE_SCORE_REGRESSION_WATCH && regressionScore !== null && (
+        <div className="bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <TrendingDown size={15} className="text-red-400 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-red-300">スコア急落を検出しました</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">
+                現在のスコア: <strong className="text-red-300">{regressionScore}</strong> — 最適化で改善できます
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActivePage("optimize")}
+              className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 text-xs font-semibold rounded-lg transition-colors"
+            >
+              最適化へ →
+            </button>
+            <button
+              type="button"
+              onClick={() => setRegressionScore(null)}
+              className="text-muted-foreground/40 hover:text-muted-foreground text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Row 1: Health ring | CPU/RAM | GPU ──────────────────────── */}
       <div className="grid grid-cols-3 gap-3">
         <Widget label="システムヘルス">
@@ -214,6 +308,12 @@ export function HomeHub() {
                   <span>プロセス: <span className="text-foreground tabular-nums">{score.process}</span></span>
                   <span>電源: <span className="text-foreground tabular-nums">{score.power}</span></span>
                   <span>ネット: <span className="text-foreground tabular-nums">{score.network}</span></span>
+                  {/* S6-01: sparkline */}
+                  {ENABLE_SCORE_REGRESSION_WATCH && scoreSnapshots.length >= 2 && (
+                    <div className="mt-1">
+                      <ScoreSparkline snapshots={scoreSnapshots} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -270,9 +370,15 @@ export function HomeHub() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="text-[10px] text-muted-foreground/50 mb-0.5">温度</p>
-                  <p className={cn("text-base font-bold tabular-nums",
-                    gpu.temperature_c >= 85 ? "text-red-400" : gpu.temperature_c >= 70 ? "text-amber-400" : "text-cyan-400"
-                  )}>{gpu.temperature_c}°C</p>
+                  <div className="flex items-center gap-1">
+                    <p className={cn("text-base font-bold tabular-nums",
+                      gpu.temperature_c >= 85 ? "text-red-400" : gpu.temperature_c >= 70 ? "text-amber-400" : "text-cyan-400"
+                    )}>{gpu.temperature_c}°C</p>
+                    {/* S6-02: thermal throttle indicator */}
+                    {ENABLE_THERMAL_AUTO_REDUCTION && thermalThrottled && (
+                      <Flame size={11} className="text-amber-400 shrink-0 animate-pulse" aria-label="電力制限中" />
+                    )}
+                  </div>
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground/50 mb-0.5">VRAM</p>
@@ -283,6 +389,11 @@ export function HomeHub() {
                   </p>
                 </div>
               </div>
+              {ENABLE_THERMAL_AUTO_REDUCTION && thermalThrottled && (
+                <p className="text-[9px] text-amber-400/70 mt-1">
+                  🌡 温度超過により電力制限中
+                </p>
+              )}
             </div>
           ) : (
             <p className="text-[11px] text-muted-foreground/40">GPU情報なし</p>

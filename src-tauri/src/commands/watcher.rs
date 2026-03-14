@@ -5,6 +5,29 @@ use winreg::RegKey;
 
 use crate::AppState;
 
+// ── Feature flags (S6) ────────────────────────────────────────────────────────
+
+/// S6-01: スコア急落を検出してユーザーに通知する
+pub const ENABLE_SCORE_REGRESSION_WATCH: bool = true;
+/// S6-02: GPU 温度が高すぎる場合に自動で電力制限を下げる
+pub const ENABLE_THERMAL_AUTO_REDUCTION: bool = true;
+
+// ── Regression / Thermal constants ────────────────────────────────────────────
+
+/// 何 pt 以上の急落を「リグレッション」とみなすか
+const REGRESSION_THRESHOLD: i16 = 15;
+/// リグレッション通知のクールダウン（秒） — 5 分
+const REGRESSION_COOLDOWN_SECS: u64 = 300;
+/// スコア履歴のローリングウィンドウサイズ
+const SCORE_HISTORY_MAX: usize = 6;
+
+/// この温度を超えたら電力制限を下げる (°C)
+const THERMAL_HIGH_C: u32 = 88;
+/// この温度を下回ったら電力制限を元に戻す (°C)
+const THERMAL_RECOVERY_C: u32 = 78;
+/// 電力制限の削減率 (%)
+const THERMAL_REDUCTION_PCT: u32 = 15;
+
 // ── Autostart (winreg) ────────────────────────────────────────────────────────
 
 const AUTOSTART_NAME: &str = "GamingPCOptimizer";
@@ -265,6 +288,139 @@ fn send_notification(handle: &tauri::AppHandle, body: &str) {
         .ok();
 }
 
+// ── S6-01: Score regression watch ────────────────────────────────────────────
+
+/// スコアを履歴に追記し、急落していれば通知する。
+/// watcher_loop の末尾（毎サイクル）から呼ばれる。
+fn check_score_regression(
+    current_score: u8,
+    state: &crate::AppState,
+    handle: &tauri::AppHandle,
+) {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let now_secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let (should_notify, baseline) = {
+        let mut w = state.0.lock().unwrap_or_else(|p| p.into_inner());
+
+        // Push new score
+        w.score_history.push(current_score);
+        if w.score_history.len() > SCORE_HISTORY_MAX {
+            w.score_history.remove(0);
+        }
+
+        // Need at least 3 readings before evaluating
+        if w.score_history.len() < 3 {
+            return;
+        }
+
+        // Baseline = average of all readings except the latest
+        let older = &w.score_history[..w.score_history.len() - 1];
+        let baseline: i16 = (older.iter().map(|&v| v as u32).sum::<u32>() / older.len() as u32) as i16;
+        let delta = current_score as i16 - baseline;
+
+        let cooldown_ok = now_secs.saturating_sub(w.regression_notified_secs) > REGRESSION_COOLDOWN_SECS;
+
+        if delta <= -REGRESSION_THRESHOLD && cooldown_ok {
+            w.regression_notified_secs = now_secs;
+            (true, baseline)
+        } else {
+            (false, baseline)
+        }
+    };
+
+    if should_notify {
+        let detail = format!(
+            "スコアが {} → {} に急落しました ({:+} pts)",
+            baseline,
+            current_score,
+            current_score as i16 - baseline
+        );
+        super::event_log::add_event_internal(
+            "score_regression",
+            "最適化スコアが急落しました",
+            &detail,
+            "warning",
+        );
+        send_notification(handle, &format!("⚠ スコア急落: {} pts → 最適化を推奨します", current_score));
+        handle.emit("score_regression", current_score).ok();
+    }
+}
+
+// ── S6-02: Thermal auto-reduction ────────────────────────────────────────────
+
+/// GPU 温度を取得し、閾値超えで電力制限を自動削減、回復時に復元する。
+/// watcher_loop の末尾（毎サイクル）から呼ばれる。
+async fn check_thermal_auto_reduction(state: &crate::AppState, handle: &tauri::AppHandle) {
+    // GPU ステータスを取得
+    let gpu_list = match tokio::task::spawn_blocking(super::hardware::fetch_gpu_status_sync).await {
+        Ok(Ok(list)) => list,
+        _ => return,
+    };
+    let gpu = match gpu_list.into_iter().next() {
+        Some(g) => g,
+        None => return,
+    };
+    let temp = gpu.temperature_c as u32;
+
+    let (currently_reduced, original_limit) = {
+        let w = state.0.lock().unwrap_or_else(|p| p.into_inner());
+        (w.thermal_reduced, w.thermal_original_limit_w)
+    };
+
+    if !currently_reduced && temp >= THERMAL_HIGH_C {
+        // 現在の電力情報を取得
+        let power_info = match tokio::task::spawn_blocking(super::hardware::get_gpu_power_info).await {
+            Ok(Ok(info)) => info,
+            _ => return,
+        };
+        let reduced_w = (power_info.current_w * (100 - THERMAL_REDUCTION_PCT)) / 100;
+        let reduced_w = reduced_w.max(power_info.min_w);
+
+        let set_result = super::hardware::set_gpu_power_limit(0, reduced_w).await;
+
+        if set_result.is_ok() {
+            {
+                let mut w = state.0.lock().unwrap_or_else(|p| p.into_inner());
+                w.thermal_reduced = true;
+                w.thermal_original_limit_w = Some(power_info.current_w);
+            }
+            super::event_log::add_event_internal(
+                "thermal_throttle",
+                "GPU 温度超過 — 電力制限を自動削減しました",
+                &format!("{}°C 検知 → {} W → {} W (-{}%)", temp, power_info.current_w, reduced_w, THERMAL_REDUCTION_PCT),
+                "warning",
+            );
+            send_notification(handle, &format!("🌡 GPU {}°C — 電力制限を {}W に削減しました", temp, reduced_w));
+            handle.emit("thermal_throttle_changed", true).ok();
+        }
+    } else if currently_reduced && temp <= THERMAL_RECOVERY_C {
+        // 元の電力制限に戻す
+        let restore_w = original_limit.unwrap_or(0);
+        if restore_w > 0 {
+            let _ = super::hardware::set_gpu_power_limit(0, restore_w).await;
+        } else {
+            let _ = super::hardware::reset_gpu_power_limit().await;
+        }
+        {
+            let mut w = state.0.lock().unwrap_or_else(|p| p.into_inner());
+            w.thermal_reduced = false;
+            w.thermal_original_limit_w = None;
+        }
+        super::event_log::add_event_internal(
+            "thermal_restored",
+            "GPU 温度回復 — 電力制限を復元しました",
+            &format!("{}°C まで低下", temp),
+            "info",
+        );
+        handle.emit("thermal_throttle_changed", false).ok();
+    }
+}
+
 pub async fn watcher_loop(handle: tauri::AppHandle) {
     let mut sys = System::new();
     loop {
@@ -456,6 +612,24 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                     dispatch_policy_action(&p, &handle).await;
                     super::policy::mark_fired(p.id);
                 }
+
+                // S6-01: Score regression watch (runs after policy engine so score is fresh)
+                if ENABLE_SCORE_REGRESSION_WATCH {
+                    check_score_regression(score, &state, &handle);
+                }
+            } else if ENABLE_SCORE_REGRESSION_WATCH {
+                // Policy engine off but regression watch still enabled
+                let score = tokio::task::spawn_blocking(|| {
+                    super::optimizer::compute_optimization_score().overall
+                })
+                .await
+                .unwrap_or(100);
+                check_score_regression(score, &state, &handle);
+            }
+
+            // S6-02: Thermal auto-reduction (independent of active game state)
+            if ENABLE_THERMAL_AUTO_REDUCTION {
+                check_thermal_auto_reduction(&state, &handle).await;
             }
         }
     }

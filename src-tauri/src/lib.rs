@@ -23,6 +23,12 @@ pub struct WatcherState {
     pub active_profile_id: Option<String>,
     pub is_applying: bool,
     pub current_game_session_id: Option<String>,
+    // S6-01: score regression watch
+    pub score_history: Vec<u8>,          // rolling window (max 6)
+    pub regression_notified_secs: u64,   // epoch secs of last regression notification
+    // S6-02: thermal auto-reduction
+    pub thermal_reduced: bool,
+    pub thermal_original_limit_w: Option<u32>,
 }
 
 pub struct AppState(pub std::sync::Mutex<WatcherState>);
@@ -39,6 +45,10 @@ pub fn run() {
             active_profile_id: None,
             is_applying: false,
             current_game_session_id: None,
+            score_history: Vec::new(),
+            regression_notified_secs: 0,
+            thermal_reduced: false,
+            thermal_original_limit_w: None,
         })))
         .setup(|app| {
             // ── System tray ────────────────────────────────────────────────
