@@ -3,6 +3,21 @@ use std::path::PathBuf;
 
 use super::profiles::{load_profiles, save_profiles, GameProfile};
 
+// ── V2: ImpactLevel ───────────────────────────────────────────────────────────
+//
+// 全 AI Recommendation に共通の影響度フィールド。
+// #[serde(default)] で既存レスポンスとの後方互換を維持する。
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ImpactLevel {
+    Low,
+    #[default]
+    Medium,
+    High,
+    Critical,
+}
+
 // ── Keyring constants ─────────────────────────────────────────────────────────
 
 const KEYRING_SERVICE: &str = "gaming-pc-optimizer";
@@ -310,6 +325,9 @@ pub struct AiUpdatePriority {
     /// AI confidence 0–100
     #[serde(default)]
     pub confidence: u8,
+    /// 影響度 (V2)
+    #[serde(default)]
+    pub impact: ImpactLevel,
 }
 
 #[tauri::command]
@@ -330,7 +348,8 @@ pub async fn get_ai_update_priorities() -> Result<Vec<AiUpdatePriority>, String>
     "id": "winget package id（app_updatesのidフィールドと一致させること）",
     "priority": "critical" | "recommended" | "optional" | "skip",
     "reason": "30文字以内の日本語の理由",
-    "confidence": 0〜100の整数（100=確信。アプリの性質が不明な場合は低めに設定）
+    "confidence": 0〜100の整数（100=確信。アプリの性質が不明な場合は低めに設定）,
+    "impact": "low" | "medium" | "high" | "critical"
   }}
 ]
 
@@ -356,6 +375,9 @@ pub struct AiWindowsRecommendation {
     pub explanation: String,
     #[serde(default)]
     pub confidence: u8,
+    /// 影響度 (V2)
+    #[serde(default)]
+    pub impact: ImpactLevel,
 }
 
 #[tauri::command]
@@ -377,6 +399,7 @@ JSONのみを返してください（説明・マークダウン不要）：
 
 {{
   "preset_id": "default" | "gaming" | "balanced",
+  "impact": "low" | "medium" | "high" | "critical",
   "explanation": "なぜこのプリセットを選んだかの理由（日本語・1〜2文）",
   "confidence": 0〜100の整数（100=確信。現在設定が明確であれば高く、情報が不十分なら低めに）
 }}"#,
@@ -452,6 +475,9 @@ pub struct AiNetworkRecommendation {
     pub apply_network_gaming: bool,
     #[serde(default)]
     pub confidence: u8,
+    /// 影響度 (V2)
+    #[serde(default)]
+    pub impact: ImpactLevel,
 }
 
 #[tauri::command]
@@ -508,6 +534,9 @@ pub struct AiHardwareMode {
     pub suggested_power_limit_percent: f32, // fraction of default (e.g. 1.0, 0.8, 0.65)
     #[serde(default)]
     pub confidence: u8,
+    /// 影響度 (V2)
+    #[serde(default)]
+    pub impact: ImpactLevel,
 }
 
 #[tauri::command]
@@ -533,7 +562,8 @@ pub async fn get_ai_hardware_mode() -> Result<AiHardwareMode, String> {
   "mode": "performance" | "balanced" | "efficiency",
   "reason": "50文字以内の日本語の理由",
   "suggested_power_limit_percent": 0.0から1.0の数値（デフォルト電力に対する割合、あくまで目安。アプリ側ではmodeに対応した固定比を使用します）,
-  "confidence": 0〜100の整数（100=確信。GPU情報が揃っていれば高く、GPUデータがない場合は低めに）
+  "confidence": 0〜100の整数（100=確信。GPU情報が揃っていれば高く、GPUデータがない場合は低めに）,
+  "impact": "low" | "medium" | "high" | "critical"
 }}
 
 モードの定義：

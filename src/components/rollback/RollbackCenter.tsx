@@ -16,6 +16,7 @@ import { useSafetyStore } from "@/stores/useSafetyStore";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { toast } from "@/stores/useToastStore";
 import type { OptimizationSession, SessionStatus, SessionMetrics } from "@/types";
+import { TelemetryViewer } from "@/components/ui/TelemetryViewer";
 
 // ── Before/After metric delta ─────────────────────────────────────────────────
 
@@ -216,6 +217,9 @@ function SessionRow({
               after={session.metrics_after}
             />
           )}
+
+          {/* [Sprint 3] Telemetry timeline */}
+          <TelemetryViewer sessionId={session.id} />
 
           {/* Snapshot power plan */}
           {session.snapshot.power_plan_guid && (

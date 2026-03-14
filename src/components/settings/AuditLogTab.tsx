@@ -12,8 +12,8 @@ import type { AuditLogEntry, AuditActor } from "@/types";
 import { toast } from "@/stores/useToastStore";
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
-// Sprint 2 で true に切り替える
-export const ENABLE_AUDIT_LOG = false;
+// Sprint 3 で true に切り替え済み
+export const ENABLE_AUDIT_LOG = true;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

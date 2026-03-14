@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use super::now_iso8601;
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
-pub const ENABLE_TELEMETRY: bool = false;
+pub const ENABLE_TELEMETRY: bool = true;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

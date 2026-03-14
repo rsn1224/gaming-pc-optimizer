@@ -125,6 +125,7 @@ export interface NetworkRecommendation {
   explanation: string;
   apply_network_gaming: boolean;
   confidence: number; // 0–100
+  impact: ImpactLevel;
 }
 
 export interface DiscoveredGame {
@@ -162,11 +163,15 @@ export interface AppUpdate {
   source: string;
 }
 
+/** V2: 影響度 (全 AI Recommendation 共通) */
+export type ImpactLevel = "low" | "medium" | "high" | "critical";
+
 export interface AiUpdatePriority {
   id: string;
   priority: "critical" | "recommended" | "optional" | "skip";
   reason: string;
   confidence: number; // 0–100
+  impact: ImpactLevel;
 }
 
 export interface DriverInfo {
@@ -214,12 +219,14 @@ export interface AiHardwareMode {
   reason: string;
   suggested_power_limit_percent: number;
   confidence: number; // 0–100
+  impact: ImpactLevel;
 }
 
 export interface AiWindowsRecommendation {
   preset_id: string; // "default" | "gaming" | "balanced"
   explanation: string;
   confidence: number; // 0–100
+  impact: ImpactLevel;
 }
 
 export interface AiStorageItem {
@@ -232,6 +239,8 @@ export type ActivePage =
   // ── [Phase C/D] 新規ページ（ENABLE_HOME_HUB flag で有効化） ──────────────
   | "home"          // HomeHub（Dashboard + DashboardV2 統合、司令塔）
   | "optimize"      // OptimizeHub（GameMode 改称）
+  // ── [Sprint 3] V2 ページ ──────────────────────────────────────────────────
+  | "policies"      // PolicyManager（ポリシーエンジン管理）
   // ── 既存ページ（後方互換維持） ─────────────────────────────────────────────
   | "dashboard" | "dashboardv2" | "gamemode"
   | "presets" | "process" | "windows" | "storage" | "network"
@@ -741,7 +750,8 @@ export type PolicyActionKind =
   | "apply_preset"
   | "kill_bloatware"
   | "set_power_plan"
-  | "apply_graph_nodes";
+  | "apply_graph_nodes"
+  | "apply_all";
 
 export interface PolicyAction {
   kind: PolicyActionKind;
