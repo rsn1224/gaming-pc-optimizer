@@ -1,11 +1,11 @@
 {
-  "version": "1.1.0",
-  "notes": "初回リリース",
+  "version": "1.2.0",
+  "notes": "アプリ内自動アップデート機能を実装（tauri-plugin-updater）\n- ダウンロード進捗バー表示\n- ワンクリックでインストール・自動再起動\n- コンソールウィンドウ点滅バグ修正\n- 初回ウィザードにAPIプロバイダー選択を追加",
   "pub_date": "2026-03-15T00:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "",
-      "url": ""
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRODhZclhSN0o3c3RudjhmSEdQajc4c1hpczVoNERhWFgzWTI3a0Z3emhFYVdWS29WVUttMGlrR0hBZ0lYeWkvcytBdDhjTTBFS1hYQTM1L0h1Ync1OXVzOTFkSUVReWdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczNTE4MDA1CWZpbGU6R2FtaW5nIFBDIE9wdGltaXplcl8xLjIuMF94NjQtc2V0dXAuZXhlCndtUnROMmZqc0E0NXhzL3F2RDFueU1zV3Ercmx3VGJLR0hYNncvdCtNOHRzaC9qbGpyM1RBenZTSlJhUHhoTVpEeExTQno5N2lCVjdtWG51TUVHcEF3PT0K",
+      "url": "https://github.com/rsn1224/gaming-pc-optimizer/releases/download/v1.2.0/Gaming%20PC%20Optimizer_1.2.0_x64-setup.exe"
     }
   }
 }
