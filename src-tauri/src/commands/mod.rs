@@ -1,4 +1,8 @@
 pub mod ai;
+pub mod ai_metrics;
+pub mod ai_router;
+pub mod ai_safety;
+pub mod ai_schema;
 pub mod app_settings;
 pub mod audit_log;
 pub mod backup;
@@ -28,6 +32,7 @@ pub mod presets;
 pub mod process;
 pub mod profile_share;
 pub mod profiles;
+pub mod recommendation;
 pub mod registry_opt;
 pub mod report;
 pub mod rollback;

@@ -156,4 +156,92 @@ src-tauri/src/                # Rust バックエンド
     windows_settings.rs       # レジストリ設定
     hardware.rs               # GPU/CPU/MB 詳細（WMI）
     steam.rs / icons.rs       # Steam 検出・EXE アイコン抽出
+    ai_schema.rs              # V2 データ契約（RecommendationInput/Result 等）
+    ai_safety.rs              # SafetyPolicy + Schema Guard
+    ai_metrics.rs             # SQLite メトリクス（モデル別成功率/レイテンシ）
+    ai_router.rs              # LLM ルーター + ルールベースフォールバック
+    recommendation.rs         # V2 エントリーポイント（Tauri コマンド）
+```
+
+---
+
+## 本番推奨エンジン V2 (ENABLE_RECOMMENDATION_V2)
+
+マルチモデル対応の AI 推奨エンジンです。
+**デフォルト OFF** — 段階的に有効化できます。
+
+### 有効化手順
+
+1. **Rust フラグを ON にする**
+
+   ```rust
+   // src-tauri/src/commands/recommendation.rs
+   pub const ENABLE_RECOMMENDATION_V2: bool = true;  // false → true
+   ```
+
+2. **フロントエンドウィジェットを表示する**
+
+   ```typescript
+   // src/components/dashboard/HomeHub.tsx
+   const ENABLE_RECOMMENDATION_V2_UI = true;  // false → true
+   ```
+
+3. **Anthropic API キーを設定する**
+   アプリ内の「設定 → AI 設定」から入力（Windows Credential Manager に保存）。
+   API キーなしの場合はルールベースフォールバックで動作します。
+
+### アーキテクチャ
+
+```
+generate_recommendation(payload)
+  └─ ai_router::select_model()    # intent/laptop → haiku or sonnet
+  └─ ai_router::build_prompt()    # システム情報 + 制約をプロンプトに変換
+  └─ ai_router::call_api()        # Claude API 呼び出し
+      ├─ OK  → parse_response()
+      │         └─ ai_safety::guard_result()   # Schema Guard
+      │         └─ SafetyPolicy::filter()      # 制約フィルタ
+      └─ Err → ai_router::fallback_rule_based() # ルールベース推奨
+  └─ ai_metrics::record()         # SQLite にレイテンシ・成功率を記録
+```
+
+### フォールバック保証
+
+API キーがない・API エラー・スキーマ違反のいずれの場合も、
+`fallback_used: true` のルールベース推奨が返されます（エラーにはなりません）。
+
+### モデル選択ロジック
+
+| 条件 | 使用モデル |
+|------|-----------|
+| ラップトップ (`isLaptop: true`) | `claude-sonnet-4-6` |
+| 静音モード (`intent: "silence"`) | `claude-sonnet-4-6` |
+| その他 | `claude-haiku-4-5-20251001` |
+
+### API コマンド
+
+| コマンド | 説明 |
+|---------|------|
+| `generate_recommendation(payload)` | 推奨一覧を生成する |
+| `get_recommendation_metrics(rangeHours?)` | モデル別メトリクスを取得する |
+
+### 環境変数・設定
+
+| 設定 | 場所 | 説明 |
+|------|------|------|
+| Anthropic API キー | Windows Credential Manager | アプリ「設定」画面から入力 |
+| `ENABLE_RECOMMENDATION_V2` | `recommendation.rs` | Rust 側フラグ（default: false） |
+| `ENABLE_RECOMMENDATION_V2_UI` | `HomeHub.tsx` | UI 側フラグ（default: false） |
+
+### CI コマンド
+
+```bash
+# TypeScript 型チェック
+npx tsc --noEmit
+
+# Rust 静的解析
+cargo check
+
+# 全テスト（TS 56件 + Rust 108件）
+npx vitest run
+cargo test
 ```

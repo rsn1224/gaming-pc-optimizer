@@ -897,3 +897,73 @@ export interface SharedProfile {
   profile: GameProfile;
   system_hint: string;
 }
+
+// ── Recommendation Engine V2 (ENABLE_RECOMMENDATION_V2) ──────────────────────
+
+export type RecommendationIntent = "fps" | "stability" | "silence" | "balanced";
+
+export interface RecommendationSystem {
+  osVersion: string;
+  cpu?: string;
+  gpu?: string;
+  memoryGb?: number;
+  isLaptop?: boolean;
+  powerPlan?: string;
+}
+
+export interface RecommendationProfile {
+  gameTitle?: string;
+  exe?: string;
+}
+
+export interface RecommendationConstraints {
+  allowRegistry?: boolean;
+  allowNetworkChange?: boolean;
+  allowPowerPlanChange?: boolean;
+}
+
+export interface RecommendationInput {
+  intent: RecommendationIntent;
+  system: RecommendationSystem;
+  profile?: RecommendationProfile;
+  constraints?: RecommendationConstraints;
+}
+
+export interface RecommendationExpectedImpact {
+  fps?: number;
+  latencyMs?: number;
+  stability?: number; // -1.0..1.0
+}
+
+export interface RecommendationItem {
+  id: string;
+  title: string;
+  reason: string;
+  confidence: number; // 0.0..1.0
+  expectedImpact: RecommendationExpectedImpact;
+  riskLevel: RiskLevel;
+}
+
+export interface RecommendationResult {
+  items: RecommendationItem[];
+  summary: string;
+  model: string;
+  fallbackUsed: boolean;
+  generatedAt: string; // ISO8601
+}
+
+export interface ModelMetrics {
+  model: string;
+  totalCalls: number;
+  successes: number;
+  failures: number;
+  fallbacks: number;
+  avgLatencyMs: number;
+  successRate: number;
+  fallbackRate: number;
+}
+
+export interface MetricsSummary {
+  rangeHours: number;
+  models: ModelMetrics[];
+}

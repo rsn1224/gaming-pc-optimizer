@@ -128,7 +128,7 @@ pub fn set_ai_api_key(key: String) -> Result<(), String> {
 
 /// Internal helper used by AI commands — returns Err with a user-friendly
 /// Japanese message when the key is missing.
-fn load_api_key() -> Result<String, String> {
+pub(crate) fn load_api_key() -> Result<String, String> {
     let key = get_ai_api_key();
     if key.is_empty() {
         Err("Anthropic API キーが設定されていません。設定ページで入力してください。".to_string())

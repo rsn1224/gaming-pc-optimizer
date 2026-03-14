@@ -27,6 +27,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
 import { toast } from "@/stores/useToastStore";
 import { PerformanceCoach } from "@/components/gamelog/PerformanceCoach";
+import { RecommendationCard } from "@/components/recommendation/RecommendationCard";
 import type {
   OptimizationScore, SystemInfo, GpuStatus,
   FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry, Policy, ScoreSnapshot,
@@ -43,6 +44,8 @@ const ENABLE_LAUNCH_MONITORING      = true;
 const ENABLE_HARDWARE_SUGGESTIONS   = true;
 // S10: Sprint 10 feature flags
 const ENABLE_PERFORMANCE_COACH      = true;
+// V2: Recommendation Engine (default OFF — set to true in recommendation.rs first)
+const ENABLE_RECOMMENDATION_V2_UI   = false;
 
 // ── S6-01: Score sparkline ────────────────────────────────────────────────────
 
@@ -754,6 +757,13 @@ export function HomeHub() {
               ))}
             </div>
           </div>
+        </Widget>
+      )}
+
+      {/* ── V2: Recommendation Engine widget ─────────────────────────── */}
+      {ENABLE_RECOMMENDATION_V2_UI && (
+        <Widget label="推奨エンジン V2">
+          <RecommendationCard sysInfo={sysInfo} />
         </Widget>
       )}
 

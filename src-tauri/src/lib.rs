@@ -6,9 +6,10 @@ use commands::{
     ai, app_settings, audit_log, backup, bandwidth, benchmark, clipboard_opt, cpu_affinity,
     crash_report, disk_health, event_log, fps, game_integrity, game_log, hardware,
     hardware_suggestions, hotkeys, icons, memory_cleaner, metrics, network, optimizer,
-    optimizer_graph, osd, policy, power, presets, process, profile_share, profiles, registry_opt,
-    report, rollback, safety_kernel, scheduler, self_improve, startup, steam, storage, system_info,
-    telemetry, uninstaller, update_check, updates, watcher, windows_settings,
+    optimizer_graph, osd, policy, power, presets, process, profile_share, profiles,
+    recommendation, registry_opt, report, rollback, safety_kernel, scheduler, self_improve,
+    startup, steam, storage, system_info, telemetry, uninstaller, update_check, updates, watcher,
+    windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -354,6 +355,9 @@ pub fn run() {
             update_check::open_release_url,
             // Performance Report
             report::generate_performance_report,
+            // Recommendation Engine V2 (ENABLE_RECOMMENDATION_V2)
+            recommendation::generate_recommendation,
+            recommendation::get_recommendation_metrics,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
