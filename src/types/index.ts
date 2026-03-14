@@ -968,6 +968,20 @@ export interface MetricsSummary {
   models: ModelMetrics[];
 }
 
+// ── Benchmark History (ENABLE_BENCHMARK_HISTORY) ─────────────────────────────
+
+export interface BenchmarkRecord {
+  id: number;
+  runAt: number;      // Unix epoch seconds
+  cpuScore: number;
+  memoryScore: number;
+  diskScore: number;
+  totalScore: number;
+  cpuMs: number;
+  memoryMs: number;
+  diskMs: number;
+}
+
 // ── Tournament Checklist (ENABLE_TOURNAMENT_MODE) ─────────────────────────────
 
 export type StepStatus = "Pass" | "Warn" | "Fail";

@@ -3,7 +3,7 @@ mod error;
 pub use error::AppError;
 
 use commands::{
-    ai, app_settings, audit_log, backup, bandwidth, benchmark, clipboard_opt, cpu_affinity,
+    ai, app_settings, audit_log, backup, bandwidth, benchmark, benchmark_history, clipboard_opt, cpu_affinity,
     crash_report, disk_health, event_log, fps, game_integrity, game_log, hardware,
     hardware_suggestions, hotkeys, icons, memory_cleaner, metrics, network, optimizer,
     optimizer_graph, osd, policy, power, presets, process, profile_share, profiles,
@@ -249,6 +249,10 @@ pub fn run() {
             policy::fire_policy_manual,
             // Benchmark
             benchmark::run_benchmark,
+            // Benchmark History (ENABLE_BENCHMARK_HISTORY)
+            benchmark_history::save_benchmark_result,
+            benchmark_history::get_benchmark_history,
+            benchmark_history::clear_benchmark_history,
             // Event Log
             event_log::get_event_log,
             event_log::clear_event_log,

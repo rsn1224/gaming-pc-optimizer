@@ -1,5 +1,6 @@
 pub mod ai;
 pub mod ai_metrics;
+pub mod benchmark_history;
 pub mod ai_router;
 pub mod ai_safety;
 pub mod ai_schema;

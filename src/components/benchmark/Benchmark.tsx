@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Gauge, Loader2, Cpu, MemoryStick, HardDrive, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { BenchmarkResult } from "@/types";
+import { BenchmarkHistoryChart } from "./BenchmarkHistoryChart";
+import type { BenchmarkResult, BenchmarkRecord } from "@/types";
+
+// History feature flag (mirrors Rust ENABLE_BENCHMARK_HISTORY)
+const ENABLE_BENCHMARK_HISTORY = false;
 
 // ── Score rating ──────────────────────────────────────────────────────────────
 
@@ -102,6 +106,26 @@ export function Benchmark() {
   const [result, setResult] = useState<BenchmarkResult | null>(null);
   const [prev, setPrev] = useState<BenchmarkResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // History
+  const [history, setHistory] = useState<BenchmarkRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const fetchHistory = useCallback(async () => {
+    if (!ENABLE_BENCHMARK_HISTORY) return;
+    setHistoryLoading(true);
+    try {
+      const h = await invoke<BenchmarkRecord[]>("get_benchmark_history");
+      setHistory(h);
+    } catch {
+      // silently ignore
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const runBenchmark = async () => {
     setRunning(true);
@@ -115,6 +139,23 @@ export function Benchmark() {
       await new Promise((r) => setTimeout(r, 50));
       const res = await invoke<BenchmarkResult>("run_benchmark");
       setResult(res);
+      // Auto-save to history when feature is enabled
+      if (ENABLE_BENCHMARK_HISTORY) {
+        try {
+          await invoke("save_benchmark_result", {
+            cpuScore:    res.cpu_score,
+            memoryScore: res.memory_score,
+            diskScore:   res.disk_score,
+            totalScore:  res.total_score,
+            cpuMs:       res.cpu_ms,
+            memoryMs:    res.memory_ms,
+            diskMs:      res.disk_ms,
+          });
+          await fetchHistory();
+        } catch {
+          // history save failure is non-fatal
+        }
+      }
     } catch (e) {
       setError(String(e));
     } finally {
@@ -122,6 +163,15 @@ export function Benchmark() {
       setStep(null);
     }
   };
+
+  async function handleClearHistory() {
+    try {
+      await invoke("clear_benchmark_history");
+      setHistory([]);
+    } catch {
+      // ignore
+    }
+  }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -214,6 +264,16 @@ export function Benchmark() {
               完了まで10〜30秒かかります
             </p>
           </div>
+        )}
+
+        {/* History chart (ENABLE_BENCHMARK_HISTORY) */}
+        {ENABLE_BENCHMARK_HISTORY && (
+          <BenchmarkHistoryChart
+            records={history}
+            loading={historyLoading}
+            onRefresh={fetchHistory}
+            onClear={handleClearHistory}
+          />
         )}
       </div>
     </div>
