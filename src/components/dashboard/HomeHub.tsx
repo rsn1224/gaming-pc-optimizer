@@ -19,7 +19,7 @@ import { listen } from "@tauri-apps/api/event";
 import {
   Zap, Cpu, Wifi, HardDrive,
   Activity, Gauge, MemoryStick, MonitorCheck, AlertTriangle, Home,
-  Bot, CheckCircle2, Circle, Flame, TrendingDown,
+  Bot, CheckCircle2, Circle, Flame, TrendingDown, Gamepad2, Stethoscope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMemory } from "@/lib/utils";
@@ -29,6 +29,7 @@ import { toast } from "@/stores/useToastStore";
 import type {
   OptimizationScore, SystemInfo, GpuStatus,
   FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry, Policy, ScoreSnapshot,
+  HardwareDiagnostics, HardwareSuggestion, GameLaunchedPayload,
 } from "@/types";
 
 // S4-05: Policy engine feature flag (mirrors Rust ENABLE_POLICY_ENGINE)
@@ -36,6 +37,9 @@ const ENABLE_POLICY_ENGINE = true;
 // S6: monitoring feature flags (mirror Rust)
 const ENABLE_SCORE_REGRESSION_WATCH = true;
 const ENABLE_THERMAL_AUTO_REDUCTION  = true;
+// S8: Sprint 8 feature flags
+const ENABLE_LAUNCH_MONITORING      = true;
+const ENABLE_HARDWARE_SUGGESTIONS   = true;
 
 // ── S6-01: Score sparkline ────────────────────────────────────────────────────
 
@@ -131,6 +135,10 @@ export function HomeHub() {
   const [regressionScore, setRegressionScore] = useState<number | null>(null);
   // S6-02
   const [thermalThrottled, setThermalThrottled] = useState(false);
+  // S8-01: game launch monitoring
+  const [gameLaunched, setGameLaunched] = useState<GameLaunchedPayload | null>(null);
+  // S8-04: hardware diagnostics
+  const [hwDiag, setHwDiag] = useState<HardwareDiagnostics | null>(null);
   const [firstLoad, setFirstLoad] = useState(true);
 
   const fetchAll = useCallback(async () => {
@@ -145,6 +153,9 @@ export function HomeHub() {
       invoke<string | null>("get_active_profile"),
       invoke<Policy[]>("list_policies"),
       invoke<ScoreSnapshot[]>("get_score_history"),
+      ENABLE_HARDWARE_SUGGESTIONS
+        ? invoke<HardwareDiagnostics>("get_hardware_diagnostics")
+        : Promise.reject("disabled"),
     ]);
     if (results[0].status === "fulfilled") setScore(results[0].value);
     if (results[1].status === "fulfilled") setSysInfo(results[1].value);
@@ -156,6 +167,7 @@ export function HomeHub() {
     if (results[7].status === "fulfilled") setActiveProfile(results[7].value);
     if (results[8].status === "fulfilled") setPolicies(results[8].value);
     if (results[9].status === "fulfilled") setScoreSnapshots(results[9].value);
+    if (results[10].status === "fulfilled") setHwDiag(results[10].value as HardwareDiagnostics);
     setFirstLoad(false);
   }, []);
 
@@ -182,6 +194,17 @@ export function HomeHub() {
     let unlisten: (() => void) | undefined;
     listen<boolean>("thermal_throttle_changed", (event) => {
       setThermalThrottled(event.payload);
+    }).then(fn => { unlisten = fn; });
+    return () => { unlisten?.(); };
+  }, []);
+
+  // S8-01: listen for game_launched events from watcher
+  useEffect(() => {
+    if (!ENABLE_LAUNCH_MONITORING) return;
+    let unlisten: (() => void) | undefined;
+    listen<GameLaunchedPayload>("game_launched", (event) => {
+      setGameLaunched(event.payload);
+      toast.info(`ゲーム起動検出: ${event.payload.game_name}`);
     }).then(fn => { unlisten = fn; });
     return () => { unlisten?.(); };
   }, []);
@@ -292,6 +315,32 @@ export function HomeHub() {
               ✕
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── S8-01: Game launched banner ──────────────────────────────── */}
+      {ENABLE_LAUNCH_MONITORING && gameLaunched && (
+        <div className="bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 bg-emerald-500/15 border border-emerald-500/25 rounded-lg shrink-0">
+              <Gamepad2 size={14} className="text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-emerald-300">ゲーム起動を検出しました</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">
+                <span className="text-emerald-300 font-medium">{gameLaunched.game_name}</span>
+                {" — プロファイルを自動適用しました"}
+                <span className="ml-2 text-muted-foreground/40">起動前スコア: {gameLaunched.score_before}</span>
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setGameLaunched(null)}
+            className="text-muted-foreground/40 hover:text-muted-foreground text-xs shrink-0"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -548,6 +597,106 @@ export function HomeHub() {
               >
                 管理 →
               </button>
+            </div>
+          </div>
+        </Widget>
+      )}
+
+      {/* ── S8-04: Hardware diagnostics card ─────────────────────────── */}
+      {ENABLE_HARDWARE_SUGGESTIONS && hwDiag && (
+        <Widget label="ハードウェア診断">
+          <div className="flex flex-col gap-3">
+            {/* Metric bars */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                    <Cpu size={9} /> CPU
+                  </span>
+                  <span className="text-[10px] tabular-nums font-semibold text-slate-200">
+                    {hwDiag.cpu_usage_percent.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                  <div className={cn("h-full rounded-full transition-all",
+                    hwDiag.cpu_usage_percent > 90 ? "bg-red-500" : hwDiag.cpu_usage_percent > 80 ? "bg-amber-500" : "bg-cyan-500"
+                  )} style={{ width: `${hwDiag.cpu_usage_percent}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                    <MemoryStick size={9} /> RAM
+                  </span>
+                  <span className="text-[10px] tabular-nums font-semibold text-slate-200">
+                    {hwDiag.memory_used_percent.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                  <div className={cn("h-full rounded-full transition-all",
+                    hwDiag.memory_used_percent > 90 ? "bg-red-500" : hwDiag.memory_used_percent > 80 ? "bg-amber-500" : "bg-emerald-500"
+                  )} style={{ width: `${hwDiag.memory_used_percent}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                    <MonitorCheck size={9} /> GPU
+                  </span>
+                  <span className={cn("text-[10px] tabular-nums font-semibold",
+                    hwDiag.gpu_temp_c != null && hwDiag.gpu_temp_c >= 90 ? "text-red-400"
+                    : hwDiag.gpu_temp_c != null && hwDiag.gpu_temp_c >= 83 ? "text-amber-400"
+                    : "text-slate-200"
+                  )}>
+                    {hwDiag.gpu_temp_c != null ? `${hwDiag.gpu_temp_c}°C` : "—"}
+                  </span>
+                </div>
+                <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                  <div className={cn("h-full rounded-full transition-all",
+                    hwDiag.gpu_temp_c != null && hwDiag.gpu_temp_c >= 90 ? "bg-red-500"
+                    : hwDiag.gpu_temp_c != null && hwDiag.gpu_temp_c >= 83 ? "bg-amber-500"
+                    : "bg-violet-500"
+                  )} style={{ width: hwDiag.gpu_temp_c != null ? `${Math.min(100, (hwDiag.gpu_temp_c / 100) * 100)}%` : "0%" }} />
+                </div>
+              </div>
+            </div>
+            {/* Suggestions */}
+            <div className="space-y-1.5">
+              {hwDiag.suggestions.map((s: HardwareSuggestion) => (
+                <div key={s.id} className={cn(
+                  "flex items-start gap-2.5 px-3 py-2 rounded-lg border text-xs",
+                  s.severity === "critical" && "bg-red-500/8 border-red-500/20",
+                  s.severity === "warning"  && "bg-amber-500/8 border-amber-500/15",
+                  s.severity === "info"     && "bg-white/[0.02] border-white/[0.06]",
+                )}>
+                  <Stethoscope size={11} className={cn(
+                    "shrink-0 mt-0.5",
+                    s.severity === "critical" ? "text-red-400" : s.severity === "warning" ? "text-amber-400" : "text-cyan-400/60"
+                  )} />
+                  <div className="flex-1 min-w-0">
+                    <p className={cn("font-medium",
+                      s.severity === "critical" ? "text-red-300" : s.severity === "warning" ? "text-amber-300" : "text-slate-300"
+                    )}>{s.title}</p>
+                    <p className="text-muted-foreground/50 text-[10px] mt-0.5 leading-relaxed">{s.detail}</p>
+                  </div>
+                  {s.action && (
+                    <button
+                      type="button"
+                      onClick={() => setActivePage(
+                        s.action === "プロセス管理" ? "process"
+                        : s.action === "ブロートウェア終了" ? "process"
+                        : s.action === "メモリクリーン" ? "process"
+                        : s.action === "GPU 電力制限" ? "hardware"
+                        : s.action === "電源プラン最適化" ? "optimize"
+                        : "optimize"
+                      )}
+                      className="text-[10px] text-cyan-400/70 hover:text-cyan-400 transition-colors shrink-0 whitespace-nowrap"
+                    >
+                      {s.action} →
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </Widget>

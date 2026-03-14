@@ -5,12 +5,14 @@ use winreg::RegKey;
 
 use crate::AppState;
 
-// ── Feature flags (S6) ────────────────────────────────────────────────────────
+// ── Feature flags ─────────────────────────────────────────────────────────────
 
 /// S6-01: スコア急落を検出してユーザーに通知する
 pub const ENABLE_SCORE_REGRESSION_WATCH: bool = true;
 /// S6-02: GPU 温度が高すぎる場合に自動で電力制限を下げる
 pub const ENABLE_THERMAL_AUTO_REDUCTION: bool = true;
+/// S8-01: ゲーム起動時にフル監視チェーン（T0テレメトリ + game_launched イベント）を実行する
+pub const ENABLE_LAUNCH_MONITORING: bool = true;
 
 // ── Regression / Thermal constants ────────────────────────────────────────────
 
@@ -566,27 +568,65 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                                 "ゲーム起動を検知してプロファイルを適用",
                                 "success",
                             );
-                            // Save score snapshot and record game start
+                            // S8-01: Save score snapshot, record game start, capture T0 telemetry
                             let profile_id = profile.id.clone();
                             let profile_name = profile.name.clone();
-                            let session_id = tokio::task::spawn_blocking(move || {
+                            let launch_result = tokio::task::spawn_blocking(move || {
                                 let score = super::optimizer::compute_optimization_score();
                                 super::optimizer::save_score_snapshot_internal(&score);
-                                super::game_log::record_game_start(
+                                let sid = super::game_log::record_game_start(
                                     &profile_id,
                                     &profile_name,
                                     score.overall as u32,
-                                )
+                                );
+                                // T0 telemetry: baseline snapshot before optimization takes effect
+                                if ENABLE_LAUNCH_MONITORING && super::telemetry::ENABLE_TELEMETRY {
+                                    let mut sys2 = System::new();
+                                    sys2.refresh_memory();
+                                    let rec = super::telemetry::TelemetryRecord {
+                                        id: None,
+                                        session_id: sid.clone(),
+                                        phase: super::telemetry::TelemetryPhase::Before,
+                                        timestamp: super::now_iso8601(),
+                                        score_overall: score.overall,
+                                        score_process: score.process,
+                                        score_power: score.power,
+                                        score_windows: score.windows,
+                                        score_network: score.network,
+                                        memory_used_mb: (sys2.used_memory() / 1024 / 1024) as f64,
+                                        memory_percent: if sys2.total_memory() > 0 {
+                                            (sys2.used_memory() as f64 / sys2.total_memory() as f64) * 100.0
+                                        } else {
+                                            0.0
+                                        },
+                                        cpu_usage: 0.0,
+                                        process_count: 0,
+                                    };
+                                    super::telemetry::insert_record(&rec).ok();
+                                }
+                                (sid, score.overall)
                             })
                             .await
-                            .ok();
+                            .ok()
+                            .unwrap_or_else(|| (String::new(), 0));
 
-                            if let Some(sid) = session_id {
+                            let (session_id_str, score_before) = launch_result;
+
+                            if !session_id_str.is_empty() {
                                 state
                                     .0
                                     .lock()
                                     .unwrap_or_else(|p| p.into_inner())
-                                    .current_game_session_id = Some(sid);
+                                    .current_game_session_id = Some(session_id_str);
+                            }
+
+                            // S8-01: Emit detailed game_launched event for frontend banner
+                            if ENABLE_LAUNCH_MONITORING {
+                                handle.emit("game_launched", serde_json::json!({
+                                    "game_name": profile.name,
+                                    "profile_id": profile.id,
+                                    "score_before": score_before,
+                                })).ok();
                             }
                         }
                         Err(e) => eprintln!("[watcher] apply error: {e}"),

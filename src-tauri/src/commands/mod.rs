@@ -13,6 +13,7 @@ pub mod fps;
 pub mod game_integrity;
 pub mod game_log;
 pub mod hardware;
+pub mod hardware_suggestions;
 pub mod hotkeys;
 pub mod icons;
 pub mod memory_cleaner;

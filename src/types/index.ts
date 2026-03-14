@@ -836,6 +836,36 @@ export interface TelemetryRecord {
   process_count: number;
 }
 
+// ── S8: Hardware Diagnostics ──────────────────────────────────────────────────
+
+export interface HardwareSuggestion {
+  id: string;
+  category: string; // "cpu" | "gpu" | "memory" | "thermal" | "system"
+  title: string;
+  detail: string;
+  severity: string; // "info" | "warning" | "critical"
+  action: string | null;
+}
+
+export interface HardwareDiagnostics {
+  cpu_usage_percent: number;
+  memory_used_percent: number;
+  memory_used_mb: number;
+  memory_total_mb: number;
+  gpu_temp_c: number | null;
+  gpu_utilization_percent: number | null;
+  gpu_name: string | null;
+  suggestions: HardwareSuggestion[];
+}
+
+// ── S8: Game Launched Payload ─────────────────────────────────────────────────
+
+export interface GameLaunchedPayload {
+  game_name: string;
+  profile_id: string;
+  score_before: number;
+}
+
 // ── Profile Share ─────────────────────────────────────────────────────────────
 
 export interface SharedProfile {

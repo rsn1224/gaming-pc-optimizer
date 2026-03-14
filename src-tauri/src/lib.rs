@@ -4,11 +4,11 @@ pub use error::AppError;
 
 use commands::{
     ai, app_settings, audit_log, backup, bandwidth, benchmark, clipboard_opt, cpu_affinity,
-    crash_report, disk_health, event_log, fps, game_integrity, game_log, hardware, hotkeys, icons,
-    memory_cleaner, metrics, network, optimizer, optimizer_graph, osd, policy, power, presets,
-    process, profile_share, profiles, registry_opt, report, rollback, safety_kernel, scheduler,
-    self_improve, startup, steam, storage, system_info, telemetry, uninstaller, update_check,
-    updates, watcher, windows_settings,
+    crash_report, disk_health, event_log, fps, game_integrity, game_log, hardware,
+    hardware_suggestions, hotkeys, icons, memory_cleaner, metrics, network, optimizer,
+    optimizer_graph, osd, policy, power, presets, process, profile_share, profiles, registry_opt,
+    report, rollback, safety_kernel, scheduler, self_improve, startup, steam, storage, system_info,
+    telemetry, uninstaller, update_check, updates, watcher, windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -257,6 +257,8 @@ pub fn run() {
             startup::enable_startup_entry,
             // Hardware
             hardware::get_gpu_status,
+            // Hardware Suggestions (S8-03)
+            hardware_suggestions::get_hardware_diagnostics,
             hardware::set_gpu_power_limit,
             hardware::get_gpu_power_info,
             hardware::reset_gpu_power_limit,
