@@ -109,6 +109,11 @@ pub fn record_game_end(session_id: &str, score_after: u32, memory_freed_mb: f64)
     save_game_log(&sessions).ok();
 }
 
+/// セッション ID で1件取得するヘルパー（watcher / ai から使用）
+pub(crate) fn get_session_by_id(id: &str) -> Option<GameSession> {
+    load_game_log().into_iter().find(|s| s.id == id)
+}
+
 #[tauri::command]
 pub fn get_game_log() -> Vec<GameSession> {
     load_game_log()

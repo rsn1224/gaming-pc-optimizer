@@ -26,10 +26,11 @@ import { formatMemory } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
 import { toast } from "@/stores/useToastStore";
+import { PerformanceCoach } from "@/components/gamelog/PerformanceCoach";
 import type {
   OptimizationScore, SystemInfo, GpuStatus,
   FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry, Policy, ScoreSnapshot,
-  HardwareDiagnostics, HardwareSuggestion, GameLaunchedPayload,
+  HardwareDiagnostics, HardwareSuggestion, GameLaunchedPayload, SessionEndedPayload,
 } from "@/types";
 
 // S4-05: Policy engine feature flag (mirrors Rust ENABLE_POLICY_ENGINE)
@@ -40,6 +41,8 @@ const ENABLE_THERMAL_AUTO_REDUCTION  = true;
 // S8: Sprint 8 feature flags
 const ENABLE_LAUNCH_MONITORING      = true;
 const ENABLE_HARDWARE_SUGGESTIONS   = true;
+// S10: Sprint 10 feature flags
+const ENABLE_PERFORMANCE_COACH      = true;
 
 // ── S6-01: Score sparkline ────────────────────────────────────────────────────
 
@@ -139,6 +142,9 @@ export function HomeHub() {
   const [gameLaunched, setGameLaunched] = useState<GameLaunchedPayload | null>(null);
   // S8-04: hardware diagnostics
   const [hwDiag, setHwDiag] = useState<HardwareDiagnostics | null>(null);
+  // S10-03: session ended coaching
+  const [sessionEnded, setSessionEnded] = useState<SessionEndedPayload | null>(null);
+  const [showCoach, setShowCoach] = useState(false);
   const [firstLoad, setFirstLoad] = useState(true);
 
   const fetchAll = useCallback(async () => {
@@ -205,6 +211,18 @@ export function HomeHub() {
     listen<GameLaunchedPayload>("game_launched", (event) => {
       setGameLaunched(event.payload);
       toast.info(`ゲーム起動検出: ${event.payload.game_name}`);
+    }).then(fn => { unlisten = fn; });
+    return () => { unlisten?.(); };
+  }, []);
+
+  // S10-03: listen for session_ended events from watcher
+  useEffect(() => {
+    if (!ENABLE_PERFORMANCE_COACH) return;
+    let unlisten: (() => void) | undefined;
+    listen<SessionEndedPayload>("session_ended", (event) => {
+      setSessionEnded(event.payload);
+      setShowCoach(true);
+      toast.info(`セッション終了: ${event.payload.game_name} — コーチングレポートを生成中`);
     }).then(fn => { unlisten = fn; });
     return () => { unlisten?.(); };
   }, []);
@@ -341,6 +359,43 @@ export function HomeHub() {
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {/* ── S10-03: Session ended banner ─────────────────────────────── */}
+      {ENABLE_PERFORMANCE_COACH && sessionEnded && !showCoach && (
+        <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 bg-amber-500/15 border border-amber-500/25 rounded-lg shrink-0">
+              <Bot size={14} className="text-amber-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-300">セッション終了</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">
+                <span className="text-amber-300 font-medium">{sessionEnded.game_name}</span>
+                {sessionEnded.duration_minutes != null && (
+                  <span className="ml-1.5 text-muted-foreground/40">· {sessionEnded.duration_minutes}分</span>
+                )}
+                {" — AI コーチングレポートを確認できます"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowCoach(true)}
+              className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-xs font-semibold rounded-lg transition-colors"
+            >
+              コーチングを見る →
+            </button>
+            <button
+              type="button"
+              onClick={() => setSessionEnded(null)}
+              className="text-muted-foreground/40 hover:text-muted-foreground text-xs"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
@@ -727,6 +782,21 @@ export function HomeHub() {
       <div className="flex items-center justify-end pt-1 border-t border-white/[0.04]">
         <RollbackEntryPoint />
       </div>
+
+      {/* ── S10-03: Performance Coach modal ──────────────────────────── */}
+      {ENABLE_PERFORMANCE_COACH && showCoach && sessionEnded && (
+        <PerformanceCoach
+          sessionId={sessionEnded.session_id}
+          gameName={sessionEnded.game_name}
+          scoreBefore={sessionEnded.score_before}
+          scoreAfter={sessionEnded.score_after}
+          durationMinutes={sessionEnded.duration_minutes}
+          onClose={() => {
+            setShowCoach(false);
+            setSessionEnded(null);
+          }}
+        />
+      )}
 
     </div>
   );

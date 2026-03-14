@@ -681,6 +681,122 @@ pub async fn get_game_settings_advice(game_name: String) -> Result<GameSettingsA
     Ok(advice)
 }
 
+// ── S10-01: Performance Coach ─────────────────────────────────────────────────
+
+pub const ENABLE_PERFORMANCE_COACH: bool = true;
+
+/// セッション後のパフォーマンスコーチングレポート
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PerformanceCoachReport {
+    pub game_name: String,
+    pub score_before: u8,
+    pub score_after: u8,
+    pub score_delta: i16,
+    pub duration_minutes: Option<u32>,
+    /// 総括コメント（1〜2文）
+    pub summary: String,
+    /// 良かった点リスト
+    pub achievements: Vec<String>,
+    /// 改善できる点リスト
+    pub improvements: Vec<String>,
+    /// 次セッション前のヒント
+    pub next_tips: Vec<String>,
+    /// 総合評価 (1〜5)
+    pub rating: u8,
+}
+
+/// ゲームセッション後に AI がパフォーマンスを評価してコーチングレポートを生成する。
+#[tauri::command]
+pub async fn generate_performance_coaching(session_id: String) -> Result<PerformanceCoachReport, String> {
+    let api_key = load_api_key()?;
+
+    // Load session data
+    let session = super::game_log::get_session_by_id(&session_id)
+        .ok_or_else(|| format!("セッション {} が見つかりません", session_id))?;
+
+    // Load telemetry records (T0 before + T1/T2 after)
+    let records = super::telemetry::get_records_for_session(&session_id)
+        .unwrap_or_default();
+
+    let t0 = records.iter().find(|r| r.phase == super::telemetry::TelemetryPhase::Before);
+    let t_latest = records.iter().filter(|r| r.phase != super::telemetry::TelemetryPhase::Before).last();
+
+    let score_before = session.score_before.unwrap_or(0) as u8;
+    let score_after  = session.score_after.unwrap_or(score_before as u32) as u8;
+    let score_delta  = score_after as i16 - score_before as i16;
+    let duration_str = session.duration_minutes
+        .map(|m| format!("{}分", m))
+        .unwrap_or_else(|| "不明".to_string());
+
+    let tele_before = if let Some(r) = t0 {
+        format!("CPU {:.0}% / メモリ {:.0}% / スコア {}", r.cpu_usage, r.memory_percent, r.score_overall)
+    } else { "データなし".to_string() };
+
+    let tele_after = if let Some(r) = t_latest {
+        format!("CPU {:.0}% / メモリ {:.0}% / スコア {}", r.cpu_usage, r.memory_percent, r.score_overall)
+    } else { "データなし".to_string() };
+
+    let prompt = format!(r#"あなたは Windows ゲーミング PC の最適化コーチです。
+以下のゲームセッションデータを分析して、日本語でコーチングレポートを返してください。
+
+ゲーム: {game}
+プレイ時間: {duration}
+最適化スコア: {before} → {after} ({delta:+} pts)
+セッション開始時のシステム状態: {tele_before}
+セッション終了時のシステム状態: {tele_after}
+
+以下の JSON スキーマに厳密に従って返してください（マークダウン・説明不要）:
+{{
+  "summary": "セッション全体の総括（1〜2文、日本語）",
+  "achievements": ["良かった点1", "良かった点2"],
+  "improvements": ["改善できる点1", "改善できる点2"],
+  "next_tips": ["次回セッション前のヒント1", "次回セッション前のヒント2"],
+  "rating": 1から5の整数（5=非常に良い）
+}}
+
+判断基準:
+- スコア +10 以上 → achievements に最適化の効果を記載
+- スコアが低い（<60）→ improvements に具体的な改善提案
+- プレイ時間が長い（>120分）→ next_tips に休憩・サーマル管理を提案
+- CPU/メモリ使用率が高い → improvements にプロセス管理を提案"#,
+        game = session.game_name,
+        duration = duration_str,
+        before = score_before,
+        after = score_after,
+        delta = score_delta,
+        tele_before = tele_before,
+        tele_after = tele_after,
+    );
+
+    let raw = call_claude_api(&api_key, &prompt, 600).await?;
+    let json_str = extract_json_object(&raw);
+
+    #[derive(Deserialize)]
+    struct AiCoachResponse {
+        summary: String,
+        #[serde(default)] achievements: Vec<String>,
+        #[serde(default)] improvements: Vec<String>,
+        #[serde(default)] next_tips: Vec<String>,
+        rating: u8,
+    }
+
+    let ai: AiCoachResponse = serde_json::from_str(json_str)
+        .map_err(|e| format!("AI レスポンスの解析に失敗しました: {} (raw: {})", e, &raw[..raw.len().min(300)]))?;
+
+    Ok(PerformanceCoachReport {
+        game_name: session.game_name,
+        score_before,
+        score_after,
+        score_delta,
+        duration_minutes: session.duration_minutes,
+        summary: ai.summary,
+        achievements: ai.achievements,
+        improvements: ai.improvements,
+        next_tips: ai.next_tips,
+        rating: ai.rating.clamp(1, 5),
+    })
+}
+
 // ── S9-01: AI Profile Generator ───────────────────────────────────────────────
 
 pub const ENABLE_AI_PROFILE_GENERATOR: bool = true;

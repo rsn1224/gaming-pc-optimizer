@@ -13,6 +13,8 @@ pub const ENABLE_SCORE_REGRESSION_WATCH: bool = true;
 pub const ENABLE_THERMAL_AUTO_REDUCTION: bool = true;
 /// S8-01: ゲーム起動時にフル監視チェーン（T0テレメトリ + game_launched イベント）を実行する
 pub const ENABLE_LAUNCH_MONITORING: bool = true;
+/// S10-03: ゲームセッション終了時に session_ended イベントを発行してコーチングを提供する
+pub const ENABLE_PERFORMANCE_COACH: bool = true;
 
 // ── Regression / Thermal constants ────────────────────────────────────────────
 
@@ -492,6 +494,9 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                         // Record game end in performance log
                         if let Some(ref sid) = session_id_opt {
                             let sid_clone = sid.clone();
+                            let handle_clone = handle.clone();
+                            let game_name = state.0.lock().unwrap_or_else(|p| p.into_inner())
+                                .last_game_name.clone().unwrap_or_default();
                             tokio::task::spawn_blocking(move || {
                                 let score = super::optimizer::compute_optimization_score();
                                 super::game_log::record_game_end(
@@ -499,6 +504,17 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                                     score.overall as u32,
                                     0.0,
                                 );
+                                // S10-03: emit session_ended for PerformanceCoach
+                                if ENABLE_PERFORMANCE_COACH {
+                                    let session = super::game_log::get_session_by_id(&sid_clone);
+                                    handle_clone.emit("session_ended", serde_json::json!({
+                                        "session_id": sid_clone,
+                                        "game_name": game_name,
+                                        "score_before": session.as_ref().and_then(|s| s.score_before),
+                                        "score_after": score.overall,
+                                        "duration_minutes": session.as_ref().and_then(|s| s.duration_minutes),
+                                    })).ok();
+                                }
                             })
                             .await
                             .ok();
@@ -510,6 +526,7 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                     let mut w = state.0.lock().unwrap_or_else(|p| p.into_inner());
                     w.active_profile_id = None;
                     w.current_game_session_id = None;
+                    w.last_game_name = None;
                 }
                 handle
                     .emit("active_profile_changed", Option::<String>::None)
@@ -555,6 +572,10 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
 
                     match result {
                         Ok(_) => {
+                            // Store game name for session_ended coaching event
+                            state.0.lock().unwrap_or_else(|p| p.into_inner())
+                                .last_game_name = Some(profile.name.clone());
+
                             handle
                                 .emit("active_profile_changed", Some(profile.id.clone()))
                                 .ok();

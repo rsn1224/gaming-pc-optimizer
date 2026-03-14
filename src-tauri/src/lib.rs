@@ -29,6 +29,8 @@ pub struct WatcherState {
     // S6-02: thermal auto-reduction
     pub thermal_reduced: bool,
     pub thermal_original_limit_w: Option<u32>,
+    // S10-03: session ended coaching trigger
+    pub last_game_name: Option<String>,
 }
 
 pub struct AppState(pub std::sync::Mutex<WatcherState>);
@@ -49,6 +51,7 @@ pub fn run() {
             regression_notified_secs: 0,
             thermal_reduced: false,
             thermal_original_limit_w: None,
+            last_game_name: None,
         })))
         .setup(|app| {
             // ── System tray ────────────────────────────────────────────────
@@ -217,6 +220,8 @@ pub fn run() {
             ai::get_game_settings_advice,
             // S9-01: AI Profile Generator
             ai::generate_ai_profile,
+            // S10-01: Performance Coach
+            ai::generate_performance_coaching,
             // Self-improvement
             self_improve::export_self_improve_context,
             // Optimizer

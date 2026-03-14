@@ -866,6 +866,29 @@ export interface GameLaunchedPayload {
   score_before: number;
 }
 
+// ── S10: Performance Coach ────────────────────────────────────────────────────
+
+export interface PerformanceCoachReport {
+  game_name: string;
+  score_before: number;
+  score_after: number;
+  score_delta: number;
+  duration_minutes: number | null;
+  summary: string;
+  achievements: string[];
+  improvements: string[];
+  next_tips: string[];
+  rating: number; // 1–5
+}
+
+export interface SessionEndedPayload {
+  session_id: string;
+  game_name: string;
+  score_before: number | null;
+  score_after: number;
+  duration_minutes: number | null;
+}
+
 // ── Profile Share ─────────────────────────────────────────────────────────────
 
 export interface SharedProfile {
