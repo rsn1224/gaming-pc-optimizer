@@ -1,12 +1,12 @@
 /**
- * FrametimePanel — リアルタイム CPU/GPU パフォーマンスモニター
+ * FrametimePanel  Eリアルタイム CPU/GPU パフォーマンスモニター
  * (ENABLE_FRAMETIME_OVERLAY)
  *
- * 機能:
- *   - 60 サンプルのローリングウィンドウ（1s ごと）
- *   - CPU% + GPU% デュアルライン SVG チャート
- *   - 1% Low / 0.1% Low 相当の安定度指標
- *   - Tauri イベント `perf_snapshot` / `perf_stats` をリアルタイムで受信
+ * 機�E:
+ *   - 60 サンプルのローリングウィンドウ�E�Es ごと�E�E
+ *   - CPU% + GPU% チE��アルライン SVG チャーチE
+ *   - 1% Low / 0.1% Low 相当�E安定度持E��E
+ *   - Tauri イベンチE`perf_snapshot` / `perf_stats` をリアルタイムで受信
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
@@ -98,11 +98,11 @@ function PerfChart({ snapshots }: { snapshots: PerfSnapshot[] }) {
 
       {/* Legend */}
       <div className="absolute top-1 right-2 flex items-center gap-2.5 pointer-events-none">
-        <span className="flex items-center gap-1 text-[9px] text-cyan-400/70">
+        <span className="flex items-center gap-1 text-[10px] text-cyan-400/70">
           <span className="w-3 h-px bg-cyan-400 inline-block" /> CPU
         </span>
         {hasGpu && (
-          <span className="flex items-center gap-1 text-[9px] text-violet-400/70">
+          <span className="flex items-center gap-1 text-[10px] text-violet-400/70">
             <span className="w-3 h-px bg-violet-400 inline-block" /> GPU
           </span>
         )}
@@ -126,12 +126,12 @@ function StatBadge({
 }) {
   return (
     <div className="flex flex-col items-center gap-0.5 px-3 py-2 bg-white/[0.02] border border-white/[0.05] rounded-lg min-w-[64px]">
-      <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wide">
+      <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide">
         {label}
       </span>
       <span className={cn("text-[15px] font-bold tabular-nums leading-none", color)}>
         {typeof value === "number" ? value.toFixed(1) : value}
-        <span className="text-[9px] font-normal ml-0.5 text-muted-foreground/50">{unit}</span>
+        <span className="text-[10px] font-normal ml-0.5 text-muted-foreground/50">{unit}</span>
       </span>
     </div>
   );
@@ -241,7 +241,7 @@ export function FrametimePanel() {
         </span>
         <div className="ml-auto flex items-center gap-1.5">
           {running && (
-            <span className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
+            <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
               監視中
             </span>
@@ -250,7 +250,7 @@ export function FrametimePanel() {
             type="button"
             onClick={running ? handleStop : handleStart}
             disabled={starting}
-            aria-label={running ? "モニター停止" : "モニター開始"}
+            aria-label={running ? "モニター停止" : "モニター開姁E}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
               running
@@ -266,7 +266,7 @@ export function FrametimePanel() {
             ) : (
               <Play size={10} />
             )}
-            {running ? "停止" : "開始"}
+            {running ? "停止" : "開姁E}
           </button>
         </div>
       </div>
@@ -283,7 +283,7 @@ export function FrametimePanel() {
       ) : (
         <div className="flex items-center justify-center h-20 bg-[#080c10] border border-white/[0.05] rounded-xl">
           <p className="text-[11px] text-muted-foreground/30">
-            {running ? "データ収集中..." : "「開始」を押してモニタリングを開始"}
+            {running ? "チE�Eタ収集中..." : "「開始」を押してモニタリングを開姁E}
           </p>
         </div>
       )}
@@ -303,7 +303,7 @@ export function FrametimePanel() {
           )}
           {latest.gpuTempC > 0 && (
             <div className="flex flex-col items-center gap-0.5 px-3 py-2 bg-white/[0.02] border border-white/[0.05] rounded-lg min-w-[64px]">
-              <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wide flex items-center gap-0.5">
+              <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide flex items-center gap-0.5">
                 <Thermometer size={8} /> GPU温度
               </span>
               <span
@@ -317,18 +317,18 @@ export function FrametimePanel() {
                 )}
               >
                 {latest.gpuTempC}
-                <span className="text-[9px] font-normal ml-0.5 text-muted-foreground/50">°C</span>
+                <span className="text-[10px] font-normal ml-0.5 text-muted-foreground/50">°C</span>
               </span>
             </div>
           )}
           {latest.gpuVramTotalMb > 0 && (
             <div className="flex flex-col items-center gap-0.5 px-3 py-2 bg-white/[0.02] border border-white/[0.05] rounded-lg min-w-[64px]">
-              <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wide flex items-center gap-0.5">
+              <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide flex items-center gap-0.5">
                 <MemoryStick size={8} /> VRAM
               </span>
               <span className="text-[15px] font-bold tabular-nums leading-none text-violet-300">
                 {(latest.gpuVramUsedMb / 1024).toFixed(1)}
-                <span className="text-[9px] font-normal ml-0.5 text-muted-foreground/50">
+                <span className="text-[10px] font-normal ml-0.5 text-muted-foreground/50">
                   / {(latest.gpuVramTotalMb / 1024).toFixed(1)} GB
                 </span>
               </span>
@@ -341,16 +341,16 @@ export function FrametimePanel() {
       {stats && stats.sampleCount > 0 && (
         <div className="flex items-center gap-2 px-3 py-2 bg-white/[0.02] border border-white/[0.04] rounded-lg">
           <Cpu size={9} className="text-muted-foreground/30 shrink-0" />
-          <p className="text-[10px] text-muted-foreground/40 leading-relaxed">
-            {stats.sampleCount} サンプル &nbsp;·&nbsp; CPU 平均{" "}
+          <p className="text-[10px] text-muted-foreground/55 leading-relaxed">
+            {stats.sampleCount} サンプル &nbsp;·&nbsp; CPU 平坁E" "}
             <span className="text-cyan-400/70">{stats.avgCpu.toFixed(1)}%</span>
             {stats.gpuAvailable && (
               <>
-                &nbsp;·&nbsp; GPU 平均{" "}
+                &nbsp;·&nbsp; GPU 平坁E" "}
                 <span className="text-violet-400/70">{stats.avgGpu.toFixed(1)}%</span>
                 {stats.peakVramMb > 0 && (
                   <>
-                    &nbsp;·&nbsp; VRAM ピーク{" "}
+                    &nbsp;·&nbsp; VRAM ピ�Eク{" "}
                     <span className="text-violet-400/70">
                       {(stats.peakVramMb / 1024).toFixed(1)} GB
                     </span>
@@ -364,8 +364,8 @@ export function FrametimePanel() {
       )}
 
       {/* Info */}
-      <p className="text-[9px] text-muted-foreground/25 leading-relaxed px-0.5">
-        CPU は sysinfo で取得。GPU は nvidia-smi（NVIDIA のみ）。1秒ごとにサンプリングし、直近60秒を表示。
+      <p className="text-[10px] text-muted-foreground/25 leading-relaxed px-0.5">
+        CPU は sysinfo で取得、EPU は nvidia-smi�E�EVIDIA のみ�E�、E秒ごとにサンプリングし、直迁E0秒を表示、E
       </p>
     </div>
   );

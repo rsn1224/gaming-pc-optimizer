@@ -117,7 +117,7 @@ export function TournamentModal({ onClose }: TournamentModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}
     >
-      <div className="w-full max-w-md bg-[#05080c] border border-white/[0.08] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="w-full max-w-md bg-[#05080c] border border-white/[0.12] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
@@ -129,7 +129,7 @@ export function TournamentModal({ onClose }: TournamentModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+            className="text-muted-foreground/55 hover:text-muted-foreground transition-colors"
           >
             <X size={16} />
           </button>
@@ -149,7 +149,7 @@ export function TournamentModal({ onClose }: TournamentModalProps) {
               <button
                 type="button"
                 onClick={runCheck}
-                className="flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-lg border border-white/[0.08] text-muted-foreground hover:text-white hover:bg-white/[0.05] transition-colors"
+                className="flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-lg border border-white/[0.12] text-muted-foreground hover:text-white hover:bg-white/[0.05] transition-colors"
               >
                 <RefreshCw size={11} /> 再試行
               </button>
@@ -174,7 +174,7 @@ export function TournamentModal({ onClose }: TournamentModalProps) {
 
               {/* Timestamp + re-run */}
               <div className="flex items-center justify-between pt-1">
-                <span className="text-[10px] text-muted-foreground/40">
+                <span className="text-[10px] text-muted-foreground/55">
                   {result.checkedAt.replace("T", " ").replace("Z", " UTC")}
                 </span>
                 <button
@@ -195,7 +195,7 @@ export function TournamentModal({ onClose }: TournamentModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 text-[12px] rounded-lg border border-white/[0.08] text-muted-foreground hover:text-white hover:bg-white/[0.05] transition-colors"
+            className="px-4 py-1.5 text-[12px] rounded-lg border border-white/[0.12] text-muted-foreground hover:text-white hover:bg-white/[0.05] transition-colors"
           >
             閉じる
           </button>

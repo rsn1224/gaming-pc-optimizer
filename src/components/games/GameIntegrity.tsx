@@ -99,7 +99,7 @@ export function GameIntegrity() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="ゲーム名 / App IDで検索..."
-            className="w-full pl-9 pr-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-cyan-500/40 transition-colors"
+            className="w-full pl-9 pr-4 py-2 bg-white/[0.04] border border-white/[0.12] rounded-xl text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-cyan-500/40 transition-colors"
           />
         </div>
       </div>

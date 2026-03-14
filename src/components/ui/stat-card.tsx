@@ -14,7 +14,7 @@ export function StatCard({ label, value, unit = "%", subtitle, icon, className }
   return (
     <div
       className={cn(
-        "bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden flex flex-col card-glow",
+        "bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden flex flex-col card-glow",
         className
       )}
     >

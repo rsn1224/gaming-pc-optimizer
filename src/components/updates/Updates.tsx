@@ -326,11 +326,11 @@ export function Updates() {
             <span>wingetでスキャン中…</span>
           </div>
         ) : appUpdates.length === 0 ? (
-          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl px-4 py-8 text-center text-sm text-muted-foreground">
+          <div className="bg-[#05080c] border border-white/[0.12] rounded-xl px-4 py-8 text-center text-sm text-muted-foreground">
             利用可能なアップデートはありません
           </div>
         ) : (
-          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden">
+          <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-white/[0.03] border-b border-white/[0.06]">
                 <tr>
@@ -382,7 +382,7 @@ export function Updates() {
                       <td className="px-3 py-3 hidden sm:table-cell">
                         <div className="flex items-center gap-1">
                           <span className="text-muted-foreground/70 text-xs">{update.current_version}</span>
-                          <ChevronRight size={10} className="text-muted-foreground/40" />
+                          <ChevronRight size={10} className="text-muted-foreground/55" />
                           <span className="text-emerald-400 font-semibold text-xs">{update.available_version}</span>
                         </div>
                       </td>
@@ -391,7 +391,7 @@ export function Updates() {
                           {prio ? (
                             <PriorityBadge priority={prio.priority} reason={prio.reason} confidence={prio.confidence ?? 0} />
                           ) : (
-                            <span className="text-xs text-muted-foreground/40">—</span>
+                            <span className="text-xs text-muted-foreground/55">—</span>
                           )}
                         </td>
                       )}
@@ -405,7 +405,7 @@ export function Updates() {
 
         {/* Upgrade log */}
         {upgradeLog && (
-          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl p-3 font-mono text-xs space-y-0.5 max-h-40 overflow-y-auto">
+          <div className="bg-[#05080c] border border-white/[0.12] rounded-xl p-3 font-mono text-xs space-y-0.5 max-h-40 overflow-y-auto">
             {upgradeLog.map((line, i) => (
               <p
                 key={i}
@@ -424,7 +424,7 @@ export function Updates() {
           <Cpu size={14} className="text-cyan-400" />
           インストール済みドライバー
           {drivers.length > 0 && (
-            <span className="text-[10px] bg-white/5 text-muted-foreground border border-white/[0.08] rounded-full px-2 py-0.5">
+            <span className="text-[10px] bg-white/5 text-muted-foreground border border-white/[0.12] rounded-full px-2 py-0.5">
               {drivers.length}件
             </span>
           )}
@@ -436,11 +436,11 @@ export function Updates() {
             <span>ドライバー情報を取得中…</span>
           </div>
         ) : drivers.length === 0 ? (
-          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl px-4 py-6 text-center text-sm text-muted-foreground">
+          <div className="bg-[#05080c] border border-white/[0.12] rounded-xl px-4 py-6 text-center text-sm text-muted-foreground">
             ドライバー情報を取得できませんでした
           </div>
         ) : (
-          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden">
+          <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-white/[0.03] border-b border-white/[0.06]">
                 <tr>
@@ -483,7 +483,7 @@ export function Updates() {
       </section>
 
       {/* Windows Update link */}
-      <div className="bg-[#05080c] border border-white/[0.08] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+      <div className="bg-[#05080c] border border-white/[0.12] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <AlertTriangle size={15} className="text-amber-400 shrink-0" />
           <div>

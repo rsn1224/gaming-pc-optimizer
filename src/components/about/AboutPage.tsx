@@ -137,7 +137,7 @@ export function AboutPage() {
           <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
             <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">{label}</p>
             <p className="text-lg font-bold text-foreground mt-0.5">{value}</p>
-            <p className="text-[10px] text-muted-foreground/40">{sub}</p>
+            <p className="text-[10px] text-muted-foreground/55">{sub}</p>
           </div>
         ))}
       </div>
@@ -179,7 +179,7 @@ export function AboutPage() {
             "Tailwind CSS 3", "Zustand 5", "Framer Motion",
             "rusqlite", "cron", "chrono", "sysinfo", "winreg",
           ].map(t => (
-            <span key={t} className="text-[10px] px-2 py-0.5 bg-white/[0.05] border border-white/[0.08] rounded-full text-muted-foreground/70">
+            <span key={t} className="text-[10px] px-2 py-0.5 bg-white/[0.05] border border-white/[0.12] rounded-full text-muted-foreground/70">
               {t}
             </span>
           ))}

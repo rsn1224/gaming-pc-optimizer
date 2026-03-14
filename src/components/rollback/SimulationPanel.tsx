@@ -77,7 +77,7 @@ export function SimulationPanel() {
           <button
             type="button"
             onClick={handleCancel}
-            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-slate-300 hover:bg-white/[0.06] transition-colors"
+            className="p-1.5 rounded-lg text-muted-foreground/55 hover:text-slate-300 hover:bg-white/[0.06] transition-colors"
           >
             <X size={16} />
           </button>
@@ -132,7 +132,7 @@ export function SimulationPanel() {
                     {c.target}
                   </span>
                   {!c.will_apply && (
-                    <span className="text-[10px] text-muted-foreground/40">
+                    <span className="text-[10px] text-muted-foreground/55">
                       既に最適化済み
                     </span>
                   )}
@@ -151,7 +151,7 @@ export function SimulationPanel() {
             type="button"
             onClick={handleCancel}
             disabled={executing}
-            className="flex-1 py-2.5 rounded-xl border border-white/[0.08] text-[13px] font-medium text-muted-foreground/70 hover:text-slate-200 hover:border-white/[0.15] transition-colors disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-xl border border-white/[0.12] text-[13px] font-medium text-muted-foreground/70 hover:text-slate-200 hover:border-white/[0.15] transition-colors disabled:opacity-40"
           >
             キャンセル
           </button>

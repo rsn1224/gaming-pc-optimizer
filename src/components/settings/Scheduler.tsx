@@ -183,7 +183,7 @@ export function Scheduler() {
                 aria-label="実行時刻"
                 value={config.time}
                 onChange={(e) => set("time", e.target.value)}
-                className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/40 w-36"
+                className="bg-white/[0.04] border border-white/[0.12] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/40 w-36"
               />
             </div>
           )}

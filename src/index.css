@@ -5,7 +5,7 @@
 @layer base {
   /* ── Gaming Dark theme (default) ── */
   :root {
-    --background: 222 47% 3%;       /* #05070b near-black */
+    --background: 222 47% 5%;       /* #0d1117 slightly lighter near-black */
     --foreground: 210 40% 96%;
     --card: 220 50% 4%;             /* #05080c panel bg */
     --card-foreground: 210 40% 96%;
@@ -79,13 +79,13 @@
 
 /* ── Gaming glow utilities ── */
 .glow-cyan {
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.4), 0 0 0 1px rgba(34, 211, 238, 0.3);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.25), 0 0 0 1px rgba(34, 211, 238, 0.2);
 }
 .glow-green {
-  box-shadow: 0 0 24px rgba(34, 197, 94, 0.4), 0 0 0 1px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.25), 0 0 0 1px rgba(34, 197, 94, 0.2);
 }
 .glow-red {
-  box-shadow: 0 0 18px rgba(248, 113, 113, 0.3);
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.2);
 }
 
 /* ── Card hover glow ── */
@@ -126,20 +126,6 @@
   );
 }
 
-/* ── Subtle scanline texture overlay ── */
-.scanlines::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-  pointer-events: none;
-}
 
 /* ── Gaming gradient border ── */
 .border-glow-cyan {
@@ -223,7 +209,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.3);
   flex-shrink: 0;

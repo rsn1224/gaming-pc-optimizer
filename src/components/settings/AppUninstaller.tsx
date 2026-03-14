@@ -106,7 +106,7 @@ export function AppUninstaller() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="アプリ名・発行元で検索..."
-            className="w-full pl-9 pr-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-cyan-500/40 transition-colors"
+            className="w-full pl-9 pr-4 py-2 bg-white/[0.04] border border-white/[0.12] rounded-xl text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-cyan-500/40 transition-colors"
           />
         </div>
 
@@ -194,7 +194,7 @@ export function AppUninstaller() {
                         {app.display_name}
                       </span>
                       {app.is_system && (
-                        <span className="text-[10px] bg-white/[0.06] text-muted-foreground border border-white/[0.08] px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] bg-white/[0.06] text-muted-foreground border border-white/[0.12] px-1.5 py-0.5 rounded">
                           システム
                         </span>
                       )}
@@ -253,7 +253,7 @@ export function AppUninstaller() {
                     className={cn(
                       "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all",
                       app.is_system
-                        ? "bg-white/[0.03] border border-white/[0.06] text-muted-foreground/40 cursor-not-allowed"
+                        ? "bg-white/[0.03] border border-white/[0.06] text-muted-foreground/55 cursor-not-allowed"
                         : "bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 text-red-400 hover:text-red-300"
                     )}
                   >
@@ -283,7 +283,7 @@ export function AppUninstaller() {
               <button
                 type="button"
                 onClick={() => setConfirmApp(null)}
-                className="flex-1 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] rounded-xl text-sm text-muted-foreground hover:text-white transition-all"
+                className="flex-1 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.12] rounded-xl text-sm text-muted-foreground hover:text-white transition-all"
               >
                 キャンセル
               </button>

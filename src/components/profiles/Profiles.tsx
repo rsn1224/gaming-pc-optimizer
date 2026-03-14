@@ -35,7 +35,7 @@ function ChangeRow({ change }: { change: PreviewChange }) {
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-slate-200 truncate">{change.description || change.target}</p>
         <p className="text-[11px] text-muted-foreground/50 mt-0.5">
-          <span className="text-muted-foreground/40">{fmtVal(change.current_value)}</span>
+          <span className="text-muted-foreground/55">{fmtVal(change.current_value)}</span>
           {" → "}
           <span className="text-cyan-300/70">{fmtVal(change.new_value)}</span>
         </p>
@@ -85,7 +85,7 @@ function ApplyPreviewModal({ profileName, sim, applying, onConfirm, onCancel }: 
             <ChangeRow key={i} change={c} />
           ))}
           {sim.changes.filter((c) => c.will_apply).length === 0 && (
-            <p className="text-sm text-muted-foreground/40 text-center py-10">適用される変更はありません</p>
+            <p className="text-sm text-muted-foreground/55 text-center py-10">適用される変更はありません</p>
           )}
         </div>
 
@@ -397,7 +397,7 @@ function ProfileCard({ profile, onEdit, onDelete, onApply, applying, isActive }:
     <div className={`bg-[#05080c] border rounded-xl p-4 flex flex-col gap-3 transition-all ${
       isActive
         ? "border-cyan-500/50 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]"
-        : "border-white/[0.08] hover:border-cyan-500/30 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.15)]"
+        : "border-white/[0.12] hover:border-cyan-500/30 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.15)]"
     }`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -443,7 +443,7 @@ function ProfileCard({ profile, onEdit, onDelete, onApply, applying, isActive }:
       {profile.tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {profile.tags.map((t) => (
-            <span key={t} className="inline-flex items-center gap-1 text-[10px] bg-white/5 border border-white/[0.08] rounded-full px-2 py-0.5 text-muted-foreground">
+            <span key={t} className="inline-flex items-center gap-1 text-[10px] bg-white/5 border border-white/[0.12] rounded-full px-2 py-0.5 text-muted-foreground">
               <Tag size={9} />
               {t}
             </span>

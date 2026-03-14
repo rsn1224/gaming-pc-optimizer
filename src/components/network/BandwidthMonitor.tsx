@@ -191,7 +191,7 @@ export function BandwidthMonitor() {
           {/* Download */}
           <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5">
             <p className="text-[11px] text-muted-foreground/60 mb-1 uppercase tracking-wider">↓ ダウンロード</p>
-            <p className={cn("text-2xl font-bold tabular-nums", dlKbps > 0 ? "text-cyan-400" : "text-muted-foreground/40")}>
+            <p className={cn("text-2xl font-bold tabular-nums", dlKbps > 0 ? "text-cyan-400" : "text-muted-foreground/55")}>
               {dlKbps > 0 ? formatKbps(dlKbps) : "—"}
             </p>
             <p className="text-xs text-muted-foreground/50 mt-1">ピーク: {peakDl > 0 ? formatKbps(peakDl) : "—"}</p>
@@ -200,7 +200,7 @@ export function BandwidthMonitor() {
           {/* Upload */}
           <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5">
             <p className="text-[11px] text-muted-foreground/60 mb-1 uppercase tracking-wider">↑ アップロード</p>
-            <p className={cn("text-2xl font-bold tabular-nums", ulKbps > 0 ? "text-emerald-400" : "text-muted-foreground/40")}>
+            <p className={cn("text-2xl font-bold tabular-nums", ulKbps > 0 ? "text-emerald-400" : "text-muted-foreground/55")}>
               {ulKbps > 0 ? formatKbps(ulKbps) : "—"}
             </p>
             <p className="text-xs text-muted-foreground/50 mt-1">ピーク: {peakUl > 0 ? formatKbps(peakUl) : "—"}</p>
@@ -213,7 +213,7 @@ export function BandwidthMonitor() {
             帯域幅履歴グラフ
           </p>
           {history.length < 2 ? (
-            <div className="flex items-center justify-center h-32 text-muted-foreground/40 text-sm">
+            <div className="flex items-center justify-center h-32 text-muted-foreground/55 text-sm">
               {running ? "データを収集中…" : "「開始」を押してモニタリングを開始してください"}
             </div>
           ) : (

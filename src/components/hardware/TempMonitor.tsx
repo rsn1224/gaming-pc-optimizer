@@ -58,7 +58,7 @@ function TempValue({ label, temp, unit = "°C" }: { label: string; temp: number;
     temp >= 80 ? "text-red-400" : temp >= 60 ? "text-amber-400" : "text-emerald-400";
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className={cn("text-2xl font-bold tabular-nums", temp > 0 ? color : "text-muted-foreground/40")}>
+      <span className={cn("text-2xl font-bold tabular-nums", temp > 0 ? color : "text-muted-foreground/55")}>
         {temp > 0 ? temp.toFixed(1) : "—"}
         {temp > 0 && <span className="text-sm font-normal ml-0.5">{unit}</span>}
       </span>
@@ -198,7 +198,7 @@ export function TempMonitor() {
             温度履歴グラフ
           </p>
           {history.length < 2 ? (
-            <div className="flex items-center justify-center h-32 text-muted-foreground/40 text-sm">
+            <div className="flex items-center justify-center h-32 text-muted-foreground/55 text-sm">
               {running ? "データを収集中…" : "「開始」を押してモニタリングを開始してください"}
             </div>
           ) : (

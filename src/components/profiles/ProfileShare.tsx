@@ -131,7 +131,7 @@ export function ProfileShare() {
                     type="button"
                     onClick={() => handleExport(profile)}
                     disabled={exportingId === profile.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] border border-white/[0.12] text-white/70 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50"
                   >
                     <Download size={12} />
                     {exportingId === profile.id ? "処理中..." : "エクスポート"}
@@ -159,7 +159,7 @@ export function ProfileShare() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={importing}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/[0.04] border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/[0.04] border border-white/[0.12] text-white/70 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50"
           >
             <Upload size={14} />
             {importing ? "インポート中..." : "JSONファイルを選択"}

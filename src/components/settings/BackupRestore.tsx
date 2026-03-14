@@ -66,7 +66,7 @@ function ExportCard() {
       </p>
 
       {lastExportedAt && (
-        <p className="text-[11px] text-muted-foreground/40">
+        <p className="text-[11px] text-muted-foreground/55">
           最終エクスポート: {lastExportedAt}
         </p>
       )}
@@ -142,7 +142,7 @@ function ImportCard() {
           htmlFor="backup-file-input"
           className={`flex items-center justify-center gap-2 px-4 py-2.5 border border-dashed rounded-xl text-sm font-medium cursor-pointer transition-colors ${
             importing
-              ? "border-white/[0.06] text-muted-foreground/40 cursor-not-allowed"
+              ? "border-white/[0.06] text-muted-foreground/55 cursor-not-allowed"
               : "border-white/[0.15] text-muted-foreground hover:border-emerald-500/40 hover:text-emerald-400 hover:bg-emerald-500/[0.05]"
           }`}
         >

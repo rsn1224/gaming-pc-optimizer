@@ -42,13 +42,13 @@ import { RiskSummary } from "@/components/ui/RiskSummary";
 import type { ActivePage } from "@/types";
 
 // ── [Phase D] HomeHub feature flag ────────────────────────────────────────────
-// Set to `true` to activate the HomeHub 司令塔 as the "home" page.
-// Default: false — DashboardV2 is used as fallback.
+// Set to `true` to activate the HomeHub 司令塁Eas the "home" page.
+// Default: false  EDashboardV2 is used as fallback.
 const ENABLE_HOME_HUB = true;
 
 // ── Synergy #3: Score Regression Watcher ──────────────────────────────────────
-// Feature flag — set to `true` to enable background score monitoring.
-// Default: false — no polling, no UI changes.
+// Feature flag  Eset to `true` to enable background score monitoring.
+// Default: false  Eno polling, no UI changes.
 const ENABLE_SCORE_REGRESSION_WATCH = false;
 
 /** Score drop ≥ this many points triggers the regression alert */
@@ -66,7 +66,7 @@ function ScoreRegressionWatcher() {
     try {
       const score = await invoke<OptimizationScore>("get_optimization_score");
       if (baselineRef.current === null) {
-        // First poll — set baseline, no alert
+        // First poll  Eset baseline, no alert
         baselineRef.current = score.overall;
         setBaseline(score.overall);
         return;
@@ -76,7 +76,7 @@ function ScoreRegressionWatcher() {
         setAlert({ current: score.overall, delta: Math.round(drop) });
       }
     } catch {
-      // silent — don't spam toasts from background polling
+      // silent  Edon't spam toasts from background polling
     }
   }, []);
 
@@ -90,7 +90,7 @@ function ScoreRegressionWatcher() {
     setReoptimizing(true);
     try {
       await invoke("apply_preset", { preset: "esports" });
-      toast.success("再最適化が完了しました");
+      toast.success("再最適化が完亁E��ました");
       setAlert(null);
       // Refresh baseline after reoptimize
       const fresh = await invoke<OptimizationScore>("get_optimization_score");
@@ -120,13 +120,13 @@ function ScoreRegressionWatcher() {
             <TrendingDown size={13} className="text-amber-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-300">スコアが低下しています</p>
+            <p className="text-sm font-semibold text-amber-300">スコアが低下してぁE��ぁE/p>
             <p className="text-xs text-muted-foreground/70 mt-0.5">
-              ベースライン: <span className="text-white tabular-nums">{baseline?.toFixed(0)}</span>
-              {" → "}現在: <span className="text-amber-300 tabular-nums">{alert.current.toFixed(0)}</span>
-              {" （"}
+              ベ�Eスライン: <span className="text-white tabular-nums">{baseline?.toFixed(0)}</span>
+              {" ↁE"}現在: <span className="text-amber-300 tabular-nums">{alert.current.toFixed(0)}</span>
+              {" �E�E}
               <span className="text-red-400 tabular-nums">−{alert.delta}</span>
-              {" ポイント）"}
+              {" ポイント！E}
             </p>
             <div className="flex items-center gap-2 mt-2.5">
               <button
@@ -136,7 +136,7 @@ function ScoreRegressionWatcher() {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 rounded-lg hover:brightness-110 disabled:opacity-50 transition-all active:scale-[0.97]"
               >
                 {reoptimizing ? <Loader2 size={11} className="animate-spin" /> : null}
-                {reoptimizing ? "最適化中..." : "Esports プリセットで再最適化"}
+                {reoptimizing ? "最適化中..." : "Esports プリセチE��で再最適匁E}
               </button>
               <button
                 type="button"
@@ -144,7 +144,7 @@ function ScoreRegressionWatcher() {
                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground/60 hover:text-white border border-white/[0.07] hover:border-white/20 rounded-lg transition-colors"
               >
                 <X size={11} />
-                閉じる
+                閉じめE
               </button>
             </div>
           </div>
@@ -155,13 +155,13 @@ function ScoreRegressionWatcher() {
 }
 
 // ── Synergy #5: Thermal Watcher ───────────────────────────────────────────────
-// Feature flag — set to `true` to enable background GPU temperature monitoring.
-// Default: false — no polling, no UI changes.
+// Feature flag  Eset to `true` to enable background GPU temperature monitoring.
+// Default: false  Eno polling, no UI changes.
 const ENABLE_THERMAL_AUTO_REDUCTION = false;
 
 /** GPU temp (°C) above which a warning is issued */
 const THERMAL_DANGER_TEMP = 85;
-/** Number of consecutive danger readings before showing the alert (~N × POLL_MS ms) */
+/** Number of consecutive danger readings before showing the alert (~N ÁEPOLL_MS ms) */
 const THERMAL_SUSTAINED_COUNT = 3;
 /** Polling interval (ms) */
 const THERMAL_POLL_MS = 2000;
@@ -187,12 +187,12 @@ function ThermalWatcher() {
           setAlert({ gpuTemp: temp });
         }
       } else {
-        // Temperature returned to safe zone — reset counter and clear alert
+        // Temperature returned to safe zone  Ereset counter and clear alert
         dangerCount.current = 0;
         setAlert(null);
       }
     } catch {
-      // silent — GPU may not be NVIDIA or sensor unavailable
+      // silent  EGPU may not be NVIDIA or sensor unavailable
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snoozedUntil]);
@@ -208,12 +208,12 @@ function ThermalWatcher() {
       const info = await invoke<GpuPowerLimit>("get_gpu_power_info");
       const target = Math.max(info.min_w, Math.round(info.default_w * 0.8));
       await invoke("set_gpu_power_limit", { gpuIndex: 0, watts: target });
-      toast.success(`GPU電力制限を ${target}W（デフォルトの80%）に引き下げました`);
+      toast.success(`GPU電力制限を ${target}W�E�デフォルト�E80%�E�に引き下げました`);
       setAlert(null);
       dangerCount.current = 0;
       setSnoozedUntil(Date.now() + THERMAL_SNOOZE_MS);
     } catch (e) {
-      toast.error("GPU電力制限の変更に失敗しました: " + String(e));
+      toast.error("GPU電力制限�E変更に失敗しました: " + String(e));
     } finally {
       setReducing(false);
     }
@@ -236,9 +236,9 @@ function ThermalWatcher() {
             <Thermometer size={13} className="text-red-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-red-300">GPU過熱を検出</p>
+            <p className="text-sm font-semibold text-red-300">GPU過�Eを検�E</p>
             <p className="text-xs text-muted-foreground/70 mt-0.5">
-              GPU温度が <span className="text-red-400 font-bold tabular-nums">{alert.gpuTemp.toFixed(0)}°C</span> を超えています（危険域 ≥{THERMAL_DANGER_TEMP}°C）
+              GPU温度ぁE<span className="text-red-400 font-bold tabular-nums">{alert.gpuTemp.toFixed(0)}°C</span> を趁E��てぁE��す（危険埁E≥{THERMAL_DANGER_TEMP}°C�E�E
             </p>
             <div className="flex items-center gap-2 mt-2.5">
               <button
@@ -248,7 +248,7 @@ function ThermalWatcher() {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-red-500 to-amber-500 text-white rounded-lg hover:brightness-110 disabled:opacity-50 transition-all active:scale-[0.97]"
               >
                 {reducing ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
-                {reducing ? "設定中..." : "GPU電力を80%に下げる"}
+                {reducing ? "設定中..." : "GPU電力を80%に下げめE}
               </button>
               <button
                 type="button"
@@ -256,7 +256,7 @@ function ThermalWatcher() {
                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground/60 hover:text-white border border-white/[0.07] hover:border-white/20 rounded-lg transition-colors"
               >
                 <X size={11} />
-                10分無視
+                10刁E��要E
               </button>
             </div>
           </div>
@@ -267,8 +267,8 @@ function ThermalWatcher() {
 }
 
 // ── Phase 2F: Global Rollback Header ─────────────────────────────────────────
-// Feature flag — set to `true` to show a persistent rollback/result/risk strip
-// at the top of every screen. Default: false — no visible change.
+// Feature flag  Eset to `true` to show a persistent rollback/result/risk strip
+// at the top of every screen. Default: false  Eno visible change.
 const ENABLE_GLOBAL_ROLLBACK_HEADER = false;
 
 function GlobalRollbackHeader() {
@@ -321,13 +321,13 @@ function GlobalRollbackHeader() {
           <Activity size={12} />
           <span>
             {latestSession
-              ? `最終: ${latestSession.changes.length}件 · ${latestSession.status}`
-              : "最終: なし"}
+              ? `最絁E ${latestSession.changes.length}件 · ${latestSession.status}`
+              : "最絁E なぁE}
           </span>
         </button>
         {showLastResult && latestSession && (
           <div className="absolute top-full left-0 mt-1 z-50 w-60 bg-popover border border-border rounded-md shadow-xl p-3 text-xs pointer-events-none">
-            <p className="font-semibold text-foreground mb-1">最終最適化セッション</p>
+            <p className="font-semibold text-foreground mb-1">最終最適化セチE��ョン</p>
             <p className="text-muted-foreground/70">{new Date(latestSession.started_at).toLocaleString("ja-JP")}</p>
             <p className="mt-1.5">変更数: <span className="text-foreground tabular-nums">{latestSession.changes.length}</span></p>
             <div className="mt-1">
@@ -335,7 +335,7 @@ function GlobalRollbackHeader() {
                 safe={latestSession.changes.filter((c) => c.risk_level === "safe").length}
                 caution={latestSession.changes.filter((c) => c.risk_level === "caution").length}
                 advanced={latestSession.changes.filter((c) => c.risk_level === "advanced").length}
-                emptyLabel="変更なし"
+                emptyLabel="変更なぁE
               />
             </div>
           </div>
@@ -353,7 +353,7 @@ function GlobalRollbackHeader() {
           className="flex items-center gap-1.5 hover:text-white transition-colors"
         >
           <Shield size={12} />
-          <span>リスク凡例</span>
+          <span>リスク凡侁E/span>
         </button>
         {showRiskLegend && (
           <div className="absolute top-full left-0 mt-1 z-50 w-52 bg-popover border border-border rounded-md shadow-xl p-3 text-xs pointer-events-none">
@@ -361,15 +361,15 @@ function GlobalRollbackHeader() {
             <div className="flex flex-col gap-1.5 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
-                <span><span className="text-green-400 font-medium">safe</span> — 安全・影響小</span>
+                <span><span className="text-green-400 font-medium">safe</span>  E安�E・影響封E/span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                <span><span className="text-amber-400 font-medium">caution</span> — 要注意・要再起動</span>
+                <span><span className="text-amber-400 font-medium">caution</span>  E要注意�E要�E起勁E/span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
-                <span><span className="text-red-400 font-medium">advanced</span> — 高度・慎重に</span>
+                <span><span className="text-red-400 font-medium">advanced</span>  E高度・慎重に</span>
               </div>
             </div>
           </div>
@@ -387,13 +387,13 @@ type NavEntry =
 
 const NAV_ITEMS: NavEntry[] = [
   { type: "section", label: "メイン" },
-  { id: "home",        icon: <LayoutDashboard size={17} />, label: "ホーム" },       // [Phase D] 司令塔（dashboard/dashboardv2 吸収）
+  { id: "home",        icon: <LayoutDashboard size={17} />, label: "ホ�Eム" },       // [Phase D] 司令塔！Eashboard/dashboardv2 吸収！E
 
-  { type: "section", label: "最適化" },
-  { id: "optimize",   icon: <Gamepad2 size={17} />,         label: "最適化" },      // [Phase D] gamemode 吸収
-  { id: "presets",    icon: <SlidersHorizontal size={17} />, label: "プリセット" },
-  { id: "process",    icon: <Activity size={17} />,         label: "プロセス管理" },
-  { id: "windows",    icon: <Monitor size={17} />,          label: "Windows最適化" },
+  { type: "section", label: "最適匁E },
+  { id: "optimize",   icon: <Gamepad2 size={17} />,         label: "最適匁E },      // [Phase D] gamemode 吸叁E
+  { id: "presets",    icon: <SlidersHorizontal size={17} />, label: "プリセチE��" },
+  { id: "process",    icon: <Activity size={17} />,         label: "プロセス管琁E },
+  { id: "windows",    icon: <Monitor size={17} />,          label: "Windows最適匁E },
   { id: "storage",    icon: <HardDrive size={17} />,        label: "ストレージ" },
   { id: "network",    icon: <Wifi size={17} />,             label: "ネットワーク" },
 
@@ -404,34 +404,34 @@ const NAV_ITEMS: NavEntry[] = [
   { id: "advisor",    icon: <Lightbulb size={17} />,        label: "設定アドバイザー" },
   { id: "gameintegrity", icon: <FileSearch size={17} />,    label: "ファイル検証" },
 
-  { type: "section", label: "ハードウェア" },
-  { id: "hardware",   icon: <Cpu size={17} />,              label: "ハードウェア" },
-  { id: "benchmark",  icon: <Gauge size={17} />,            label: "ベンチマーク" },
+  { type: "section", label: "ハ�Eドウェア" },
+  { id: "hardware",   icon: <Cpu size={17} />,              label: "ハ�Eドウェア" },
+  { id: "benchmark",  icon: <Gauge size={17} />,            label: "ベンチ�Eーク" },
 
-  { type: "section", label: "管理" },                        // [Phase D] システム→管理
-  { id: "rollback",   icon: <ShieldCheck size={17} />,      label: "ロールバック" }, // [Phase D] 先頭に昇格
+  { type: "section", label: "管琁E },                        // [Phase D] シスチE��→管琁E
+  { id: "rollback",   icon: <ShieldCheck size={17} />,      label: "ロールバック" }, // [Phase D] 先頭に昁E��
   { id: "policies",   icon: <Bot size={17} />,              label: "ポリシーエンジン" }, // [Sprint 3]
-  { id: "graph",      icon: <GitGraph size={17} />,         label: "最適化グラフ" },       // [Sprint 5]
-  { id: "startup",    icon: <Rocket size={17} />,           label: "スタートアップ" },
+  { id: "graph",      icon: <GitGraph size={17} />,         label: "最適化グラチE },       // [Sprint 5]
+  { id: "startup",    icon: <Rocket size={17} />,           label: "スタートアチE�E" },
   { id: "scheduler",  icon: <Calendar size={17} />,         label: "スケジューラー" },
-  { id: "uninstaller", icon: <Trash2 size={17} />,          label: "アプリ管理" },
-  { id: "updates",    icon: <Shield size={17} />,           label: "アップデート" },
+  { id: "uninstaller", icon: <Trash2 size={17} />,          label: "アプリ管琁E },
+  { id: "updates",    icon: <Shield size={17} />,           label: "アチE�EチE�EチE },
 
-  { type: "section", label: "その他" },
+  { type: "section", label: "そ�E仁E },
   { id: "notifications", icon: <Bell size={17} />,          label: "通知センター" },
-  { id: "settings",   icon: <SettingsIcon size={17} />,     label: "設定" },
+  { id: "settings",   icon: <SettingsIcon size={17} />,     label: "設宁E },
   { id: "about",      icon: <Info size={17} />,             label: "About" },
 ];
 
 function PageContent({ page }: { page: ActivePage }) {
   switch (page) {
-    // ── [Phase C/D] 新規ページ（ENABLE_HOME_HUB で有効化）──────────────────
-    // flag OFF の間は既存コンポーネントにフォールバック
+    // ── [Phase C/D] 新規�Eージ�E�ENABLE_HOME_HUB で有効化）──────────────────
+    // flag OFF の間�E既存コンポ�Eネントにフォールバック
     case "home":
       return ENABLE_HOME_HUB ? <HomeHub /> : <DashboardV2 />;
     case "optimize":
       return <GameMode />;
-    // ── 既存ページ ────────────────────────────────────────────────────────
+    // ── 既存�Eージ ────────────────────────────────────────────────────────
     case "dashboard":
       return <Dashboard />;
     case "dashboardv2":
@@ -532,7 +532,7 @@ export default function App() {
           </div>
           <div>
             <p className="text-[13px] font-bold leading-none tracking-tight text-white">Gaming</p>
-            <p className="text-[9px] text-cyan-400/60 leading-none mt-1 tracking-[0.15em] uppercase">PC Optimizer</p>
+            <p className="text-[10px] text-cyan-400/60 leading-none mt-1 tracking-[0.15em] uppercase">PC Optimizer</p>
           </div>
         </div>
 
@@ -545,7 +545,8 @@ export default function App() {
             if (item.type === "section") {
               return (
                 <div key={`section-${i}`} className="px-3 pt-3 pb-1 first:pt-1">
-                  <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.15em]">
+                  {i > 0 && <div className="h-px mb-2.5 -mx-1 bg-white/[0.05]" />}
+                  <p className="text-[10px] font-semibold text-muted-foreground/55 uppercase tracking-[0.15em]">
                     {item.label}
                   </p>
                 </div>
@@ -572,7 +573,7 @@ export default function App() {
                 </span>
                 <span className="flex-1 truncate">{item.label}</span>
                 {item.phase && !isActive && (
-                  <span className="text-[9px] text-muted-foreground/40 bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 rounded-md">
+                  <span className="text-[10px] text-muted-foreground/55 bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 rounded-md">
                     {item.phase}
                   </span>
                 )}
@@ -597,7 +598,7 @@ export default function App() {
               <span className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-60" />
               <span className="relative w-1.5 h-1.5 rounded-full bg-cyan-400 block" />
             </div>
-            <p className="text-[10px] text-muted-foreground/50 tracking-widest uppercase">v1.1.0 · AI搭載</p>
+            <p className="text-[10px] text-muted-foreground/50 tracking-widest uppercase">v1.1.0 · AI搭輁E/p>
           </div>
         </div>
       </aside>
@@ -615,11 +616,11 @@ export default function App() {
       <ToastContainer />
       {/* Phase 3: Simulation / confirmation overlay */}
       <SimulationPanel />
-      {/* [SCORE REGRESSION] Background watcher — only mounts when flag is ON */}
+      {/* [SCORE REGRESSION] Background watcher  Eonly mounts when flag is ON */}
       {ENABLE_SCORE_REGRESSION_WATCH && <ScoreRegressionWatcher />}
-      {/* [THERMAL] Background GPU temperature watcher — only mounts when flag is ON */}
+      {/* [THERMAL] Background GPU temperature watcher  Eonly mounts when flag is ON */}
       {ENABLE_THERMAL_AUTO_REDUCTION && <ThermalWatcher />}
-      {/* [S7-04] First-run wizard — mounts once, dismissed to localStorage */}
+      {/* [S7-04] First-run wizard  Emounts once, dismissed to localStorage */}
       <FirstRunWizard />
     </div>
   );

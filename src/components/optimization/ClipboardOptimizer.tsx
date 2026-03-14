@@ -20,8 +20,8 @@ function ContentTypeBadge({ type: ct }: { type: string }) {
     text:    { label: "テキスト",   cls: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30" },
     image:   { label: "画像",       cls: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
     files:   { label: "ファイル",   cls: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
-    empty:   { label: "空",         cls: "bg-white/[0.05] text-muted-foreground border-white/[0.08]" },
-    unknown: { label: "不明",       cls: "bg-white/[0.05] text-muted-foreground border-white/[0.08]" },
+    empty:   { label: "空",         cls: "bg-white/[0.05] text-muted-foreground border-white/[0.12]" },
+    unknown: { label: "不明",       cls: "bg-white/[0.05] text-muted-foreground border-white/[0.12]" },
   };
   const { label, cls } = config[ct] ?? config.unknown;
   return (

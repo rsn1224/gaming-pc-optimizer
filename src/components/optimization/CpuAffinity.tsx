@@ -189,14 +189,14 @@ export function CpuAffinity() {
                     <button
                       type="button"
                       onClick={() => setPendingMask(allCoresMask)}
-                      className="px-2.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg text-xs text-muted-foreground hover:text-white transition-all"
+                      className="px-2.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.12] rounded-lg text-xs text-muted-foreground hover:text-white transition-all"
                     >
                       すべてのコアを使用
                     </button>
                     <button
                       type="button"
                       onClick={() => setPendingMask(perfCoresMask)}
-                      className="px-2.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg text-xs text-muted-foreground hover:text-white transition-all"
+                      className="px-2.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.12] rounded-lg text-xs text-muted-foreground hover:text-white transition-all"
                     >
                       パフォーマンスコアのみ
                     </button>
@@ -226,7 +226,7 @@ export function CpuAffinity() {
                     type="button"
                     onClick={() => handleResetAffinity(selectedProcess.pid)}
                     disabled={applying}
-                    className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-xl text-xs text-muted-foreground hover:text-white transition-all disabled:opacity-50"
+                    className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.12] rounded-xl text-xs text-muted-foreground hover:text-white transition-all disabled:opacity-50"
                   >
                     全コアにリセット
                   </button>

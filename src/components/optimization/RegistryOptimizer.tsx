@@ -227,7 +227,7 @@ export function RegistryOptimizer() {
                     type="button"
                     onClick={() => handleRevert(tweak)}
                     disabled={applying === tweak.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-xl text-muted-foreground text-xs font-medium transition-all disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.12] rounded-xl text-muted-foreground text-xs font-medium transition-all disabled:opacity-50"
                   >
                     <RotateCcw size={12} />
                     {applying === tweak.id ? "処理中..." : "元に戻す"}

@@ -580,7 +580,7 @@ function DnsAutoTestSection({
                 placeholder='{"adapter_name": "...", "dns_preset": "cloudflare", "apply_network_gaming": true, "explanation": "..."}'
                 rows={4}
                 aria-label="AI推奨JSONを入力"
-                className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-xs font-mono placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary resize-y"
+                className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-xs font-mono placeholder:text-muted-foreground/55 focus:outline-none focus:border-primary resize-y"
               />
               {parseError && (
                 <p className="text-xs text-destructive flex items-center gap-1">

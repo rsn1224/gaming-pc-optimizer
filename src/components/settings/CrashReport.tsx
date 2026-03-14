@@ -144,7 +144,7 @@ export function CrashReport() {
 
       <div className="flex-1 overflow-y-auto p-6">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-muted-foreground/40 text-sm">
+          <div className="flex items-center justify-center h-40 text-muted-foreground/55 text-sm">
             読み込み中…
           </div>
         ) : errors.length === 0 ? (

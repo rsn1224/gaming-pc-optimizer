@@ -48,7 +48,7 @@ function HealthRing({ score }: { score: number }) {
       </svg>
       <div className="absolute flex flex-col items-center">
         <span className={`text-3xl font-bold leading-none tabular-nums ${colorClass}`}>{score}</span>
-        <span className="text-[9px] text-muted-foreground/50 mt-1 tracking-widest uppercase">score</span>
+        <span className="text-[10px] text-muted-foreground/50 mt-1 tracking-widest uppercase">score</span>
       </div>
     </div>
   );
@@ -104,7 +104,7 @@ function ScoreBar({
           {label}
         </span>
         {sub && (
-          <span className="ml-1.5 text-[10px] text-muted-foreground/40">{sub}</span>
+          <span className="ml-1.5 text-[10px] text-muted-foreground/55">{sub}</span>
         )}
       </span>
       {/* 5 fixed segments: each lights up when score exceeds its threshold */}
@@ -195,7 +195,7 @@ function MiniStat({
   accent?: boolean;
 }) {
   return (
-    <div className="flex-1 min-w-0 bg-[#05080c] border border-white/[0.08] rounded-xl px-4 py-3.5 flex items-center gap-3 card-glow transition-all">
+    <div className="flex-1 min-w-0 bg-[#05080c] border border-white/[0.12] rounded-xl px-4 py-3.5 flex items-center gap-3 card-glow transition-all">
       <div className={`p-2 rounded-lg shrink-0 ${accent ? "bg-cyan-500/15 border border-cyan-500/25" : "bg-white/[0.05] border border-white/[0.06]"}`}>
         <span className={accent ? "text-cyan-400" : "text-muted-foreground"}>{icon}</span>
       </div>
@@ -274,13 +274,13 @@ export function Dashboard() {
         const sim = await invoke<SimulationResult>("simulate_all_optimizations");
         const hasRisky = sim.caution_count > 0 || sim.advanced_count > 0;
         if (hasRisky) {
-          // Open confirmation dialog — execution happens inside SimulationPanel
+          // Open confirmation dialog  Eexecution happens inside SimulationPanel
           setSimulation(sim);
           setAllOptRunning(false);
           return;
         }
       }
-      // All safe or rollback disabled — run directly
+      // All safe or rollback disabled  Erun directly
       const r = await invoke<AllOptimizationResult>("apply_all_optimizations");
       setAllOptResult(r);
       useAppStore.getState().setGameModeActive(true);
@@ -299,10 +299,10 @@ export function Dashboard() {
   };
 
   const healthChecks: HealthCheck[] = [
-    { label: "プロセス最適化", active: gameModeActive, page: "gamemode" },
-    { label: "Windows 設定", active: windowsOptimized, page: "windows" },
-    { label: "ネットワーク最適化", active: networkOptimized, page: "network" },
-    { label: "パフォーマンス電源", active: powerOptimized, page: "gamemode" },
+    { label: "プロセス最適匁E, active: gameModeActive, page: "gamemode" },
+    { label: "Windows 設宁E, active: windowsOptimized, page: "windows" },
+    { label: "ネットワーク最適匁E, active: networkOptimized, page: "network" },
+    { label: "パフォーマンス電溁E, active: powerOptimized, page: "gamemode" },
   ];
   // Use detailed score when available, else fall back to binary 4-check score
   const healthScore = optScore?.overall ?? healthChecks.filter((c) => c.active).length * 25;
@@ -312,7 +312,7 @@ export function Dashboard() {
       <div className="flex items-center justify-center h-full">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 size={16} className="animate-spin text-cyan-400" />
-          <span className="text-sm">システム情報を取得中...</span>
+          <span className="text-sm">シスチE��惁E��を取得中...</span>
         </div>
       </div>
     );
@@ -327,7 +327,7 @@ export function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">ダッシュボード</h1>
+          <h1 className="text-xl font-bold text-foreground tracking-tight">ダチE��ュボ�EチE/h1>
           <p className="text-xs text-muted-foreground/60 mt-0.5">
             {systemInfo.os_name} · {systemInfo.os_version}
           </p>
@@ -335,12 +335,12 @@ export function Dashboard() {
         {gameModeActive && (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full shadow-[0_0_12px_rgba(34,197,94,0.15)]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.8)]" />
-            <span className="text-xs font-semibold text-emerald-400 tracking-wide">ゲームモード ON</span>
+            <span className="text-xs font-semibold text-emerald-400 tracking-wide">ゲームモーチEON</span>
           </div>
         )}
       </div>
 
-      {/* Top strip — mini stat cards */}
+      {/* Top strip  Emini stat cards */}
       <div className="flex gap-3">
         <MiniStat
           icon={cpuLogo ? <VendorIcon vendor={cpuLogo.vendor} className="w-3.5 h-3.5" /> : <Cpu size={14} />}
@@ -360,7 +360,7 @@ export function Dashboard() {
           <MiniStat
             icon={gpuLogo ? <VendorIcon vendor={gpuLogo.vendor} className="w-3.5 h-3.5" /> : <MonitorCheck size={14} />}
             label="GPU"
-            value={gpuFirst.vram_total_mb > 0 ? `${((gpuFirst.vram_used_mb / gpuFirst.vram_total_mb) * 100).toFixed(1)}%` : "—"}
+            value={gpuFirst.vram_total_mb > 0 ? `${((gpuFirst.vram_used_mb / gpuFirst.vram_total_mb) * 100).toFixed(1)}%` : " E}
             sub={gpuFirst.vram_total_mb > 0 ? `${formatMemory(gpuFirst.vram_total_mb)} VRAM` : gpuFirst.name}
             accent
           />
@@ -369,13 +369,13 @@ export function Dashboard() {
           icon={<Wifi size={14} />}
           label="Network"
           value={networkOptimized ? "最適化済み" : "通常"}
-          sub={networkOptimized ? "DNS・TCP/IP最適化" : "未最適化"}
+          sub={networkOptimized ? "DNS・TCP/IP最適匁E : "未最適匁E}
           accent={networkOptimized}
         />
       </div>
 
       {/* Health Score + CTA */}
-      <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+      <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
         {/* Top accent bar */}
         <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
         <div className="p-5 flex flex-col gap-4">
@@ -387,19 +387,19 @@ export function Dashboard() {
                 <p className="text-[11px] text-muted-foreground/50 mt-0.5">
                   {optScore
                     ? `総合スコア ${optScore.overall}/100`
-                    : `${healthChecks.filter(c => c.active).length} / ${healthChecks.length} 項目が有効`}
+                    : `${healthChecks.filter(c => c.active).length} / ${healthChecks.length} 頁E��が有効`}
                 </p>
               </div>
               {optScore ? (
                 <div className="flex flex-col gap-1">
                   <ScoreBar
                     score={optScore.process}
-                    label="プロセス最適化"
+                    label="プロセス最適匁E
                     sub={optScore.bloatware_running > 0 ? `${optScore.bloatware_running}個稼働中` : undefined}
                     page="gamemode"
                   />
-                  <ScoreBar score={optScore.power}   label="電源プラン"     page="gamemode" />
-                  <ScoreBar score={optScore.windows} label="Windows 設定"   page="windows"  />
+                  <ScoreBar score={optScore.power}   label="電源�Eラン"     page="gamemode" />
+                  <ScoreBar score={optScore.windows} label="Windows 設宁E   page="windows"  />
                   <ScoreBar score={optScore.network} label="ネットワーク"   page="network"  />
                 </div>
               ) : (
@@ -440,7 +440,7 @@ export function Dashboard() {
               {allOptRunning ? (
                 <><Loader2 size={16} className="animate-spin" /> 全最適化実行中...</>
               ) : (
-                <><Zap size={16} /> 今すぐ全最適化（プロセス・電源・Windows・ネットワーク）</>
+                <><Zap size={16} /> 今すぐ�E最適化（�Eロセス・電源�EWindows・ネットワーク�E�E/>
               )}
             </button>
           )}
@@ -454,13 +454,13 @@ export function Dashboard() {
                 ) : (
                   <XCircle size={14} className="text-amber-400 shrink-0" />
                 )}
-                <p className="text-sm font-semibold text-emerald-400">全最適化完了</p>
+                <p className="text-sm font-semibold text-emerald-400">全最適化完亁E/p>
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground pl-5">
                 <span>プロセス停止: <span className="text-foreground font-medium">{allOptResult.process_killed}件 ({allOptResult.process_freed_mb.toFixed(0)} MB解放)</span></span>
-                {allOptResult.power_plan_set && <span className="text-emerald-400">電源 ✓</span>}
-                {allOptResult.windows_applied && <span className="text-emerald-400">Windows ✓</span>}
-                {allOptResult.network_applied && <span className="text-emerald-400">ネットワーク ✓</span>}
+                {allOptResult.power_plan_set && <span className="text-emerald-400">電溁E✁E/span>}
+                {allOptResult.windows_applied && <span className="text-emerald-400">Windows ✁E/span>}
+                {allOptResult.network_applied && <span className="text-emerald-400">ネットワーク ✁E/span>}
                 {allOptResult.errors.map((e, i) => (
                   <span key={i} className="text-amber-400">{e}</span>
                 ))}
@@ -472,7 +472,7 @@ export function Dashboard() {
 
       {/* Cumulative Session Stats */}
       {sessionStats && sessionStats.total_sessions > 0 && (
-        <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+        <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
           <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
           <div className="px-4 py-3 flex items-center gap-3">
             <div className="p-1.5 bg-white/[0.04] border border-white/[0.07] rounded-lg shrink-0">
@@ -503,7 +503,7 @@ export function Dashboard() {
           {/* Score trend sparkline */}
           {scoreHistory.length >= 2 && (
             <div className="px-4 pb-3">
-              <p className="text-[9px] text-muted-foreground/40 uppercase tracking-widest mb-1.5">
+              <p className="text-[10px] text-muted-foreground/55 uppercase tracking-widest mb-1.5">
                 スコア推移
               </p>
               <ScoreSparkline history={scoreHistory} />
@@ -515,13 +515,13 @@ export function Dashboard() {
       {/* System Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          label="CPU 使用率"
+          label="CPU 使用玁E
           value={systemInfo.cpu_usage}
           icon={cpuLogo ? <VendorIcon vendor={cpuLogo.vendor} className="w-3.5 h-3.5" /> : <Cpu size={14} />}
           subtitle={`${systemInfo.cpu_name} (${systemInfo.cpu_cores}コア)`}
         />
         <StatCard
-          label="RAM 使用率"
+          label="RAM 使用玁E
           value={systemInfo.memory_percent}
           icon={<MemoryStick size={14} />}
           subtitle={`${formatMemory(systemInfo.memory_used_mb)} / ${formatMemory(systemInfo.memory_total_mb)}`}
@@ -543,49 +543,49 @@ export function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+      <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
         <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
         <div className="p-4">
           <h2 className="text-[10px] font-semibold text-muted-foreground/50 mb-3.5 uppercase tracking-widest">
-            クイックアクション
+            クイチE��アクション
           </h2>
           <div className="grid grid-cols-3 gap-2.5">
             <QuickActionButton
               icon={<Monitor size={16} />}
-              label="ゲームモード"
-              description="不要プロセス停止"
+              label="ゲームモーチE
+              description="不要�Eロセス停止"
               onClick={() => useAppStore.getState().setActivePage("gamemode")}
               active={gameModeActive}
             />
             <QuickActionButton
               icon={<Zap size={16} />}
-              label="Windows設定"
-              description="視覚効果最適化"
+              label="Windows設宁E
+              description="視覚効果最適匁E
               onClick={() => useAppStore.getState().setActivePage("windows")}
               active={windowsOptimized}
             />
             <QuickActionButton
               icon={<Wifi size={16} />}
               label="ネットワーク"
-              description="DNS・TCP/IP最適化"
+              description="DNS・TCP/IP最適匁E
               onClick={() => useAppStore.getState().setActivePage("network")}
               active={networkOptimized}
             />
             <QuickActionButton
               icon={<HardDrive size={16} />}
               label="ストレージ"
-              description="キャッシュ削除"
+              description="キャチE��ュ削除"
               onClick={() => useAppStore.getState().setActivePage("storage")}
             />
             <QuickActionButton
               icon={<Shield size={16} />}
-              label="アップデート"
-              description="アプリ・ドライバー"
+              label="アチE�EチE�EチE
+              description="アプリ・ドライバ�E"
               onClick={() => useAppStore.getState().setActivePage("updates")}
             />
             <QuickActionButton
               icon={<Cpu size={16} />}
-              label="ハードウェア"
+              label="ハ�Eドウェア"
               description="GPU電力制御"
               onClick={() => useAppStore.getState().setActivePage("hardware")}
             />
@@ -600,7 +600,7 @@ export function Dashboard() {
             <CheckCircle2 size={14} className="text-emerald-400" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-emerald-400">最適化完了</p>
+            <p className="text-sm font-semibold text-emerald-400">最適化完亁E/p>
             <p className="text-xs text-muted-foreground/60 mt-0.5">
               {freedMemoryMb.toFixed(1)} MB のメモリを解放しました
             </p>
@@ -657,7 +657,7 @@ function QuickActionButton({
         <p className="text-[10px] text-muted-foreground/50 mt-0.5 leading-tight">{description}</p>
       </div>
       {disabled && disabledLabel && (
-        <span className="absolute top-1 right-1 text-[9px] text-muted-foreground/50 bg-white/5 px-1 rounded">
+        <span className="absolute top-1 right-1 text-[10px] text-muted-foreground/50 bg-white/5 px-1 rounded">
           {disabledLabel}
         </span>
       )}

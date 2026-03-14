@@ -122,7 +122,7 @@ export function GameCard({
       className={`bg-[#05080c] border rounded-xl overflow-hidden flex flex-col transition-all ${
         isActive
           ? "card-active-border"
-          : "border-white/[0.08] hover:border-cyan-500/30 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_4px_20px_rgba(34,211,238,0.05)]"
+          : "border-white/[0.12] hover:border-cyan-500/30 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_4px_20px_rgba(34,211,238,0.05)]"
       }`}
     >
       {/* Steam artwork header */}
@@ -162,7 +162,7 @@ export function GameCard({
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm leading-tight truncate text-foreground">{profile.name}</p>
             {profile.exe_path && (
-              <p className="text-[10px] text-muted-foreground/40 font-mono truncate mt-0.5">
+              <p className="text-[10px] text-muted-foreground/55 font-mono truncate mt-0.5">
                 {shortPath(profile.exe_path)}
               </p>
             )}
@@ -234,7 +234,7 @@ export function GameCard({
                 </select>
                 {profile.recommended_reason && (
                   <span
-                    className="text-[10px] text-muted-foreground/40 truncate max-w-[80px] cursor-help"
+                    className="text-[10px] text-muted-foreground/55 truncate max-w-[80px] cursor-help"
                     title={profile.recommended_reason}
                   >
                     {profile.recommended_reason}

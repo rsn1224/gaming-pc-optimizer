@@ -64,7 +64,7 @@ function SettingRow({ icon, label, value, highlight }: {
   return (
     <div className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
       <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
-        <span className="text-muted-foreground/40">{icon}</span>
+        <span className="text-muted-foreground/55">{icon}</span>
         {label}
       </div>
       <span className={cn(
@@ -134,7 +134,7 @@ export function AiProfileGenerator({ onClose, onSaved }: AiProfileGeneratorProps
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg mx-4 bg-[#05080c] border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.8)]">
+      <div className="relative w-full max-w-lg mx-4 bg-[#05080c] border border-white/[0.12] rounded-2xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.8)]">
         {/* Top accent */}
         <div className="h-[1px] bg-gradient-to-r from-transparent via-violet-500/60 to-transparent" />
 
@@ -151,7 +151,7 @@ export function AiProfileGenerator({ onClose, onSaved }: AiProfileGeneratorProps
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="閉じる" className="text-muted-foreground/40 hover:text-white transition-colors">
+          <button type="button" onClick={onClose} aria-label="閉じる" className="text-muted-foreground/55 hover:text-white transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -172,7 +172,7 @@ export function AiProfileGenerator({ onClose, onSaved }: AiProfileGeneratorProps
                 onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
                 placeholder="例: Apex Legends, Elden Ring, Valorant..."
                 disabled={status === "generating" || saving}
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm outline-none focus:border-violet-500/40 transition-colors disabled:opacity-50"
+                className="w-full bg-white/[0.04] border border-white/[0.12] rounded-lg px-3 py-2 text-sm outline-none focus:border-violet-500/40 transition-colors disabled:opacity-50"
               />
             </div>
             <div>
@@ -185,7 +185,7 @@ export function AiProfileGenerator({ onClose, onSaved }: AiProfileGeneratorProps
                 onChange={(e) => setExePath(e.target.value)}
                 placeholder="例: r5apex.exe"
                 disabled={status === "generating" || saving}
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-violet-500/40 transition-colors disabled:opacity-50"
+                className="w-full bg-white/[0.04] border border-white/[0.12] rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-violet-500/40 transition-colors disabled:opacity-50"
               />
             </div>
           </div>
@@ -228,7 +228,7 @@ export function AiProfileGenerator({ onClose, onSaved }: AiProfileGeneratorProps
                   type="text"
                   value={draft.name}
                   onChange={(e) => handleEditName(e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500/40 transition-colors"
+                  className="w-full bg-white/[0.04] border border-white/[0.12] rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500/40 transition-colors"
                 />
               </div>
 
@@ -306,7 +306,7 @@ export function AiProfileGenerator({ onClose, onSaved }: AiProfileGeneratorProps
               {draft.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {draft.tags.map(t => (
-                    <span key={t} className="text-[10px] px-2 py-0.5 bg-white/[0.05] border border-white/[0.08] rounded-full text-muted-foreground/60">
+                    <span key={t} className="text-[10px] px-2 py-0.5 bg-white/[0.05] border border-white/[0.12] rounded-full text-muted-foreground/60">
                       {t}
                     </span>
                   ))}

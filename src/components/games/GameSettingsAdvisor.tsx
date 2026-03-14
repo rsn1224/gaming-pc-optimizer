@@ -73,14 +73,14 @@ export function GameSettingsAdvisor() {
         {/* Search bar */}
         <div className="mt-4 flex gap-2">
           <div className="flex-1 relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/55" />
             <input
               type="text"
               value={gameName}
               onChange={(e) => setGameName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleGetAdvice()}
               placeholder="ゲーム名を入力... (例: Apex Legends)"
-              className="w-full pl-8 pr-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[13px] text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-amber-500/40 focus:bg-white/[0.06] transition-all"
+              className="w-full pl-8 pr-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.12] text-[13px] text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-amber-500/40 focus:bg-white/[0.06] transition-all"
             />
           </div>
           <button
@@ -91,7 +91,7 @@ export function GameSettingsAdvisor() {
               "px-4 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all shrink-0",
               gameName.trim() && !loading
                 ? "bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:brightness-110"
-                : "bg-white/[0.04] border border-white/[0.08] text-muted-foreground/40 cursor-not-allowed"
+                : "bg-white/[0.04] border border-white/[0.12] text-muted-foreground/55 cursor-not-allowed"
             )}
           >
             {loading ? (
@@ -140,7 +140,7 @@ export function GameSettingsAdvisor() {
         {advice && pc && !loading && (
           <div className="flex flex-col gap-4 max-w-2xl">
             {/* Summary card */}
-            <div className="p-5 rounded-2xl border border-white/[0.08] bg-[#05080c]">
+            <div className="p-5 rounded-2xl border border-white/[0.12] bg-[#05080c]">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-[16px] font-bold text-slate-100">{advice.game_name}</h2>
@@ -168,7 +168,7 @@ export function GameSettingsAdvisor() {
             </div>
 
             {/* Settings table */}
-            <div className="rounded-2xl border border-white/[0.08] bg-[#05080c] overflow-hidden">
+            <div className="rounded-2xl border border-white/[0.12] bg-[#05080c] overflow-hidden">
               <div className="px-4 py-3 border-b border-white/[0.05] flex items-center gap-2">
                 <Zap size={13} className="text-amber-400" />
                 <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
@@ -198,7 +198,7 @@ export function GameSettingsAdvisor() {
 
         {/* Empty state */}
         {!advice && !loading && !error && (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground/40">
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground/55">
             <Lightbulb size={32} />
             <p className="text-[13px]">ゲーム名を入力してアドバイスを取得</p>
           </div>

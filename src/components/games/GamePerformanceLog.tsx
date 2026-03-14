@@ -301,7 +301,7 @@ export function GamePerformanceLog() {
                   <select
                     value={filterGame}
                     onChange={(e) => setFilterGame(e.target.value)}
-                    className="text-[12px] bg-white/[0.03] border border-white/[0.08] rounded-lg px-2 py-1 text-muted-foreground focus:outline-none focus:border-cyan-500/40"
+                    className="text-[12px] bg-white/[0.03] border border-white/[0.12] rounded-lg px-2 py-1 text-muted-foreground focus:outline-none focus:border-cyan-500/40"
                   >
                     <option value="all">すべてのゲーム</option>
                     {gameNames.map((name) => (
@@ -315,7 +315,7 @@ export function GamePerformanceLog() {
 
               {filteredSessions.length === 0 ? (
                 <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center">
-                  <Activity size={24} className="text-muted-foreground/40 mx-auto mb-2" />
+                  <Activity size={24} className="text-muted-foreground/55 mx-auto mb-2" />
                   <p className="text-[13px] text-muted-foreground">
                     セッション履歴がありません
                   </p>
@@ -386,7 +386,7 @@ export function GamePerformanceLog() {
                           <button
                             type="button"
                             onClick={() => setCoachSession(session)}
-                            className="shrink-0 text-muted-foreground/40 hover:text-amber-400 transition-colors"
+                            className="shrink-0 text-muted-foreground/55 hover:text-amber-400 transition-colors"
                             title="AIコーチングを見る"
                           >
                             <Bot size={13} />
@@ -398,7 +398,7 @@ export function GamePerformanceLog() {
                           <button
                             type="button"
                             onClick={() => handleDeleteSession(session.id)}
-                            className="shrink-0 text-muted-foreground/40 hover:text-rose-400 transition-colors"
+                            className="shrink-0 text-muted-foreground/55 hover:text-rose-400 transition-colors"
                           >
                             <Trash2 size={13} />
                           </button>

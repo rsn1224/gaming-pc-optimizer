@@ -1,8 +1,8 @@
 /**
- * RecommendationMetricsPanel — 推奨エンジン V2 メトリクス表示
+ * RecommendationMetricsPanel  E推奨エンジン V2 メトリクス表示
  *
- * Settings.tsx の AI セクション内に埋め込む。
- * ENABLE_RECOMMENDATION_V2 の ON/OFF に関わらず表示（履歴があれば見える）。
+ * Settings.tsx の AI セクション冁E��埋め込む、E
+ * ENABLE_RECOMMENDATION_V2 の ON/OFF に関わらず表示�E�履歴があれ�E見える）、E
  */
 import { useState, useEffect, useCallback } from "react";
 import { BarChart3, RefreshCw, Loader2 } from "lucide-react";
@@ -32,10 +32,10 @@ function ModelRow({ m }: { m: ModelMetrics }) {
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold text-slate-200 truncate">{shortName}</span>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[9px] text-muted-foreground/50 tabular-nums">
+          <span className="text-[10px] text-muted-foreground/50 tabular-nums">
             {m.totalCalls}件
           </span>
-          <span className="text-[9px] tabular-nums text-muted-foreground/50">
+          <span className="text-[10px] tabular-nums text-muted-foreground/50">
             avg {m.avgLatencyMs.toFixed(0)}ms
           </span>
         </div>
@@ -44,9 +44,9 @@ function ModelRow({ m }: { m: ModelMetrics }) {
       {/* Success rate bar */}
       <div>
         <div className="flex justify-between mb-0.5">
-          <span className="text-[9px] text-muted-foreground/50">成功率</span>
+          <span className="text-[10px] text-muted-foreground/50">成功玁E/span>
           <span className={cn(
-            "text-[9px] font-semibold tabular-nums",
+            "text-[10px] font-semibold tabular-nums",
             successPct >= 80 ? "text-emerald-400" : successPct >= 50 ? "text-amber-400" : "text-red-400"
           )}>
             {successPct}%
@@ -66,16 +66,16 @@ function ModelRow({ m }: { m: ModelMetrics }) {
       {/* Fallback badge */}
       {fallbackPct > 0 && (
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] text-muted-foreground/40">フォールバック率:</span>
+          <span className="text-[10px] text-muted-foreground/55">フォールバック玁E</span>
           <span className={cn(
-            "text-[9px] font-semibold tabular-nums",
+            "text-[10px] font-semibold tabular-nums",
             fallbackPct >= 50 ? "text-amber-400" : "text-muted-foreground/60"
           )}>
             {fallbackPct}%
           </span>
           {fallbackPct === 100 && (
-            <span className="text-[9px] text-muted-foreground/40">
-              （APIキー未設定またはエラー）
+            <span className="text-[10px] text-muted-foreground/55">
+              �E�EPIキー未設定また�Eエラー�E�E
             </span>
           )}
         </div>
@@ -97,7 +97,7 @@ export function RecommendationMetricsPanel() {
       const data = await getRecommendationMetrics(rangeHours);
       setSummary(data);
     } catch {
-      // silently fail — metrics are optional
+      // silently fail  Emetrics are optional
       setSummary(null);
     } finally {
       setLoading(false);
@@ -129,7 +129,7 @@ export function RecommendationMetricsPanel() {
                 type="button"
                 onClick={() => setRangeHours(r.hours)}
                 className={cn(
-                  "px-2 py-0.5 text-[10px] font-medium transition-colors first:rounded-l-md last:rounded-r-md border border-white/[0.08]",
+                  "px-2 py-0.5 text-[10px] font-medium transition-colors first:rounded-l-md last:rounded-r-md border border-white/[0.12]",
                   rangeHours === r.hours
                     ? "bg-violet-500/20 text-violet-300 border-violet-500/30"
                     : "text-muted-foreground/50 hover:text-muted-foreground bg-white/[0.02]"
@@ -143,7 +143,7 @@ export function RecommendationMetricsPanel() {
             type="button"
             onClick={fetchMetrics}
             disabled={loading}
-            className="text-muted-foreground/40 hover:text-muted-foreground transition-colors disabled:opacity-50"
+            className="text-muted-foreground/55 hover:text-muted-foreground transition-colors disabled:opacity-50"
             aria-label="更新"
           >
             <RefreshCw size={11} className={cn(loading && "animate-spin")} />
@@ -165,8 +165,8 @@ export function RecommendationMetricsPanel() {
         </div>
       ) : (
         <div className="flex items-center justify-center py-4">
-          <p className="text-[11px] text-muted-foreground/40">
-            まだ呼び出し履歴がありません — ENABLE_RECOMMENDATION_V2 を有効にしてください
+          <p className="text-[11px] text-muted-foreground/55">
+            まだ呼び出し履歴がありません  EENABLE_RECOMMENDATION_V2 を有効にしてください
           </p>
         </div>
       )}

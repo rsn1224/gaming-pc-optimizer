@@ -120,7 +120,7 @@ export function PerformanceCoach({
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg mx-4 bg-[#05080c] border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.8)] max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-lg mx-4 bg-[#05080c] border border-white/[0.12] rounded-2xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.8)] max-h-[90vh] flex flex-col">
         {/* Top accent */}
         <div className="h-[1px] bg-gradient-to-r from-transparent via-amber-500/60 to-transparent shrink-0" />
 
@@ -135,13 +135,13 @@ export function PerformanceCoach({
               <p className="text-[11px] text-muted-foreground/50 mt-0.5 truncate max-w-[260px]">
                 {gameName}
                 {displayDuration != null && (
-                  <span className="ml-1.5 text-muted-foreground/40">· {displayDuration}分</span>
+                  <span className="ml-1.5 text-muted-foreground/55">· {displayDuration}分</span>
                 )}
               </p>
             </div>
           </div>
           <button type="button" onClick={onClose} aria-label="閉じる"
-            className="text-muted-foreground/40 hover:text-white transition-colors shrink-0">
+            className="text-muted-foreground/55 hover:text-white transition-colors shrink-0">
             <X size={18} />
           </button>
         </div>
@@ -164,7 +164,7 @@ export function PerformanceCoach({
               <div>
                 <p className="text-sm font-medium text-red-300">分析に失敗しました</p>
                 <p className="text-xs text-muted-foreground/60 mt-1">{error}</p>
-                <p className="text-xs text-muted-foreground/40 mt-1">
+                <p className="text-xs text-muted-foreground/55 mt-1">
                   AI API キーが設定されていることを確認してください（設定 → AI 設定）。
                 </p>
               </div>

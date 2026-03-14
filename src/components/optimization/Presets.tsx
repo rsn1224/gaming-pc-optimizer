@@ -134,7 +134,7 @@ function PresetCard({
       <ul className="space-y-1.5">
         {preset.steps.map((step, i) => (
           <li key={i} className="flex items-start gap-2 text-[12px] text-muted-foreground/70">
-            <ChevronRight size={13} className="mt-0.5 shrink-0 text-muted-foreground/40" />
+            <ChevronRight size={13} className="mt-0.5 shrink-0 text-muted-foreground/55" />
             {step}
           </li>
         ))}
@@ -238,7 +238,7 @@ export function Presets() {
         </div>
 
         {rollbackEnabled && (
-          <p className="mt-3 text-[11px] text-muted-foreground/40">
+          <p className="mt-3 text-[11px] text-muted-foreground/55">
             スナップショット自動作成が有効 — ロールバックセンターから元に戻せます
           </p>
         )}

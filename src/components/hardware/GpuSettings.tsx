@@ -140,7 +140,7 @@ export function GpuSettings() {
 
       {/* GPU info card */}
       {gpuStatus && (
-        <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+        <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
           <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
           <div className="p-4 flex flex-wrap gap-4">
             <div>
@@ -165,7 +165,7 @@ export function GpuSettings() {
 
       {/* Power limit */}
       {powerInfo && (
-        <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+        <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
           <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
           <div className="p-4 flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -229,7 +229,7 @@ export function GpuSettings() {
               className={cn(
                 "w-full py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all",
                 settingPower || pendingWatts === powerInfo.current_w
-                  ? "bg-white/[0.04] text-muted-foreground/40 cursor-not-allowed border border-white/[0.06]"
+                  ? "bg-white/[0.04] text-muted-foreground/55 cursor-not-allowed border border-white/[0.06]"
                   : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110 active:scale-[0.97]"
               )}
             >
@@ -241,7 +241,7 @@ export function GpuSettings() {
       )}
 
       {/* Fan speed */}
-      <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+      <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
         <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
         <div className="p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -290,7 +290,7 @@ export function GpuSettings() {
             className={cn(
               "w-full py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all",
               settingFan
-                ? "bg-white/[0.04] text-muted-foreground/40 cursor-not-allowed border border-white/[0.06]"
+                ? "bg-white/[0.04] text-muted-foreground/55 cursor-not-allowed border border-white/[0.06]"
                 : "bg-white/[0.06] border border-white/[0.09] text-slate-200 hover:bg-white/[0.09] active:scale-[0.97]"
             )}
           >

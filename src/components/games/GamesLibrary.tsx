@@ -155,7 +155,7 @@ function GameSessionMonitorPanel({
           <button
             type="button"
             onClick={onStop}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] border border-white/[0.08] text-muted-foreground/60 hover:text-white hover:border-white/20 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] border border-white/[0.12] text-muted-foreground/60 hover:text-white hover:border-white/20 rounded-lg transition-colors"
           >
             <StopCircle size={11} />
             終了
@@ -660,7 +660,7 @@ export function GamesLibrary() {
         </div>
       ) : profiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 text-muted-foreground">
-          <Library size={40} strokeWidth={1} className="text-muted-foreground/40" />
+          <Library size={40} strokeWidth={1} className="text-muted-foreground/55" />
           <p className="text-sm">ゲームがまだ登録されていません</p>
           <button
             type="button"

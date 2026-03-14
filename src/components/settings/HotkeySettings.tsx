@@ -94,11 +94,11 @@ function KeyCaptureModal({
           <p className="text-sm font-semibold text-foreground">{label}</p>
           <p className="text-[11px] text-muted-foreground/60 mt-1">新しいショートカットを押してください...</p>
         </div>
-        <div className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl flex items-center justify-center">
+        <div className="w-full h-14 bg-white/[0.04] border border-white/[0.12] rounded-xl flex items-center justify-center">
           {captured ? (
             <KeyChip combo={captured} />
           ) : (
-            <span className="text-[11px] text-muted-foreground/40 animate-pulse">キー入力待ち...</span>
+            <span className="text-[11px] text-muted-foreground/55 animate-pulse">キー入力待ち...</span>
           )}
         </div>
         <button
@@ -176,7 +176,7 @@ export function HotkeySettings() {
       </div>
 
       {/* Hotkey rows */}
-      <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+      <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
         <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
         <div className="divide-y divide-white/[0.04]">
           {ROWS.map((row) => (
@@ -203,7 +203,7 @@ export function HotkeySettings() {
         <button
           type="button"
           onClick={handleReset}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[12px] font-medium text-muted-foreground/70 hover:text-slate-200 hover:bg-white/[0.07] transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.12] rounded-xl text-[12px] font-medium text-muted-foreground/70 hover:text-slate-200 hover:bg-white/[0.07] transition-all"
         >
           <RotateCcw size={13} />
           デフォルトに戻す

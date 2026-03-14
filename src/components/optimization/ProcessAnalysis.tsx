@@ -42,7 +42,7 @@ function CpuTopList({ procs }: { procs: ProcessInfo[] }) {
     <div className="divide-y divide-white/[0.04]">
       {top.map((proc, i) => (
         <div key={`${proc.pid}-${i}`} className="flex items-center gap-3 py-2.5 px-1">
-          <span className="text-[11px] text-muted-foreground/40 w-4 shrink-0 tabular-nums text-right">
+          <span className="text-[11px] text-muted-foreground/55 w-4 shrink-0 tabular-nums text-right">
             {i + 1}
           </span>
           <span className="text-xs truncate flex-[0_0_40%] font-medium" title={proc.name}>
@@ -74,7 +74,7 @@ function MemTopList({ procs }: { procs: ProcessInfo[] }) {
     <div className="divide-y divide-white/[0.04]">
       {top.map((proc, i) => (
         <div key={`${proc.pid}-${i}`} className="flex items-center gap-3 py-2.5 px-1">
-          <span className="text-[11px] text-muted-foreground/40 w-4 shrink-0 tabular-nums text-right">
+          <span className="text-[11px] text-muted-foreground/55 w-4 shrink-0 tabular-nums text-right">
             {i + 1}
           </span>
           <span className="text-xs truncate flex-[0_0_40%] font-medium" title={proc.name}>
@@ -135,7 +135,7 @@ function BloatwareList({
                   {ann.risk_level === "safe_to_kill" ? "停止OK" : "注意"}
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground/40 mt-0.5 truncate">
+              <p className="text-[11px] text-muted-foreground/55 mt-0.5 truncate">
                 {proc.name} · {formatMemory(proc.memory_mb)} · CPU {proc.cpu_percent.toFixed(1)}%
               </p>
             </div>
@@ -178,7 +178,7 @@ function SectionCard({
         <span className="text-muted-foreground/70">{icon}</span>
         <h2 className="text-sm font-semibold text-slate-200 flex-1">{title}</h2>
         {badge && (
-          <span className="text-[10px] px-2 py-0.5 bg-white/[0.04] border border-white/[0.08] text-muted-foreground/60 rounded-full">
+          <span className="text-[10px] px-2 py-0.5 bg-white/[0.04] border border-white/[0.12] text-muted-foreground/60 rounded-full">
             {badge}
           </span>
         )}

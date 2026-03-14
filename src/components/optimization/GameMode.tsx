@@ -65,7 +65,7 @@ const RISK_CONFIG: Record<
     label: "維持推奨",
     icon: <ShieldOff size={10} />,
     cls: "bg-white/5 text-muted-foreground border-white/10",
-    dotCls: "bg-muted-foreground/40",
+    dotCls: "bg-muted-foreground/55",
   },
 };
 
@@ -159,7 +159,7 @@ function ProcessRow({ proc }: { proc: AnnotatedProcess }) {
           <span className="text-sm font-medium truncate">
             {ann ? ann.display_name : proc.name}
           </span>
-          <span className="text-[10px] text-muted-foreground/40 shrink-0 font-mono">PID {proc.pid}</span>
+          <span className="text-[10px] text-muted-foreground/55 shrink-0 font-mono">PID {proc.pid}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-muted-foreground/60 tabular-nums">
@@ -177,7 +177,7 @@ function ProcessRow({ proc }: { proc: AnnotatedProcess }) {
           <p className="text-[11px] text-muted-foreground/50 leading-relaxed">
             {ann.description}
           </p>
-          <p className="text-[11px] text-muted-foreground/40">
+          <p className="text-[11px] text-muted-foreground/55">
             <span className="font-medium text-muted-foreground/60">推奨: </span>{ann.recommended_action}
           </p>
         </div>
@@ -209,7 +209,7 @@ function ProcessSummary({ procs }: { procs: AnnotatedProcess[] }) {
         </span>
       )}
       {unknown > 0 && (
-        <span className="text-xs text-muted-foreground/40">
+        <span className="text-xs text-muted-foreground/55">
           未分類 {unknown}件
         </span>
       )}
@@ -468,7 +468,7 @@ export function GameMode() {
         {/* Left — Steps + CTA */}
         <div className="flex flex-col gap-4">
           {/* Optimization Steps */}
-          <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden card-glow">
+          <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
             <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
             <div className="px-4 py-3 border-b border-white/[0.05]">
               <div className="flex items-center gap-2">
@@ -581,7 +581,7 @@ export function GameMode() {
         </div>
 
         {/* Right — Detected Processes */}
-        <div className="bg-[#05080c] border border-white/[0.08] rounded-xl overflow-hidden flex flex-col card-glow">
+        <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden flex flex-col card-glow">
           {/* Card header */}
           <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
@@ -660,7 +660,7 @@ export function GameMode() {
                   {applyPlan.order.map((nodeId, i) => (
                     <span
                       key={nodeId}
-                      className="flex items-center gap-1 px-2 py-1 bg-white/[0.05] border border-white/[0.08] rounded-full text-[11px] text-muted-foreground"
+                      className="flex items-center gap-1 px-2 py-1 bg-white/[0.05] border border-white/[0.12] rounded-full text-[11px] text-muted-foreground"
                     >
                       <span className="text-cyan-500/50 font-mono tabular-nums">{i + 1}.</span>
                       {NODE_DISPLAY[nodeId] ?? nodeId}
@@ -693,7 +693,7 @@ export function GameMode() {
                 disabled={preCheckResult.blockers.length > 0}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
                   preCheckResult.blockers.length > 0
-                    ? "bg-white/[0.04] text-muted-foreground/40 cursor-not-allowed border border-white/[0.06]"
+                    ? "bg-white/[0.04] text-muted-foreground/55 cursor-not-allowed border border-white/[0.06]"
                     : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110"
                 }`}
               >

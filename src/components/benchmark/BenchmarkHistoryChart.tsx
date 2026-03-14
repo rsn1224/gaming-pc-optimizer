@@ -85,7 +85,7 @@ function HistoryLineChart({ records }: { records: BenchmarkRecord[] }) {
                 x={PAD_L - 4}
                 y={y + 3}
                 textAnchor="end"
-                className="fill-muted-foreground/40"
+                className="fill-muted-foreground/55"
                 fontSize="8"
               >
                 {v}
@@ -138,7 +138,7 @@ function HistoryLineChart({ records }: { records: BenchmarkRecord[] }) {
             <TrendingDown size={9} /> {delta} pts
           </span>
         ) : (
-          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/40">
+          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/55">
             <Minus size={9} /> 変化なし
           </span>
         )}
@@ -167,7 +167,7 @@ function RunRow({
       <div className={cn("text-[13px] font-bold tabular-nums w-14 shrink-0", color)}>
         {record.totalScore}
       </div>
-      <div className="flex-1 flex items-center gap-2 text-[10px] text-muted-foreground/40 tabular-nums">
+      <div className="flex-1 flex items-center gap-2 text-[10px] text-muted-foreground/55 tabular-nums">
         <span>CPU {record.cpuScore}</span>
         <span>MEM {record.memoryScore}</span>
         <span>DSK {record.diskScore}</span>
@@ -226,7 +226,7 @@ export function BenchmarkHistoryChart({
             履歴
           </span>
           {best !== null && (
-            <span className="text-[10px] text-muted-foreground/40">
+            <span className="text-[10px] text-muted-foreground/55">
               ベスト: <span className="text-violet-400 font-semibold">{best}</span>
             </span>
           )}
@@ -242,7 +242,7 @@ export function BenchmarkHistoryChart({
                 "px-2 py-1 text-[10px] transition-colors",
                 view === "chart"
                   ? "bg-violet-500/20 text-violet-300"
-                  : "text-muted-foreground/40 hover:text-muted-foreground bg-white/[0.02]"
+                  : "text-muted-foreground/55 hover:text-muted-foreground bg-white/[0.02]"
               )}
             >
               <BarChart3 size={10} />
@@ -255,7 +255,7 @@ export function BenchmarkHistoryChart({
                 "px-2 py-1 text-[10px] transition-colors",
                 view === "list"
                   ? "bg-violet-500/20 text-violet-300"
-                  : "text-muted-foreground/40 hover:text-muted-foreground bg-white/[0.02]"
+                  : "text-muted-foreground/55 hover:text-muted-foreground bg-white/[0.02]"
               )}
             >
               <List size={10} />
@@ -266,7 +266,7 @@ export function BenchmarkHistoryChart({
             onClick={onRefresh}
             disabled={loading}
             aria-label="履歴を更新"
-            className="text-muted-foreground/40 hover:text-muted-foreground transition-colors disabled:opacity-30"
+            className="text-muted-foreground/55 hover:text-muted-foreground transition-colors disabled:opacity-30"
           >
             <RefreshCw size={11} className={cn(loading && "animate-spin")} />
           </button>
@@ -278,7 +278,7 @@ export function BenchmarkHistoryChart({
                 "flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border transition-colors",
                 confirmClear
                   ? "bg-rose-500/20 border-rose-500/30 text-rose-300"
-                  : "border-white/[0.06] text-muted-foreground/40 hover:text-muted-foreground"
+                  : "border-white/[0.06] text-muted-foreground/55 hover:text-muted-foreground"
               )}
             >
               <Trash2 size={9} />
@@ -291,7 +291,7 @@ export function BenchmarkHistoryChart({
       {/* Body */}
       <div className="p-4">
         {loading && records.length === 0 ? (
-          <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground/40">
+          <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground/55">
             <Loader2 size={14} className="animate-spin" />
             <span className="text-[12px]">読み込み中...</span>
           </div>
