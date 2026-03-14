@@ -40,7 +40,7 @@ export const ENABLE_RECOMMENDATION_V2_UI = false;
 export const ENABLE_TOURNAMENT_MODE_UI = true;
 
 /** フレームタイムオーバーレイ UI を表示する（Rust 側 ENABLE_FRAMETIME_OVERLAY と連動） */
-export const ENABLE_FRAMETIME_OVERLAY_UI = false;
+export const ENABLE_FRAMETIME_OVERLAY_UI = true;
 
 // ── ゲームライブラリ ──────────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ export const ENABLE_FRAMETIME_OVERLAY_UI = false;
 export const ENABLE_PROFILE_SSOT = false;
 
 /** マルチランチャー（Epic / GOG / Xbox）対応を有効にする */
-export const ENABLE_MULTI_LAUNCHER = false;
+export const ENABLE_MULTI_LAUNCHER = true;
 
 // ── プロファイル ──────────────────────────────────────────────────────────────
 
@@ -74,12 +74,12 @@ export const ENABLE_NETWORK_TAB_SPLIT = true;
 // ── ベンチマーク ──────────────────────────────────────────────────────────────
 
 /** ベンチマーク履歴機能を有効にする */
-export const ENABLE_BENCHMARK_HISTORY = false;
+export const ENABLE_BENCHMARK_HISTORY = true;
 
 // ── 設定 ──────────────────────────────────────────────────────────────────────
 
 /** HAGS / 表示Hz / Defender除外最適化を表示する */
-export const ENABLE_HAGS_DISPLAY_OPTIMIZER = false;
+export const ENABLE_HAGS_DISPLAY_OPTIMIZER = true;
 
 /** 監査ログ UI を表示する */
 export const ENABLE_AUDIT_LOG = true;

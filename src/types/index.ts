@@ -184,6 +184,8 @@ export interface DriverInfo {
 
 export interface GpuStatus {
   name: string;
+  /** "nvidia" | "amd" | "intel" | "unknown" */
+  vendor: string;
   vram_total_mb: number;
   vram_used_mb: number;
   temperature_c: number;

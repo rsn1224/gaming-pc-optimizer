@@ -13,7 +13,7 @@ use winreg::RegKey;
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
 
-pub const ENABLE_HAGS_DISPLAY_OPTIMIZER: bool = false;
+pub const ENABLE_HAGS_DISPLAY_OPTIMIZER: bool = true;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

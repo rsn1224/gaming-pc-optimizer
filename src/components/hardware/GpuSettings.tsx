@@ -21,18 +21,22 @@ export function GpuSettings() {
 
   const loadData = async () => {
     try {
-      const [gpus, power] = await Promise.all([
-        invoke<GpuStatus[]>("get_gpu_status"),
-        invoke<GpuPowerLimit>("get_gpu_power_info"),
-      ]);
+      const gpus = await invoke<GpuStatus[]>("get_gpu_status");
       const first = gpus[0] ?? null;
       setGpuStatus(first);
-      setPowerInfo(power);
-      setPendingWatts(power.current_w);
-      if (first) {
-        setFanPercent(first.fan_speed_percent > 0 ? first.fan_speed_percent : 50);
-      }
       setNotAvailable(false);
+
+      // Power / fan controls are NVIDIA-only
+      if (first?.vendor === "nvidia") {
+        try {
+          const power = await invoke<GpuPowerLimit>("get_gpu_power_info");
+          setPowerInfo(power);
+          setPendingWatts(power.current_w);
+          setFanPercent(first.fan_speed_percent > 0 ? first.fan_speed_percent : 50);
+        } catch {
+          // NVIDIA GPU detected but power info unavailable — non-fatal
+        }
+      }
     } catch {
       setNotAvailable(true);
     } finally {
@@ -110,14 +114,16 @@ export function GpuSettings() {
         </div>
         <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-6 flex flex-col items-center gap-3 text-center">
           <AlertTriangle size={32} className="text-amber-400" />
-          <p className="text-sm font-semibold text-amber-300">GPU設定はNVIDIA GPUのみ対応</p>
+          <p className="text-sm font-semibold text-amber-300">GPU情報を取得できませんでした</p>
           <p className="text-xs text-muted-foreground/60 max-w-sm">
-            nvidia-smiが見つかりませんでした。NVIDIA GPU搭載のPCでのみご利用いただけます。
+            GPUドライバーが正しくインストールされているか確認してください。
           </p>
         </div>
       </div>
     );
   }
+
+  const isNvidia = gpuStatus?.vendor === "nvidia";
 
   const minW = powerInfo?.min_w ?? 0;
   const maxW = powerInfo?.max_w ?? 300;
@@ -148,23 +154,48 @@ export function GpuSettings() {
               <p className="text-sm font-bold text-white">{gpuStatus.name}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest mb-1">ドライバー</p>
-              <p className="text-sm font-bold text-white">{gpuStatus.driver_version}</p>
+              <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest mb-1">VRAM</p>
+              <p className="text-sm font-bold text-white">
+                {gpuStatus.vram_total_mb >= 1024
+                  ? `${(gpuStatus.vram_total_mb / 1024).toFixed(0)} GB`
+                  : `${gpuStatus.vram_total_mb} MB`}
+              </p>
             </div>
-            <div>
-              <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest mb-1">現在の電力</p>
-              <p className="text-sm font-bold text-cyan-400">{gpuStatus.power_draw_w.toFixed(0)}W</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest mb-1">温度</p>
-              <p className="text-sm font-bold text-amber-400">{gpuStatus.temperature_c}°C</p>
-            </div>
+            {gpuStatus.driver_version && (
+              <div>
+                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest mb-1">ドライバー</p>
+                <p className="text-sm font-bold text-white">{gpuStatus.driver_version}</p>
+              </div>
+            )}
+            {isNvidia && (
+              <>
+                <div>
+                  <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest mb-1">現在の電力</p>
+                  <p className="text-sm font-bold text-cyan-400">{gpuStatus.power_draw_w.toFixed(0)}W</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest mb-1">温度</p>
+                  <p className="text-sm font-bold text-amber-400">{gpuStatus.temperature_c}°C</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* Power limit */}
-      {powerInfo && (
+      {/* Non-NVIDIA notice */}
+      {gpuStatus && !isNvidia && (
+        <div className="flex items-start gap-2.5 bg-cyan-500/8 border border-cyan-500/20 rounded-xl p-3.5">
+          <AlertTriangle size={14} className="text-cyan-400 shrink-0 mt-0.5" />
+          <p className="text-[11px] text-cyan-300/70 leading-relaxed">
+            電力制限・ファン速度・温度モニタリングは NVIDIA GPU のみ対応しています。
+            現在の GPU（{gpuStatus.vendor.toUpperCase()}）では基本情報の表示のみ利用できます。
+          </p>
+        </div>
+      )}
+
+      {/* Power limit — NVIDIA only */}
+      {isNvidia && powerInfo && (
         <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
           <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
           <div className="p-4 flex flex-col gap-4">
@@ -240,8 +271,8 @@ export function GpuSettings() {
         </div>
       )}
 
-      {/* Fan speed */}
-      <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
+      {/* Fan speed — NVIDIA only */}
+      {isNvidia && <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden card-glow">
         <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
         <div className="p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -298,16 +329,16 @@ export function GpuSettings() {
             {settingFan ? "設定中..." : "ファン設定を適用"}
           </button>
         </div>
-      </div>
+      </div>}
 
-      {/* Warning */}
-      <div className="flex items-start gap-2.5 bg-red-500/8 border border-red-500/20 rounded-xl p-3.5">
+      {/* Warning — NVIDIA のみ表示 */}
+      {isNvidia && <div className="flex items-start gap-2.5 bg-red-500/8 border border-red-500/20 rounded-xl p-3.5">
         <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
         <p className="text-[11px] text-red-300/70 leading-relaxed">
           GPU設定の変更はリスクを伴います。自己責任でご使用ください。
           過度な電力設定はハードウェアの損傷を引き起こす可能性があります。
         </p>
-      </div>
+      </div>}
     </div>
   );
 }

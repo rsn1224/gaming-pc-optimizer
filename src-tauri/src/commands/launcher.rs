@@ -26,7 +26,7 @@ const SKIP_PATTERNS: &[&str] = &[
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
 
-pub const ENABLE_MULTI_LAUNCHER: bool = false;
+pub const ENABLE_MULTI_LAUNCHER: bool = true;
 
 // ── Result type ───────────────────────────────────────────────────────────────
 

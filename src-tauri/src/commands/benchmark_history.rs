@@ -11,7 +11,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
 
-pub const ENABLE_BENCHMARK_HISTORY: bool = false;
+pub const ENABLE_BENCHMARK_HISTORY: bool = true;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

@@ -18,7 +18,7 @@ use tauri::Emitter;
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
 
-pub const ENABLE_FRAMETIME_OVERLAY: bool = false;
+pub const ENABLE_FRAMETIME_OVERLAY: bool = true;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
