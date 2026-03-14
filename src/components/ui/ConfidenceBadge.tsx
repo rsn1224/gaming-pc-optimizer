@@ -25,7 +25,7 @@ export function ConfidenceBadge({ confidence, showLabel = true, className }: Con
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-semibold leading-none",
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[10px] font-semibold leading-none",
         ring,
         className
       )}

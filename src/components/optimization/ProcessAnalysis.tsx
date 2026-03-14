@@ -143,7 +143,7 @@ function BloatwareList({
               type="button"
               onClick={() => onKill(proc.pid, proc.name)}
               disabled={isKilling}
-              className="px-2 py-0.5 text-[11px] bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-md transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              className="px-2 py-0.5 text-[11px] bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
             >
               {isKilling ? (
                 <Loader2 size={10} className="animate-spin" />
@@ -238,7 +238,7 @@ export function ProcessAnalysis() {
   );
 
   return (
-    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

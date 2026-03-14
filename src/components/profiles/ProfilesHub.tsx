@@ -40,7 +40,7 @@ export function ProfilesHub() {
         )}
       </div>
       <TabBar tabs={TABS} activeTab={tab} onChange={setTab} />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         {tab === "profiles" && <Profiles key={profilesKey} />}
         {tab === "profileshare" && <ProfileShare />}
       </div>

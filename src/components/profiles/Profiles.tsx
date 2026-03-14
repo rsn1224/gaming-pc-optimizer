@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useAppStore } from "@/stores/useAppStore";
 import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap, FilePlus, Sparkles, ShieldCheck, AlertTriangle, Zap as ZapIcon } from "lucide-react";
 import { useEditingStore } from "@/stores/useEditingStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
@@ -573,6 +574,7 @@ function QuickDraftModal({ onSave, onClose }: QuickDraftProps) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function Profiles() {
+  const { hasApiKey } = useAppStore();
   const { editingProfileId, setEditingProfileId } = useEditingStore();
   const { activeProfileId } = useWatcherStore();
   const [profiles, setProfiles] = useState<GameProfile[]>([]);
@@ -691,7 +693,7 @@ export function Profiles() {
   };
 
   return (
-    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -707,8 +709,8 @@ export function Profiles() {
           <button
             type="button"
             onClick={handleAiGenerate}
-            disabled={aiGenerating}
-            title="ドラフトプロファイルの設定をAIで自動補完"
+            disabled={aiGenerating || !hasApiKey}
+            title={!hasApiKey ? "設定ページでAPIキーを登録してください" : "ドラフトプロファイルの設定をAIで自動補完"}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm font-medium hover:bg-purple-500/20 disabled:opacity-50 transition-colors"
           >
             {aiGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}

@@ -25,12 +25,12 @@ export function StatusBanner({ status, message }: StatusBannerProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className={`flex items-start gap-2 px-3 py-2 rounded-md text-xs border ${
+          className={`flex items-start gap-2 px-3 py-2 rounded-xl text-xs border ${
             status === "success"
-              ? "bg-green-500/10 border-green-500/30 text-green-400"
+              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
               : status === "error"
-              ? "bg-destructive/10 border-destructive/30 text-destructive"
-              : "bg-secondary border-border text-muted-foreground"
+              ? "bg-red-500/10 border-red-500/25 text-red-400"
+              : "bg-white/[0.04] border-white/[0.08] text-muted-foreground"
           }`}
         >
           {status === "success" && <CheckCircle2 size={13} className="shrink-0 mt-0.5" />}

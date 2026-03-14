@@ -55,27 +55,27 @@ function TcpSection({
 }) {
   const isBusy = status === "running";
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+    <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap size={16} className="text-muted-foreground" />
           <span className="text-sm font-semibold">TCP/IP 最適化</span>
         </div>
-        <span className="text-[10px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2 py-0.5 rounded flex items-center gap-1">
+        <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex items-center gap-1">
           <AlertCircle size={10} />
           管理者権限が必要
         </span>
       </div>
 
       {settings ? (
-        <div className="divide-y divide-border/50">
+        <div className="divide-y divide-white/[0.05]">
           {/* 変更前値の並列表示 */}
-          <div className="px-4 py-2 bg-secondary/30">
+          <div className="px-4 py-2 bg-white/[0.04]/30">
             <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">現在の設定</p>
             <div className="flex gap-4 text-[11px] text-muted-foreground">
-              <span>スロットリング: <span className={settings.throttling_disabled ? "text-green-400" : "text-amber-400"}>{settings.throttling_disabled ? "無効化済" : "有効"}</span></span>
-              <span>SystemResponsiveness: <span className={settings.system_responsiveness === 0 ? "text-green-400" : "text-amber-400"}>{settings.system_responsiveness}</span></span>
-              <span>Nagle: <span className={settings.nagle_disabled ? "text-green-400" : "text-amber-400"}>{settings.nagle_disabled ? "無効化済" : "有効"}</span></span>
+              <span>スロットリング: <span className={settings.throttling_disabled ? "text-emerald-400" : "text-amber-400"}>{settings.throttling_disabled ? "無効化済" : "有効"}</span></span>
+              <span>SystemResponsiveness: <span className={settings.system_responsiveness === 0 ? "text-emerald-400" : "text-amber-400"}>{settings.system_responsiveness}</span></span>
+              <span>Nagle: <span className={settings.nagle_disabled ? "text-emerald-400" : "text-amber-400"}>{settings.nagle_disabled ? "無効化済" : "有効"}</span></span>
             </div>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
@@ -117,7 +117,7 @@ function TcpSection({
             type="button"
             onClick={onApply}
             disabled={isBusy || !settings}
-            className={`flex-1 py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all
+            className={`flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all
               ${isBusy || !settings
                 ? "bg-primary/20 text-primary/60 cursor-not-allowed border border-primary/20"
                 : "bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] border border-primary/20"
@@ -130,10 +130,10 @@ function TcpSection({
             type="button"
             onClick={onRestore}
             disabled={isBusy || !settings}
-            className={`px-4 py-2.5 rounded-md font-medium text-sm flex items-center gap-2 border transition-all
+            className={`px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 border transition-all
               ${isBusy || !settings
                 ? "opacity-40 cursor-not-allowed border-border text-muted-foreground"
-                : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                : "border-white/[0.10] text-muted-foreground hover:text-foreground hover:border-white/[0.20]"
               }`}
           >
             <RotateCcw size={14} />
@@ -164,13 +164,13 @@ function DnsSection({
 }) {
   const currentAdapter = adapters.find((a) => a.name === selectedAdapter);
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+    <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity size={16} className="text-muted-foreground" />
           <span className="text-sm font-semibold">DNS 設定</span>
         </div>
-        <span className="text-[10px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2 py-0.5 rounded flex items-center gap-1">
+        <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex items-center gap-1">
           <AlertCircle size={10} />
           管理者権限が必要
         </span>
@@ -185,7 +185,7 @@ function DnsSection({
               aria-label="ネットワークアダプターを選択"
               value={selectedAdapter}
               onChange={(e) => onSelectAdapter(e.target.value)}
-              className="bg-secondary border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+              className="bg-[#05080c] border border-white/[0.10] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
             >
               {adapters.map((a) => (
                 <option key={a.name} value={a.name}>{a.name}</option>
@@ -212,7 +212,7 @@ function DnsSection({
               key={preset.id}
               onClick={() => onApplyDns(preset.id)}
               disabled={status === "running" || !selectedAdapter}
-              className="flex flex-col items-start px-3 py-2.5 bg-secondary hover:bg-secondary/70 border border-border hover:border-muted-foreground rounded-md transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex flex-col items-start px-3 py-2.5 bg-white/[0.04] hover:bg-white/[0.04]/70 border border-white/[0.10] hover:border-muted-foreground rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <span className={`text-xs font-semibold ${preset.color}`}>{preset.label}</span>
               <span className="text-[10px] text-muted-foreground font-mono mt-0.5">
@@ -299,7 +299,7 @@ export function NetworkSettingsPanel() {
   };
 
   return (
-    <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+    <div className="p-6 flex flex-col gap-6">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 border border-blue-500/30 rounded-xl">
           <Wifi className="text-blue-400" size={20} />

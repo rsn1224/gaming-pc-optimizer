@@ -103,7 +103,7 @@ export function GpuSettings() {
 
   if (notAvailable) {
     return (
-      <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
+      <div className="p-5 flex flex-col gap-5">
         <div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">GPU設定管理</h1>
           <p className="text-xs text-muted-foreground/60 mt-0.5">電力制限・ファン速度の制御</p>
@@ -131,7 +131,7 @@ export function GpuSettings() {
   ];
 
   return (
-    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5">
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-foreground tracking-tight">GPU設定管理</h1>

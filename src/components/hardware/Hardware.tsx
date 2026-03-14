@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useAppStore } from "@/stores/useAppStore";
 import {
   Cpu,
   RefreshCw,
@@ -31,7 +32,7 @@ function detectBrand(name: string): "nvidia" | "amd" | "intel" | "unknown" {
 }
 
 const BRAND_CONFIG = {
-  nvidia: { label: "NVIDIA", cls: "bg-green-500/15 text-green-400 border-green-500/30" },
+  nvidia: { label: "NVIDIA", cls: "bg-emerald-500/15 text-emerald-400 border-green-500/30" },
   amd:    { label: "AMD",    cls: "bg-red-500/15 text-red-400 border-red-500/30" },
   intel:  { label: "Intel",  cls: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
   unknown:{ label: "",       cls: "" },
@@ -53,21 +54,21 @@ function BrandBadge({ name }: { name: string }) {
 const MODE_CONFIG = {
   performance: {
     label: "パフォーマンス",
-    desc: "ゲーミング・高負荷作業向け�E�電力制限なし！E,
+    desc: "ゲーミング・高負荷作業向け（電力制限なし）",
     powerRatio: 1.0,
     cls: "bg-red-500/10 border-red-500/30 text-red-400",
     activeCls: "bg-red-500/20 border-red-500/50 text-red-300 shadow-[0_0_0_1px_rgba(239,68,68,0.25)]",
   },
   balanced: {
     label: "バランス",
-    desc: "日常使用向け�E�デフォルト毁E-20%�E�E,
+    desc: "日常使用向け（デフォルト比 -20%）",
     powerRatio: 0.8,
     cls: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
     activeCls: "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_0_1px_rgba(34,197,94,0.25)]",
   },
   efficiency: {
-    label: "省E��劁E,
-    desc: "発熱抑制・省エネ優先（デフォルト毁E-35%�E�E,
+    label: "省電力",
+    desc: "発熱抑制・省エネ優先（デフォルト比 -35%）",
     powerRatio: 0.65,
     cls: "bg-blue-500/10 border-blue-500/30 text-blue-400",
     activeCls: "bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_0_1px_rgba(59,130,246,0.25)]",
@@ -156,7 +157,7 @@ function GpuCard({
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <StatCell
             icon={<Activity size={12} />}
-            label="GPU使用玁E
+            label="GPU使用率"
             value={gpu.utilization_percent}
             unit="%"
             warn={gpu.utilization_percent > 95}
@@ -170,7 +171,7 @@ function GpuCard({
           />
           <StatCell
             icon={<Zap size={12} />}
-            label="消費電劁E
+            label="消費電力"
             value={gpu.power_draw_w.toFixed(0)}
             unit="W"
           />
@@ -184,7 +185,7 @@ function GpuCard({
           <StatCell
             icon={<Wind size={12} />}
             label="ファン"
-            value={gpu.fan_speed_percent === 0 ? " E : gpu.fan_speed_percent}
+            value={gpu.fan_speed_percent === 0 ? "—" : gpu.fan_speed_percent}
             unit={gpu.fan_speed_percent === 0 ? undefined : "%"}
           />
           <StatCell
@@ -198,14 +199,14 @@ function GpuCard({
         {/* VRAM progress bar */}
         <div>
           <div className="flex justify-between text-[10px] text-muted-foreground/50 mb-1.5 uppercase tracking-wider">
-            <span>VRAM使用玁E/span>
+            <span>VRAM使用率</span>
           </div>
           <ProgressBar value={vramPct} colorByValue showLabel />
         </div>
 
         {/* Mode buttons */}
         <div className="flex flex-col gap-2">
-          <p className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-widest">電力モーチE/p>
+          <p className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-widest">電力モード</p>
           <div className="grid grid-cols-3 gap-2">
             {(Object.entries(MODE_CONFIG) as [GpuMode, (typeof MODE_CONFIG)[GpuMode]][]).map(
               ([mode, cfg]) => {
@@ -250,7 +251,7 @@ function GpuCard({
 // ── CPU info card ─────────────────────────────────────────────────────────────
 
 function CpuInfoCard({ info }: { info: CpuDetailedInfo }) {
-  const clockGhz = info.max_clock_mhz > 0 ? (info.max_clock_mhz / 1000).toFixed(2) : " E;
+  const clockGhz = info.max_clock_mhz > 0 ? (info.max_clock_mhz / 1000).toFixed(2) : "—";
   const cpuLogo = getCpuVendorLogo(`${info.name} ${info.manufacturer}`);
   const iconBoxCls = cpuLogo ? VENDOR_ICON_BOX[cpuLogo.vendor] : DEFAULT_ICON_BOX;
   return (
@@ -267,7 +268,7 @@ function CpuInfoCard({ info }: { info: CpuDetailedInfo }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-sm leading-tight truncate">{info.name || "不�E"}</p>
+              <p className="font-semibold text-sm leading-tight truncate">{info.name || "不明"}</p>
               <BrandBadge name={`${info.name} ${info.manufacturer}`} />
             </div>
             <p className="text-[10px] text-muted-foreground/50 font-mono mt-0.5">
@@ -276,12 +277,12 @@ function CpuInfoCard({ info }: { info: CpuDetailedInfo }) {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <StatCell icon={<Cpu size={12} />} label="物琁E��ア" value={info.cores || " E} />
-          <StatCell icon={<Activity size={12} />} label="論理プロセチE��" value={info.logical_processors || " E} />
-          <StatCell icon={<Zap size={12} />} label="最大クロチE��" value={clockGhz} unit="GHz" />
-          <StatCell icon={<Layers size={12} />} label="L2キャチE��ュ" value={info.l2_cache_kb > 0 ? `${info.l2_cache_kb}` : " E} unit={info.l2_cache_kb > 0 ? "KB" : undefined} />
-          <StatCell icon={<Layers size={12} />} label="L3キャチE��ュ" value={info.l3_cache_kb > 0 ? `${(info.l3_cache_kb / 1024).toFixed(1)}` : " E} unit={info.l3_cache_kb > 0 ? "MB" : undefined} />
-          <StatCell icon={<Server size={12} />} label="ソケチE��" value={info.socket || " E} />
+          <StatCell icon={<Cpu size={12} />} label="物理コア" value={info.cores || "—"} />
+          <StatCell icon={<Activity size={12} />} label="論理プロセッサ" value={info.logical_processors || "—"} />
+          <StatCell icon={<Zap size={12} />} label="最大クロック" value={clockGhz} unit="GHz" />
+          <StatCell icon={<Layers size={12} />} label="L2キャッシュ" value={info.l2_cache_kb > 0 ? `${info.l2_cache_kb}` : "—"} unit={info.l2_cache_kb > 0 ? "KB" : undefined} />
+          <StatCell icon={<Layers size={12} />} label="L3キャッシュ" value={info.l3_cache_kb > 0 ? `${(info.l3_cache_kb / 1024).toFixed(1)}` : "—"} unit={info.l3_cache_kb > 0 ? "MB" : undefined} />
+          <StatCell icon={<Server size={12} />} label="ソケット" value={info.socket || "—"} />
         </div>
       </div>
     </div>
@@ -308,7 +309,7 @@ function MbInfoCard({ info }: { info: MotherboardInfo }) {
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-sm leading-tight">{info.product || "不�E"}</p>
+              <p className="font-semibold text-sm leading-tight">{info.product || "不明"}</p>
               {mbCfg && (
                 <span className={`inline-flex items-center text-[10px] font-bold uppercase tracking-wider border rounded px-1.5 py-0.5 ${mbCfg.box} ${mbCfg.text}`}>
                   {mbCfg.label}
@@ -321,8 +322,8 @@ function MbInfoCard({ info }: { info: MotherboardInfo }) {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <StatCell icon={<Server size={12} />} label="メーカー" value={info.manufacturer || " E} />
-          <StatCell icon={<Layers size={12} />} label="リビジョン" value={info.version || " E} />
+          <StatCell icon={<Server size={12} />} label="メーカー" value={info.manufacturer || "—"} />
+          <StatCell icon={<Layers size={12} />} label="リビジョン" value={info.version || "—"} />
         </div>
         {info.serial_number && info.serial_number.toLowerCase() !== "to be filled by o.e.m." && (
           <p className="text-[10px] text-muted-foreground/30 font-mono">S/N: {info.serial_number}</p>
@@ -335,6 +336,7 @@ function MbInfoCard({ info }: { info: MotherboardInfo }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function Hardware() {
+  const { hasApiKey } = useAppStore();
   const [gpus, setGpus]               = useState<GpuStatus[]>([]);
   const [gpuError, setGpuError]       = useState<string | null>(null);
   const [loading, setLoading]         = useState(true);
@@ -353,8 +355,8 @@ export function Hardware() {
   const [applyLog, setApplyLog]          = useState<{ msg: string; ok: boolean } | null>(null);
 
   useEffect(() => {
-    if (!aiLog) return;
-    const t = setTimeout(() => setAiLog(null), 6000);
+    if (!aiLog?.ok) return; // errors stay visible; only dismiss successes
+    const t = setTimeout(() => setAiLog(null), 8000);
     return () => clearTimeout(t);
   }, [aiLog]);
 
@@ -397,7 +399,7 @@ export function Hardware() {
       const result = await invoke<AiHardwareMode>("get_ai_hardware_mode");
       setAiResult(result);
       setAiLog({
-        msg: `AI推奨: ${MODE_CONFIG[result.mode as GpuMode]?.label ?? result.mode}  E${result.reason}�E�推奨電力毁E ${result.suggested_power_limit_percent.toFixed(2)}�E�`,
+        msg: `AI推奨: ${MODE_CONFIG[result.mode as GpuMode]?.label ?? result.mode} — ${result.reason}（推奨電力比: ${result.suggested_power_limit_percent.toFixed(2)}）`,
         ok: true,
       });
     } catch (e) {
@@ -413,7 +415,7 @@ export function Hardware() {
 
     const defaultW = gpu.power_limit_default_w;
     if (defaultW <= 0) {
-      setApplyLog({ msg: "こ�EGPUのチE��ォルト電力情報がありません", ok: false });
+      setApplyLog({ msg: "このGPUのデフォルト電力情報がありません", ok: false });
       return;
     }
 
@@ -424,7 +426,7 @@ export function Hardware() {
       await invoke("set_gpu_power_limit", { gpuIndex, watts });
       setAppliedModes((prev) => ({ ...prev, [gpuIndex]: mode }));
       setApplyLog({
-        msg: `GPU #${gpuIndex} めE{MODE_CONFIG[mode].label}モード！E{watts}W�E�に設定しました`,
+        msg: `GPU #${gpuIndex} を${MODE_CONFIG[mode].label}モード（${watts}W）に設定しました`,
         ok: true,
       });
       setTimeout(() => fetchGpus(true), 1500);
@@ -436,7 +438,7 @@ export function Hardware() {
   };
 
   return (
-    <div className="p-6 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-6 flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
@@ -444,8 +446,8 @@ export function Hardware() {
             <Cpu className="text-cyan-400" size={22} />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">ハ�Eドウェア</h1>
-            <p className="text-xs text-muted-foreground/60 mt-0.5">CPU・マザーボ�Eド�EGPU状態モニタリングと電力最適匁E/p>
+            <h1 className="text-xl font-bold tracking-tight">ハードウェア</h1>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">CPU・マザーボード・GPU状態モニタリングと電力最適化</p>
           </div>
         </div>
 
@@ -463,7 +465,8 @@ export function Hardware() {
           <button
             type="button"
             onClick={handleAiRecommend}
-            disabled={loadingAi || loading}
+            disabled={loadingAi || loading || !hasApiKey}
+            title={!hasApiKey ? "設定ページでAPIキーを登録してください" : undefined}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm font-medium hover:bg-purple-500/20 disabled:opacity-50 transition-all hover:shadow-[0_0_12px_rgba(168,85,247,0.2)]"
           >
             {loadingAi ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
@@ -481,11 +484,11 @@ export function Hardware() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-semibold text-purple-300">
-                AI推奨モーチE {MODE_CONFIG[aiResult.mode as GpuMode]?.label ?? aiResult.mode}
+                AI推奨モード: {MODE_CONFIG[aiResult.mode as GpuMode]?.label ?? aiResult.mode}
               </p>
               {aiResult.confidence > 0 && <ConfidenceBadge confidence={aiResult.confidence} />}
               <span className="text-[11px] text-purple-400/50">
-                推奨電力毁E {aiResult.suggested_power_limit_percent.toFixed(2)}
+                推奨電力比: {aiResult.suggested_power_limit_percent.toFixed(2)}
               </span>
             </div>
             <p className="text-xs text-purple-400/70 mt-0.5">{aiResult.reason}</p>
@@ -538,7 +541,7 @@ export function Hardware() {
       {loading ? (
         <div className="flex items-center justify-center flex-1 text-muted-foreground gap-2">
           <Loader2 size={18} className="animate-spin text-cyan-400" />
-          <span className="text-sm">GPU惁E��を取得中…</span>
+          <span className="text-sm">GPU情報を取得中…</span>
         </div>
       ) : gpuError ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-3 text-muted-foreground">
@@ -547,7 +550,7 @@ export function Hardware() {
           </div>
           <p className="text-sm text-center max-w-sm">{gpuError}</p>
           <p className="text-xs text-muted-foreground/55 text-center">
-            NVIDIA GPU搭載PCでのみ詳細惁E��が取得できまぁE
+            NVIDIA GPU搭載PCでのみ詳細情報が取得できます
           </p>
         </div>
       ) : (
@@ -569,7 +572,7 @@ export function Hardware() {
       {/* Note about admin */}
       {gpus.length > 0 && (
         <p className="text-[11px] text-muted-foreground/30 text-center">
-          電力制限�E変更には管琁E��E��限が忁E��な場合がありまぁE
+          電力制限の変更には管理者権限が必要な場合があります
         </p>
       )}
     </div>

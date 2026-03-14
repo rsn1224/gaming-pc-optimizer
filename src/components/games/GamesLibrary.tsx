@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Library, Loader2, Sparkles, ScanLine, Thermometer, Gauge, Clock, StopCircle, Gamepad2 as GamepadIcon } from "lucide-react";
+import { Library, Loader2, Sparkles, ScanLine, Thermometer, Gauge, Clock, StopCircle, Gamepad2 as GamepadIcon, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { useAppStore } from "@/stores/useAppStore";
 import { useEditingStore } from "@/stores/useEditingStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
 import type { GameProfile, OptimizationScore, TempSnapshot, FpsEstimate, AiHardwareMode, MultiLauncherScanResult } from "@/types";
 import { GameCard } from "./GameCard";
 import { GameFilters } from "./GameFilters";
+import { AlertBanner } from "@/components/ui/AlertBanner";
 
 // ── Feature flags ─────────────────────────────────────────────────────────────
 // Set to `true` to enable launch monitoring chain (captures score/temp/FPS during session).
@@ -59,18 +60,18 @@ function HardwareBanner({ hwMode }: { hwMode: AiHardwareMode }) {
     balanced:    "バランス",
     efficiency:  "省電力",
   };
-  const colors: Record<AiHardwareMode["mode"], string> = {
-    performance: "border-cyan-500/30 bg-cyan-500/5 text-cyan-300",
-    balanced:    "border-emerald-500/30 bg-emerald-500/5 text-emerald-300",
-    efficiency:  "border-amber-500/30 bg-amber-500/5 text-amber-300",
+  const variants: Record<AiHardwareMode["mode"], "info" | "success" | "warning"> = {
+    performance: "info",
+    balanced:    "success",
+    efficiency:  "warning",
   };
   return (
-    <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-xs ${colors[hwMode.mode]}`}>
-      <span className="font-semibold shrink-0">
-        🖥 ハードウェア判定: {labels[hwMode.mode]}
-      </span>
-      <span className="text-muted-foreground/70 leading-relaxed">{hwMode.reason}</span>
-    </div>
+    <AlertBanner
+      variant={variants[hwMode.mode]}
+      icon={<AlertTriangle size={14} />}
+      title={`ハードウェア判定: ${labels[hwMode.mode]}`}
+      detail={hwMode.reason}
+    />
   );
 }
 
@@ -614,15 +615,12 @@ export function GamesLibrary() {
 
       {/* Scan log */}
       {scanLog && (
-        <div
-          className={`rounded-xl border px-4 py-3 text-sm ${
-            scanLog.ok
-              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-              : "bg-red-500/10 border-red-500/25 text-red-400"
-          }`}
-        >
-          {scanLog.msg}
-        </div>
+        <AlertBanner
+          variant={scanLog.ok ? "success" : "error"}
+          icon={scanLog.ok ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+          title={scanLog.msg}
+          onDismiss={() => setScanLog(null)}
+        />
       )}
 
       {/* Filters */}
@@ -641,15 +639,12 @@ export function GamesLibrary() {
 
       {/* Launch log */}
       {launchLog && (
-        <div
-          className={`rounded-xl border px-4 py-3 text-sm ${
-            launchLog.ok
-              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-              : "bg-red-500/10 border-red-500/25 text-red-400"
-          }`}
-        >
-          {launchLog.msg}
-        </div>
+        <AlertBanner
+          variant={launchLog.ok ? "success" : "error"}
+          icon={launchLog.ok ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+          title={launchLog.msg}
+          onDismiss={() => setLaunchLog(null)}
+        />
       )}
 
       {/* Content */}

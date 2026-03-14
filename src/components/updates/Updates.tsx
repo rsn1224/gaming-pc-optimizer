@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useAppStore } from "@/stores/useAppStore";
 import {
   Shield,
   RefreshCw,
@@ -115,6 +116,7 @@ function PriorityBadge({ priority, reason, confidence }: { priority: AiUpdatePri
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function Updates() {
+  const { hasApiKey } = useAppStore();
   const [appUpdates, setAppUpdates]     = useState<AppUpdate[]>([]);
   const [drivers, setDrivers]           = useState<DriverInfo[]>([]);
   const [priorities, setPriorities]     = useState<Record<string, AiUpdatePriority>>({});
@@ -143,8 +145,8 @@ export function Updates() {
   }, [appLog]);
 
   useEffect(() => {
-    if (!aiLog) return;
-    const t = setTimeout(() => setAiLog(null), 6000);
+    if (!aiLog?.ok) return; // errors stay visible; only dismiss successes
+    const t = setTimeout(() => setAiLog(null), 8000);
     return () => clearTimeout(t);
   }, [aiLog]);
 
@@ -242,7 +244,7 @@ export function Updates() {
   const hasPriorities = Object.keys(priorities).length > 0;
 
   return (
-    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
@@ -270,7 +272,8 @@ export function Updates() {
             <button
               type="button"
               onClick={handleAiAnalysis}
-              disabled={loadingAi || loadingApps}
+              disabled={loadingAi || loadingApps || !hasApiKey}
+              title={!hasApiKey ? "設定ページでAPIキーを登録してください" : undefined}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm font-medium hover:bg-purple-500/20 disabled:opacity-50 transition-colors"
             >
               {loadingAi ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}

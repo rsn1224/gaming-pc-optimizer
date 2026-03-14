@@ -217,7 +217,7 @@ export function GameCard({
                     const v = e.target.value as "competitive" | "balanced" | "quality";
                     if (v) onModeChange(v);
                   }}
-                  className={`flex-1 appearance-none bg-[#07090e] border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:border-primary/60 transition-colors cursor-pointer ${
+                  className={`flex-1 appearance-none bg-[#05080c] border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:border-primary/60 transition-colors cursor-pointer ${
                     profile.recommended_mode
                       ? `${MODE_BADGE_CLASS[profile.recommended_mode]} border`
                       : "border-amber-500/25 text-amber-400/80 bg-amber-500/8"
@@ -247,17 +247,17 @@ export function GameCard({
                 {hardwareHint === "ok" && (
                   <span
                     title="このモードはあなたのハードウェアに最適です"
-                    className="text-[10px] text-emerald-400/80 shrink-0 cursor-help"
+                    className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0 cursor-help"
                   >
-                    ✓HW
+                    ✓ HW
                   </span>
                 )}
                 {hardwareHint === "warn" && (
                   <span
                     title="このモードはあなたのハードウェアには重い可能性があります。「balanced」または「quality」を推奨します。"
-                    className="text-[10px] text-amber-400/80 shrink-0 cursor-help"
+                    className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 shrink-0 cursor-help"
                   >
-                    ⚠HW
+                    ⚠ HW
                   </span>
                 )}
               </>

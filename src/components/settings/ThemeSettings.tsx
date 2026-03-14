@@ -136,7 +136,7 @@ export function ThemeSettings() {
               </div>
               <div className="ml-auto">
                 <span
-                  className="text-xs font-medium px-2 py-1 rounded-md"
+                  className="text-xs font-medium px-2 py-1 rounded-lg"
                   style={{
                     background: currentColor.glow.replace("0.2)", "0.15)"),
                     color: currentColor.hex,

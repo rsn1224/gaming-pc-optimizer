@@ -26,7 +26,7 @@ function DeltaBadge({ delta, unit, lowerIsBetter = true }: { delta: number; unit
     <span className={cn(
       "inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums",
       neutral  ? "text-muted-foreground/50" :
-      improved ? "text-green-400" : "text-amber-400"
+      improved ? "text-emerald-400" : "text-amber-400"
     )}>
       {!neutral && (improved
         ? <TrendingDown size={11} />
@@ -81,8 +81,8 @@ export function BeforeAfterCard({ before, after, className }: BeforeAfterCardPro
   const pctDelta   = Math.round(after.memory_percent - before.memory_percent);
 
   return (
-    <div className={cn("bg-card border border-border rounded-lg overflow-hidden", className)}>
-      <div className="px-4 py-2.5 border-b border-border bg-secondary/30">
+    <div className={cn("bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden", className)}>
+      <div className="px-4 py-2.5 border-b border-white/[0.08] bg-white/[0.04]/30">
         <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
           最適化前 → 後
         </p>

@@ -18,7 +18,7 @@ export function ProcessManager() {
         <h1 className="text-lg font-semibold text-white">プロセス管理</h1>
       </div>
       <TabBar tabs={TABS} activeTab={tab} onChange={setTab} />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         {tab === "process" && <ProcessAnalysis />}
         {tab === "memorycleaner" && <MemoryCleaner />}
         {tab === "cpuaffinity" && <CpuAffinity />}

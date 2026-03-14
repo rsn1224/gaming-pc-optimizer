@@ -18,7 +18,7 @@ export function WindowsOptimization() {
         <RollbackEntryPoint compact />
       </div>
       <TabBar tabs={TABS} activeTab={tab} onChange={setTab} />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         {tab === "windows" && <WindowsSettings />}
         {tab === "registry" && <RegistryOptimizer />}
       </div>

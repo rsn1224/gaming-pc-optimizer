@@ -35,7 +35,7 @@ export function NetworkHub() {
         <h1 className="text-lg font-semibold text-white">ネットワーク</h1>
       </div>
       <TabBar tabs={tabs} activeTab={tab} onChange={setTab} />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         {/* [NETWORK_TAB_SPLIT = false] — 従来の単一コンポーネント */}
         {!ENABLE_NETWORK_TAB_SPLIT && tab === "network"    && <NetworkOptimizer />}
         {!ENABLE_NETWORK_TAB_SPLIT && tab === "bandwidth"  && <BandwidthMonitor />}

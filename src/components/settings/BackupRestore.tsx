@@ -179,7 +179,7 @@ function ImportCard() {
 
 export function BackupRestore() {
   return (
-    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-emerald-500/10 border border-cyan-500/30 rounded-xl shadow-[0_0_12px_rgba(34,211,238,0.1)]">

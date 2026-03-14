@@ -34,7 +34,7 @@ function KeyChip({ combo }: { combo: string }) {
   return (
     <div className="flex items-center gap-1">
       {parts.map((part, i) => (
-        <span key={i} className="px-2 py-0.5 bg-white/[0.07] border border-white/[0.12] rounded-md text-[11px] font-mono font-semibold text-slate-200 shadow-sm">
+        <span key={i} className="px-2 py-0.5 bg-white/[0.07] border border-white/[0.12] rounded-lg text-[11px] font-mono font-semibold text-slate-200 shadow-sm">
           {part}
         </span>
       ))}
@@ -160,7 +160,7 @@ export function HotkeySettings() {
   const capturingRow = ROWS.find((r) => r.key === capturing);
 
   return (
-    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5">
       {capturing && capturingRow && (
         <KeyCaptureModal
           label={capturingRow.label}

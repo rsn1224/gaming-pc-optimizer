@@ -30,7 +30,7 @@ export function SettingsHub() {
         <h1 className="text-lg font-semibold text-white">設定</h1>
       </div>
       <TabBar tabs={TABS} activeTab={tab} onChange={setTab} />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         {tab === "settings" && <Settings />}
         {tab === "theme" && <ThemeSettings />}
         {tab === "hotkeys" && <HotkeySettings />}

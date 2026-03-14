@@ -22,7 +22,7 @@ export function HardwareHub() {
         <h1 className="text-lg font-semibold text-white">ハードウェア</h1>
       </div>
       <TabBar tabs={TABS} activeTab={tab} onChange={setTab} />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         {tab === "hardware" && <Hardware />}
         {tab === "tempmonitor" && <TempMonitor />}
         {tab === "diskhealth" && <DiskHealth />}

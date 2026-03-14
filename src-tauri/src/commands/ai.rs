@@ -18,16 +18,6 @@ pub enum ImpactLevel {
     Critical,
 }
 
-// ── Keyring constants ─────────────────────────────────────────────────────────
-
-const KEYRING_SERVICE: &str = "gaming-pc-optimizer";
-const KEYRING_USER: &str = "ai_api_key";
-
-fn keyring_entry() -> Result<keyring::Entry, String> {
-    keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
-        .map_err(|e| format!("認証情報マネージャーへのアクセスに失敗しました: {}", e))
-}
-
 // ── App config (config.json) ──────────────────────────────────────────────────
 // Stores non-secret preferences (e.g. ai_provider).
 // The API key is stored exclusively in Windows Credential Manager (keyring).
@@ -45,8 +35,7 @@ fn default_provider() -> String {
 
 #[derive(Serialize, Deserialize, Default)]
 struct AppConfig {
-    /// Legacy field — plaintext key used before keyring migration.
-    /// After migration this is erased; never written by new code.
+    /// API key stored in config.json (APPDATA).
     #[serde(default)]
     ai_api_key: String,
     /// Selected AI provider: "anthropic" | "openai"
@@ -74,71 +63,20 @@ fn save_app_config(cfg: &AppConfig) -> Result<(), String> {
     std::fs::write(&path, json).map_err(|e| e.to_string())
 }
 
-/// Read-only: retrieve the old plaintext key for one-time migration.
-fn read_legacy_key() -> Option<String> {
-    let cfg = load_app_config();
-    if cfg.ai_api_key.is_empty() {
-        None
-    } else {
-        Some(cfg.ai_api_key)
-    }
-}
-
-/// Erase the plaintext key field after successful keyring migration.
-fn erase_legacy_key() {
-    let mut cfg = load_app_config();
-    if !cfg.ai_api_key.is_empty() {
-        cfg.ai_api_key = String::new();
-        save_app_config(&cfg).ok();
-    }
-}
-
 // ── Public Tauri commands ─────────────────────────────────────────────────────
 
-/// Retrieve the API key from Windows Credential Manager.
-/// Falls back to legacy config.json once for automatic migration.
+/// Retrieve the API key from config.json.
 #[tauri::command]
 pub fn get_ai_api_key() -> String {
-    // 1. Primary: Windows Credential Manager
-    if let Ok(entry) = keyring_entry() {
-        match entry.get_password() {
-            Ok(key) if !key.is_empty() => return key,
-            _ => {}
-        }
-    }
-
-    // 2. Migration: read old plaintext key, move it to keyring, clean up file
-    if let Some(legacy_key) = read_legacy_key() {
-        if let Ok(entry) = keyring_entry() {
-            if entry.set_password(&legacy_key).is_ok() {
-                erase_legacy_key();
-            }
-        }
-        return legacy_key;
-    }
-
-    String::new()
+    load_app_config().ai_api_key
 }
 
-/// Persist the API key in Windows Credential Manager.
-/// Passing an empty string deletes the stored credential.
+/// Persist the API key in config.json.
 #[tauri::command]
 pub fn set_ai_api_key(key: String) -> Result<(), String> {
-    let entry = keyring_entry()?;
-
-    if key.is_empty() {
-        // Delete — ignore NoEntry error (idempotent)
-        entry.delete_credential().ok();
-    } else {
-        entry
-            .set_password(&key)
-            .map_err(|e| format!("APIキーの保存に失敗しました: {}", e))?;
-    }
-
-    // Clean up any legacy plaintext key that might still be on disk
-    erase_legacy_key();
-
-    Ok(())
+    let mut cfg = load_app_config();
+    cfg.ai_api_key = key;
+    save_app_config(&cfg)
 }
 
 /// Return the currently selected AI provider ("anthropic" | "openai").
@@ -569,6 +507,7 @@ JSONのみを返してください（説明・マークダウン不要）：
 pub struct AiStorageItem {
     pub id: String,
     pub recommend: bool,
+    #[serde(default)]
     pub reason: String,
 }
 
@@ -584,36 +523,46 @@ pub async fn get_ai_storage_recommendation() -> Result<Vec<AiStorageItem>, Strin
         return Ok(vec![]);
     }
 
-    let context = serde_json::to_string_pretty(&categories)
+    // Send only the fields the AI needs (id, accessible, size_mb) to keep the prompt short
+    let slim: Vec<serde_json::Value> = categories
+        .iter()
+        .map(|c| {
+            serde_json::json!({
+                "id": c.id,
+                "name": c.name,
+                "size_mb": (c.size_mb * 10.0).round() / 10.0,
+                "accessible": c.accessible
+            })
+        })
+        .collect();
+    let context = serde_json::to_string(&slim)
         .map_err(|e| format!("シリアライズ失敗: {}", e))?;
 
     let prompt = format!(
-        r#"あなたはPCストレージ最適化の専門家です。以下はWindowsPCの一時ファイル・キャッシュカテゴリとサイズです。
+        r#"You are a PC storage optimization expert. Below is a JSON array of temporary-file categories on a Windows gaming PC.
 
 {}
 
-ゲーミングPC向けに、安全に削除できるカテゴリを選定してください。
-JSONのみを返してください（説明不要）：
+Return ONLY a JSON array — no markdown, no explanation. Each element must have exactly these three fields:
+  "id"        – copy the id value unchanged
+  "recommend" – boolean true or false (not a string)
+  "reason"    – short Japanese reason (≤20 chars)
 
-[
-  {{
-    "id": "カテゴリID（変更しない）",
-    "recommend": true または false,
-    "reason": "20文字以内の日本語の理由"
-  }}
-]
+Rules:
+- Set recommend:false when accessible is false or size_mb is 0
+- Browser cache, user temp, thumbnail cache → recommend:true
+- Game/system data, prefetch, Windows Update cache → recommend:false
 
-基準：
-- accessible が false または size_mb が 0 のものは recommend: false
-- ブラウザキャッシュ・一時ファイル・サムネイルキャッシュは recommend: true
-- ゲームやシステムに必要なデータは recommend: false"#,
+Example output format:
+[{{"id":"user_temp","recommend":true,"reason":"不要な一時ファイル"}},{{"id":"prefetch","recommend":false,"reason":"システム高速化に必要"}}]"#,
         context
     );
 
-    let content_text = call_claude_api(&api_key, &prompt, 1024).await?;
+    let content_text = call_claude_api(&api_key, &prompt, 2048).await?;
     let json_str = extract_json_array(&content_text);
     serde_json::from_str::<Vec<AiStorageItem>>(json_str)
-        .map_err(|e| format!("AIレスポンスの解析失敗: {}", e))
+        .map_err(|e| format!("AIレスポンス解析失敗 ({}): {}", e, &content_text[..content_text.len().min(300)])
+        )
 }
 
 // ── Network recommendation AI ─────────────────────────────────────────────────

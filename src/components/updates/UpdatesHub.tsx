@@ -16,7 +16,7 @@ export function UpdatesHub() {
         <h1 className="text-lg font-semibold text-white">アップデート</h1>
       </div>
       <TabBar tabs={TABS} activeTab={tab} onChange={setTab} />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         {tab === "updates" && <Updates />}
         {tab === "updatecheck" && <UpdateChecker />}
       </div>

@@ -33,9 +33,9 @@ export function GameFilters({
     <div className="flex flex-col gap-2">
       {/* Search */}
       <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" />
         <input
-          className="w-full bg-secondary border border-border rounded-md pl-8 pr-3 py-2 text-sm outline-none focus:border-primary/60 placeholder:text-muted-foreground"
+          className="w-full bg-[#05080c] border border-white/[0.10] rounded-lg pl-8 pr-3 py-2 text-sm outline-none focus:border-cyan-500/40 placeholder:text-muted-foreground/40 transition-colors"
           placeholder="ゲーム名で検索…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
@@ -44,7 +44,7 @@ export function GameFilters({
           <button
             type="button"
             onClick={() => onSearchChange("")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
             aria-label="検索をクリア"
           >
             <X size={12} />
@@ -63,8 +63,8 @@ export function GameFilters({
               onClick={() => onTagChange(selectedTag === tag ? null : tag)}
               className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 selectedTag === tag
-                  ? "bg-primary/20 text-primary border-primary/40"
-                  : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/20"
+                  ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                  : "bg-white/[0.04] border-white/[0.08] text-muted-foreground/70 hover:text-foreground hover:border-white/[0.15]"
               }`}
             >
               {tag}
@@ -79,8 +79,8 @@ export function GameFilters({
               onClick={() => onModeChange(selectedMode === mode ? null : mode)}
               className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 selectedMode === mode
-                  ? "bg-primary/20 text-primary border-primary/40"
-                  : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/20"
+                  ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                  : "bg-white/[0.04] border-white/[0.08] text-muted-foreground/70 hover:text-foreground hover:border-white/[0.15]"
               }`}
             >
               {label}
@@ -92,7 +92,7 @@ export function GameFilters({
             <button
               type="button"
               onClick={() => { onSearchChange(""); onTagChange(null); onModeChange(null); }}
-              className="text-xs px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:text-red-400 hover:border-red-400/30 transition-colors"
+              className="text-xs px-2.5 py-1 rounded-full border border-white/[0.08] text-muted-foreground/50 hover:text-red-400 hover:border-red-400/30 transition-colors"
             >
               クリア
             </button>

@@ -103,7 +103,7 @@ export function RegistryOptimizer() {
         <div className="flex items-center gap-3">
           <DatabaseZap size={18} className="text-cyan-400" />
           <h1 className="text-lg font-semibold text-white">レジストリ最適化</h1>
-          <span className="text-xs text-muted-foreground bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-md">
+          <span className="text-xs text-muted-foreground bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-lg">
             {appliedCount} / {tweaks.length} 項目適用済み
           </span>
         </div>

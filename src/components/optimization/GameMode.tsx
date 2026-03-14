@@ -148,10 +148,10 @@ function ProcessRow({ proc }: { proc: AnnotatedProcess }) {
               src={`data:image/png;base64,${icon}`}
               alt=""
               aria-hidden
-              className="w-6 h-6 rounded-md shrink-0 object-contain"
+              className="w-6 h-6 rounded-lg shrink-0 object-contain"
             />
           ) : (
-            <span className={`w-6 h-6 rounded-md shrink-0 flex items-center justify-center text-[10px] font-bold ${procIconColor(proc.name)}`}>
+            <span className={`w-6 h-6 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-bold ${procIconColor(proc.name)}`}>
               {letter}
             </span>
           )}
@@ -463,7 +463,7 @@ export function GameMode() {
       </div>
 
       {/* 2-column layout for xl screens — Left: Steps+CTA, Right: Processes */}
-      <div className="flex-1 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)]">
 
         {/* Left — Steps + CTA */}
         <div className="flex flex-col gap-4">

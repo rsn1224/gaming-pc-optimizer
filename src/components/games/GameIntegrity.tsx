@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "@/stores/useToastStore";
 import { cn } from "@/lib/utils";
-import { FileSearch, RefreshCw, CheckCircle2, ExternalLink, Search } from "lucide-react";
+import { FileSearch, RefreshCw, CheckCircle2, ExternalLink, Search, Info } from "lucide-react";
+import { AlertBanner } from "@/components/ui/AlertBanner";
 
 interface SteamGame {
   app_id: string;
@@ -86,20 +87,24 @@ export function GameIntegrity() {
       </div>
 
       {/* Info banner */}
-      <div className="mx-6 mt-4 px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 rounded-xl text-cyan-300 text-xs">
-        Steamが起動し、ファイル検証が開始されます。検証の進行状況はSteamクライアントで確認してください。
+      <div className="mx-6 mt-4">
+        <AlertBanner
+          variant="info"
+          icon={<Info size={14} />}
+          title="Steamが起動し、ファイル検証が開始されます。進行状況はSteamクライアントで確認してください。"
+        />
       </div>
 
       {/* Search */}
       <div className="px-6 pt-4">
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="ゲーム名 / App IDで検索..."
-            className="w-full pl-9 pr-4 py-2 bg-white/[0.04] border border-white/[0.12] rounded-xl text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-cyan-500/40 transition-colors"
+            className="w-full pl-9 pr-4 py-2 bg-[#05080c] border border-white/[0.10] rounded-lg text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:border-cyan-500/40 transition-colors"
           />
         </div>
       </div>

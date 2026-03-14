@@ -11,7 +11,7 @@ const ENABLE_BENCHMARK_HISTORY = false;
 // ── Score rating ──────────────────────────────────────────────────────────────
 
 function rateScore(score: number): { label: string; color: string } {
-  if (score >= 1500) return { label: "ハイエンチE, color: "text-cyan-400" };
+  if (score >= 1500) return { label: "ハイエンド", color: "text-cyan-400" };
   if (score >= 1000) return { label: "高性能", color: "text-emerald-400" };
   if (score >= 600)  return { label: "標準的", color: "text-amber-400" };
   return { label: "低性能", color: "text-red-400" };
@@ -182,9 +182,9 @@ export function Benchmark() {
             <Gauge size={16} className="text-violet-400" />
           </div>
           <div>
-            <h1 className="text-[15px] font-bold text-slate-100">ベンチ�Eーク</h1>
+            <h1 className="text-[15px] font-bold text-slate-100">ベンチマーク</h1>
             <p className="text-[11px] text-muted-foreground/50">
-              CPU・メモリ・チE��スクの性能を計測
+              CPU・メモリ・ディスクの性能を計測
             </p>
           </div>
         </div>
@@ -206,7 +206,7 @@ export function Benchmark() {
           {running ? (
             <><Loader2 size={16} className="animate-spin" />{step ?? "計測中..."}</>
           ) : (
-            <><Zap size={16} />ベンチ�Eーク開姁E/>
+            <><Zap size={16} />ベンチマーク開始</>
           )}
         </button>
 
@@ -243,7 +243,7 @@ export function Benchmark() {
             <div className="flex flex-col gap-2">
               <CategoryRow icon={<Cpu size={16} />} label="CPU" score={result.cpu_score} ms={result.cpu_ms} />
               <CategoryRow icon={<MemoryStick size={16} />} label="メモリ" score={result.memory_score} ms={result.memory_ms} />
-              <CategoryRow icon={<HardDrive size={16} />} label="チE��スク" score={result.disk_score} ms={result.disk_ms} />
+              <CategoryRow icon={<HardDrive size={16} />} label="ディスク" score={result.disk_score} ms={result.disk_ms} />
             </div>
           </>
         )}
@@ -258,10 +258,10 @@ export function Benchmark() {
         {!result && !running && !error && (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground/55">
             <Gauge size={36} />
-            <p className="text-[13px]">「�Eンチ�Eーク開始」を押して計測</p>
+            <p className="text-[13px]">「ベンチマーク開始」を押して計測</p>
             <p className="text-[11px] text-center leading-relaxed">
-              CPU・メモリ・チE��スクの3頁E��を計測しまぁEbr />
-              完亁E��で10、E0秒かかりまぁE
+              CPU・メモリ・ディスクの3項目を計測します<br />
+              完了まで10〜30秒かかります
             </p>
           </div>
         )}

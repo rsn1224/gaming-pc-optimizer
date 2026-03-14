@@ -8,9 +8,9 @@ use commands::{
     crash_report, disk_health, event_log, fps, game_integrity, game_log, hardware,
     hardware_suggestions, hotkeys, icons, memory_cleaner, metrics, network, optimizer,
     optimizer_graph, osd, policy, power, presets, process, profile_share, profiles,
-    recommendation, registry_opt, report, rollback, safety_kernel, scheduler, self_improve,
-    startup, steam, storage, system_info, telemetry, tournament, uninstaller, update_check,
-    updates, watcher, windows_settings,
+    recommendation, registry_opt, report, rollback, safety_kernel, scheduler, screenshot,
+    self_improve, startup, steam, storage, system_info, telemetry, tournament, uninstaller,
+    update_check, updates, watcher, windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -308,6 +308,10 @@ pub fn run() {
             rollback::delete_session,
             rollback::rollback_enabled,
             rollback::get_session_stats,
+            // Screenshot tour
+            screenshot::take_screenshot,
+            screenshot::zip_screenshots,
+            screenshot::clear_screenshots,
             // Presets (Phase 3-2)
             presets::list_presets,
             presets::apply_preset,

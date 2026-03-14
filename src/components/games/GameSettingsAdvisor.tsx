@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Lightbulb, Loader2, Search, Zap, Target, SlidersHorizontal } from "lucide-react";
+import { Lightbulb, Loader2, Search, Zap, Target, SlidersHorizontal, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
+import { AlertBanner } from "@/components/ui/AlertBanner";
 import type { GameSettingsAdvice } from "@/types";
 
 // ── Preset accent colors ──────────────────────────────────────────────────────
@@ -123,9 +124,12 @@ export function GameSettingsAdvisor() {
       <div className="flex-1 overflow-y-auto px-6 py-5">
         {/* Error */}
         {error && (
-          <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-[12px] text-red-400">
-            {error}
-          </div>
+          <AlertBanner
+            variant="error"
+            icon={<XCircle size={14} />}
+            title={error}
+            onDismiss={() => setError(null)}
+          />
         )}
 
         {/* Loading skeleton */}

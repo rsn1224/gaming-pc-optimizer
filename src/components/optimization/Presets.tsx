@@ -123,7 +123,7 @@ function PresetCard({
         {preset.tags.map((tag) => (
           <span
             key={tag}
-            className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.07] text-[11px] text-muted-foreground/60"
+            className="px-2 py-0.5 rounded-lg bg-white/[0.04] border border-white/[0.07] text-[11px] text-muted-foreground/60"
           >
             {tag}
           </span>

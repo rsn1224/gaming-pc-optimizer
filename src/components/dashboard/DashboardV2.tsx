@@ -71,7 +71,7 @@ function MiniBar({ label, value, color = "bg-cyan-500" }: { label: string; value
 
 function Sparkline({ history }: { history: ScoreSnapshot[] }) {
   if (history.length < 2) {
-    return <div className="h-10 flex items-center justify-center text-[10px] text-muted-foreground/55">チE�EタなぁE/div>;
+    return <div className="h-10 flex items-center justify-center text-[10px] text-muted-foreground/55">データなし</div>;
   }
 
   const W = 180;
@@ -180,7 +180,7 @@ export function DashboardV2() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-foreground tracking-tight">ダチE��ュボ�EチEV2</h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight">ダッシュボード V2</h1>
           <p className="text-[10px] text-muted-foreground/50 mt-0.5">全メトリクス一覧 · 3秒更新</p>
         </div>
         {activeProfile && (
@@ -194,7 +194,7 @@ export function DashboardV2() {
       {/* Row 1: Health Score | CPU/RAM | GPU */}
       <div className="grid grid-cols-3 gap-3">
         {/* Health Score */}
-        <Widget label="シスチE��ヘルス">
+        <Widget label="システムヘルス">
           {firstLoad ? (
             <Skeleton className="h-24 w-full" />
           ) : (
@@ -205,7 +205,7 @@ export function DashboardV2() {
                 {score && (
                   <div className="flex flex-col gap-1">
                     <MiniBar label="プロセス" value={score.process} color="bg-emerald-500" />
-                    <MiniBar label="電溁E value={score.power} color="bg-cyan-500" />
+                    <MiniBar label="電源" value={score.power} color="bg-cyan-500" />
                   </div>
                 )}
               </div>
@@ -274,7 +274,7 @@ export function DashboardV2() {
                   <p className="text-base font-bold text-slate-200 tabular-nums">
                     {gpu.vram_total_mb > 0
                       ? `${((gpu.vram_used_mb / gpu.vram_total_mb) * 100).toFixed(0)}%`
-                      : " E}
+                      : "—"}
                   </p>
                 </div>
               </div>
@@ -286,7 +286,7 @@ export function DashboardV2() {
               )}
             </div>
           ) : (
-            <p className="text-[11px] text-muted-foreground/55">GPU惁E��なぁE/p>
+            <p className="text-[11px] text-muted-foreground/55">GPU情報なし</p>
           )}
         </Widget>
       </div>
@@ -294,13 +294,13 @@ export function DashboardV2() {
       {/* Row 2: Score breakdown | Network | Disk | FPS */}
       <div className="grid grid-cols-4 gap-3">
         {/* Score breakdown */}
-        <Widget label="スコア冁E��">
+        <Widget label="スコア内訳">
           {firstLoad || !score ? (
             <Skeleton className="h-20 w-full" />
           ) : (
             <div className="flex flex-col gap-1.5">
               <MiniBar label="プロセス" value={score.process} color="bg-emerald-500" />
-              <MiniBar label="電溁E value={score.power} color="bg-cyan-500" />
+              <MiniBar label="電源" value={score.power} color="bg-cyan-500" />
               <MiniBar label="Windows" value={score.windows} color="bg-blue-500" />
               <MiniBar label="ネットワーク" value={score.network} color="bg-violet-500" />
             </div>
@@ -318,7 +318,7 @@ export function DashboardV2() {
                 <span className="text-[10px] text-muted-foreground/50 truncate">{bandwidth.active_interface}</span>
               </div>
               <div>
-                <p className="text-[10px] text-muted-foreground/50 mb-0.5">ↁEダウン</p>
+                <p className="text-[10px] text-muted-foreground/50 mb-0.5">↓ ダウン</p>
                 <p className="text-base font-bold text-emerald-400 tabular-nums">
                   {bandwidth.download_kbps >= 1024
                     ? `${(bandwidth.download_kbps / 1024).toFixed(1)} Mbps`
@@ -326,7 +326,7 @@ export function DashboardV2() {
                 </p>
               </div>
               <div>
-                <p className="text-[10px] text-muted-foreground/50 mb-0.5">ↁEアチE�E</p>
+                <p className="text-[10px] text-muted-foreground/50 mb-0.5">↑ アップ</p>
                 <p className="text-sm font-bold text-cyan-400 tabular-nums">
                   {bandwidth.upload_kbps >= 1024
                     ? `${(bandwidth.upload_kbps / 1024).toFixed(1)} Mbps`
@@ -335,12 +335,12 @@ export function DashboardV2() {
               </div>
             </div>
           ) : (
-            <p className="text-[11px] text-muted-foreground/55">チE�EタなぁE/p>
+            <p className="text-[11px] text-muted-foreground/55">データなし</p>
           )}
         </Widget>
 
         {/* Disk health */}
-        <Widget label="チE��スク健全性">
+        <Widget label="ディスク健全性">
           {firstLoad ? (
             <Skeleton className="h-20 w-full" />
           ) : diskHealth ? (
@@ -350,7 +350,7 @@ export function DashboardV2() {
                 <span className={cn("text-sm font-bold",
                   diskHealth.overall_health === "良好" || diskHealth.overall_health === "Good"
                     ? "text-emerald-400"
-                    : diskHealth.overall_health === "警呁E || diskHealth.overall_health === "Warning"
+                    : diskHealth.overall_health === "警告" || diskHealth.overall_health === "Warning"
                     ? "text-amber-400"
                     : "text-red-400"
                 )}>
@@ -365,12 +365,12 @@ export function DashboardV2() {
               ))}
             </div>
           ) : (
-            <p className="text-[11px] text-muted-foreground/55">チE�EタなぁE/p>
+            <p className="text-[11px] text-muted-foreground/55">データなし</p>
           )}
         </Widget>
 
         {/* FPS */}
-        <Widget label="FPS推宁E>
+        <Widget label="FPS推定">
           {firstLoad ? (
             <Skeleton className="h-20 w-full" />
           ) : fps ? (
@@ -378,7 +378,7 @@ export function DashboardV2() {
               <div className="flex items-center gap-1.5">
                 <Gauge size={11} className="text-muted-foreground/50 shrink-0" />
                 <span className="text-[10px] text-muted-foreground/50 truncate">
-                  {fps.is_detecting ? fps.game_process || "検�E中..." : "非ゲーム"}
+                  {fps.is_detecting ? fps.game_process || "検出中..." : "非ゲーム"}
                 </span>
               </div>
               <p className={cn("text-3xl font-bold tabular-nums leading-none",
@@ -390,7 +390,7 @@ export function DashboardV2() {
               <p className="text-[10px] text-muted-foreground/50">CPU: {fps.cpu_percent.toFixed(1)}%</p>
             </div>
           ) : (
-            <p className="text-[11px] text-muted-foreground/55">チE�EタなぁE/p>
+            <p className="text-[11px] text-muted-foreground/55">データなし</p>
           )}
         </Widget>
       </div>
@@ -405,11 +405,11 @@ export function DashboardV2() {
           )}
         </Widget>
 
-        <Widget label="最近�EイベンチE>
+        <Widget label="最近のイベント">
           {firstLoad ? (
             <Skeleton className="h-14 w-full" />
           ) : recentEvents.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground/55">イベントなぁE/p>
+            <p className="text-[11px] text-muted-foreground/55">イベントなし</p>
           ) : (
             <div className="flex flex-col gap-1.5">
               {recentEvents.map((e) => (
@@ -429,19 +429,19 @@ export function DashboardV2() {
       {/* Row 4: Active profile | Session stats | Quick actions */}
       <div className="grid grid-cols-3 gap-3">
         {/* Active profile */}
-        <Widget label="アクチE��ブ�Eロファイル">
+        <Widget label="アクティブプロファイル">
           {activeProfile ? (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.7)] shrink-0" />
               <p className="text-sm font-bold text-cyan-300 truncate">{activeProfile}</p>
             </div>
           ) : (
-            <p className="text-[11px] text-muted-foreground/55">なぁE/p>
+            <p className="text-[11px] text-muted-foreground/55">なし</p>
           )}
         </Widget>
 
         {/* Session stats */}
-        <Widget label="セチE��ョン惁E��">
+        <Widget label="セッション情報">
           {sysInfo ? (
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -459,7 +459,7 @@ export function DashboardV2() {
         </Widget>
 
         {/* Quick actions */}
-        <Widget label="クイチE��アクション">
+        <Widget label="クイックアクション">
           <div className="flex flex-col gap-1.5">
             <button
               type="button"
@@ -490,7 +490,7 @@ export function DashboardV2() {
               className="w-full py-1.5 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5 border border-white/[0.12] text-muted-foreground/70 hover:text-slate-200 hover:bg-white/[0.04] transition-all"
             >
               <Gauge size={11} />
-              ベンチ�Eーク
+              ベンチマーク
             </button>
           </div>
         </Widget>

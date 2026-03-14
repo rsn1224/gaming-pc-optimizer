@@ -15,7 +15,7 @@ export function Toggle({
       disabled={disabled || !onChange}
       className={`
         relative w-11 h-6 rounded-full transition-colors shrink-0
-        ${checked ? "bg-cyan-500" : "bg-secondary"}
+        ${checked ? "bg-cyan-500" : "bg-white/[0.04]"}
         ${disabled || !onChange ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
       `}
     >

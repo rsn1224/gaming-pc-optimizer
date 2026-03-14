@@ -53,6 +53,10 @@ interface AppState {
   freedMemoryMb: number;
   setFreedMemoryMb: (mb: number) => void;
 
+  // ── AI キー状態 ─────────────────────────────────────────────────────────────
+  hasApiKey: boolean;
+  setHasApiKey: (has: boolean) => void;
+
   // ── 永続設定 ────────────────────────────────────────────────────────────────
   theme: Theme;
   setTheme: (theme: Theme) => void;
@@ -76,6 +80,9 @@ export const useAppStore = create<AppState>((set) => ({
   setGameModeActive: (active) => set({ gameModeActive: active }),
   freedMemoryMb: 0,
   setFreedMemoryMb: (mb) => set({ freedMemoryMb: mb }),
+
+  hasApiKey: false,
+  setHasApiKey: (has) => set({ hasApiKey: has }),
 
   theme: storedTheme,
   setTheme: (theme) => {

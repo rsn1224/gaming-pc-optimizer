@@ -233,7 +233,7 @@ export function BenchmarkHistoryChart({
         </div>
         <div className="flex items-center gap-1.5">
           {/* View toggle */}
-          <div className="flex rounded-md overflow-hidden border border-white/[0.06]">
+          <div className="flex rounded-lg overflow-hidden border border-white/[0.06]">
             <button
               type="button"
               onClick={() => setView("chart")}

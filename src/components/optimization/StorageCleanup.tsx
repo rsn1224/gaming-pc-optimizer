@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useAppStore } from "@/stores/useAppStore";
 import {
   HardDrive,
   RefreshCw,
@@ -35,7 +36,7 @@ const CATEGORY_ICON: Record<string, { icon: React.ReactNode; color: string }> = 
   thumbnails:     { icon: <Image size={16} />,       color: "text-purple-400" },
   nvidia_dx_cache:{ icon: <Cpu size={16} />,         color: "text-[#76B900]" },
   nvidia_gl_cache:{ icon: <Cpu size={16} />,         color: "text-[#76B900]" },
-  prefetch:       { icon: <Zap size={16} />,         color: "text-yellow-400" },
+  prefetch:       { icon: <Zap size={16} />,         color: "text-amber-400" },
   recycle_bin:    { icon: <Trash2 size={16} />,      color: "text-red-400" },
   log_files:      { icon: <Activity size={16} />,    color: "text-slate-400" },
   crash_dumps:    { icon: <FileX size={16} />,       color: "text-red-400" },
@@ -88,7 +89,7 @@ function Checkbox({
 function SizeBar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
-    <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+    <div className="w-16 h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
       <div
         className="h-full bg-cyan-500/70 rounded-full transition-all"
         style={{ width: `${pct}%` }}
@@ -102,6 +103,7 @@ function SizeBar({ value, max }: { value: number; max: number }) {
 type Phase = "idle" | "scanning" | "ready" | "cleaning" | "done" | "error";
 
 export function StorageCleanup() {
+  const { hasApiKey } = useAppStore();
   const [categories, setCategories] = useState<StorageCategory[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [phase, setPhase] = useState<Phase>("idle");
@@ -207,7 +209,7 @@ export function StorageCleanup() {
   const isBusy = phase === "scanning" || phase === "cleaning";
 
   return (
-    <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+    <div className="p-6 flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -225,8 +227,9 @@ export function StorageCleanup() {
           <button
             type="button"
             onClick={runAiRecommend}
-            disabled={isBusy || isAiLoading}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+            disabled={isBusy || isAiLoading || !hasApiKey}
+            title={!hasApiKey ? "設定ページでAPIキーを登録してください" : undefined}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed
               ${isAiLoading
                 ? "bg-purple-500/20 border-purple-500/50 text-purple-300"
                 : "bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20"
@@ -239,7 +242,7 @@ export function StorageCleanup() {
             type="button"
             onClick={scan}
             disabled={isBusy || isAiLoading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-border rounded-md hover:border-muted-foreground hover:text-foreground text-muted-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-white/[0.10] rounded-lg hover:border-muted-foreground hover:text-foreground text-muted-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <RefreshCw size={14} className={phase === "scanning" ? "animate-spin" : ""} />
             {phase === "scanning" ? "スキャン中..." : "スキャン"}
@@ -270,7 +273,7 @@ export function StorageCleanup() {
       {/* Idle state */}
       {phase === "idle" && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center">
-          <div className="p-4 bg-secondary rounded-full">
+          <div className="p-4 bg-white/[0.04] rounded-full">
             <FolderOpen size={32} className="text-muted-foreground" />
           </div>
           <p className="text-muted-foreground text-sm">
@@ -308,11 +311,11 @@ export function StorageCleanup() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-3 px-4 py-3 bg-green-500/10 border border-green-500/30 rounded-lg"
+            className="flex items-center gap-3 px-4 py-3 bg-emerald-500/10 border border-green-500/30 rounded-lg"
           >
-            <CheckCircle2 size={18} className="text-green-400 shrink-0" />
+            <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-green-400">
+              <p className="text-sm font-medium text-emerald-400">
                 クリーン完了 — {formatMemory(result.freed_mb)} 解放しました
               </p>
               {result.error_count > 0 && (
@@ -347,9 +350,9 @@ export function StorageCleanup() {
               )}
             </div>
 
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden">
               {/* Select-all header */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-secondary/30">
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.08] bg-white/[0.04]/30">
                 <Checkbox
                   checked={allChecked}
                   onChange={toggleAll}
@@ -366,7 +369,7 @@ export function StorageCleanup() {
                 </span>
               </div>
 
-              <div className="divide-y divide-border/50">
+              <div className="divide-y divide-white/[0.05]">
                 {categories.map((cat) => {
                   const canSelect = cat.accessible && cat.size_mb > 0;
                   const isChecked = selected.has(cat.id);
@@ -376,7 +379,7 @@ export function StorageCleanup() {
                       onClick={() => canSelect && !isBusy && toggleSelect(cat.id)}
                       className={`
                         flex items-center gap-3 px-4 py-3 transition-colors
-                        ${canSelect && !isBusy ? "cursor-pointer hover:bg-secondary/40" : "cursor-default"}
+                        ${canSelect && !isBusy ? "cursor-pointer hover:bg-white/[0.04]/40" : "cursor-default"}
                         ${isChecked ? "bg-cyan-500/5" : ""}
                       `}
                     >
@@ -395,8 +398,8 @@ export function StorageCleanup() {
                           {aiItems.has(cat.id) && (
                             <span className={`shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${
                               aiItems.get(cat.id)!.recommend
-                                ? "bg-green-500/15 text-green-400 border-green-500/30"
-                                : "bg-secondary text-muted-foreground border-border"
+                                ? "bg-emerald-500/15 text-emerald-400 border-green-500/30"
+                                : "bg-white/[0.04] text-muted-foreground border-border"
                             }`}>
                               {aiItems.get(cat.id)!.recommend ? "削除OK" : "スキップ"}
                             </span>

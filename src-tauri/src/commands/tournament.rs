@@ -9,7 +9,7 @@ use sysinfo::System;
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
 
-pub const ENABLE_TOURNAMENT_MODE: bool = false;
+pub const ENABLE_TOURNAMENT_MODE: bool = true;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -242,8 +242,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flag_is_off_by_default() {
-        assert!(!ENABLE_TOURNAMENT_MODE);
+    fn flag_is_enabled() {
+        assert!(ENABLE_TOURNAMENT_MODE);
     }
 
     #[test]

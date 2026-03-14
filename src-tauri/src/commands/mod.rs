@@ -40,6 +40,7 @@ pub mod recommendation;
 pub mod registry_opt;
 pub mod report;
 pub mod rollback;
+pub mod screenshot;
 pub mod runner;
 pub mod safety_kernel;
 pub mod scheduler;

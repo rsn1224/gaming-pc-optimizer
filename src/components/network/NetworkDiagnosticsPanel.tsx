@@ -26,13 +26,13 @@ import { applyNetworkRecommendation } from "@/lib/network_apply";
 
 function PingBar({ ms, max }: { ms: number; max: number }) {
   const pct = max > 0 ? Math.min((ms / max) * 100, 100) : 0;
-  const color = ms < 30 ? "bg-green-500" : ms < 80 ? "bg-yellow-500" : "bg-red-500";
+  const color = ms < 30 ? "bg-green-500" : ms < 80 ? "bg-amber-500" : "bg-red-500";
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-white/[0.04] rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct.toFixed(1)}%` }} />
       </div>
-      <span className={`text-xs font-mono w-14 text-right ${ms < 30 ? "text-green-400" : ms < 80 ? "text-yellow-400" : "text-red-400"}`}>
+      <span className={`text-xs font-mono w-14 text-right ${ms < 30 ? "text-emerald-400" : ms < 80 ? "text-amber-400" : "text-red-400"}`}>
         {ms.toFixed(0)} ms
       </span>
     </div>
@@ -169,8 +169,8 @@ function DnsAutoTestSection({
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+    <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Brain size={16} className="text-muted-foreground" />
           <span className="text-sm font-semibold">DNS 自動テスト &amp; AI推奨</span>
@@ -180,8 +180,8 @@ function DnsAutoTestSection({
             type="button"
             onClick={runTest}
             disabled={!selectedAdapter || isTesting || isAiLoading}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md transition-all
-              ${isTesting ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300" : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-all
+              ${isTesting ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300" : "bg-white/[0.04] border-white/[0.10] text-muted-foreground hover:text-foreground hover:border-white/[0.20]"}
               disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {isTesting ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />}
@@ -191,7 +191,7 @@ function DnsAutoTestSection({
             type="button"
             onClick={handleAiRecommend}
             disabled={!selectedAdapter || isTesting || isAiLoading}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md transition-all
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-all
               ${isAiLoading ? "bg-purple-500/20 border-purple-500/50 text-purple-300" : "bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20"}
               disabled:opacity-40 disabled:cursor-not-allowed`}
           >
@@ -229,7 +229,7 @@ function DnsAutoTestSection({
         )}
 
         {parsedRec && !isAiLoading && results.length === 0 && (
-          <p className="text-xs text-green-400 flex items-center gap-1.5">
+          <p className="text-xs text-emerald-400 flex items-center gap-1.5">
             <CheckCircle2 size={12} />
             AI分析完了 — 下の推奨設定を確認して適用してください
           </p>
@@ -237,10 +237,10 @@ function DnsAutoTestSection({
 
         {results.length > 0 && (
           <>
-            <div className="overflow-hidden rounded-md border border-border">
+            <div className="overflow-hidden rounded-lg border border-white/[0.10]">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-border bg-secondary/50">
+                  <tr className="border-b border-white/[0.08] bg-white/[0.04]/50">
                     <th className="text-left px-3 py-2 text-muted-foreground font-medium">DNS</th>
                     <th className="text-left px-3 py-2 text-muted-foreground font-medium">アドレス</th>
                     <th className="text-right px-3 py-2 text-muted-foreground font-medium">平均</th>
@@ -249,15 +249,15 @@ function DnsAutoTestSection({
                     <th className="text-right px-3 py-2 text-muted-foreground font-medium">損失</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/50">
+                <tbody className="divide-y divide-white/[0.05]">
                   {results.map((r) => {
                     const isBest = r.preset === bestPreset;
                     return (
-                      <tr key={r.preset} className={isBest ? "bg-green-500/5" : ""}>
+                      <tr key={r.preset} className={isBest ? "bg-emerald-500/5" : ""}>
                         <td className="px-3 py-2 font-medium">
                           <div className="flex items-center gap-1.5">
-                            {isBest && <CheckCircle2 size={11} className="text-green-400 shrink-0" />}
-                            <span className={isBest ? "text-green-400" : "text-foreground"}>
+                            {isBest && <CheckCircle2 size={11} className="text-emerald-400 shrink-0" />}
+                            <span className={isBest ? "text-emerald-400" : "text-foreground"}>
                               {PRESET_LABEL[r.preset] ?? r.preset}
                             </span>
                           </div>
@@ -266,8 +266,8 @@ function DnsAutoTestSection({
                         {r.ping.success ? (
                           <>
                             <td className="px-3 py-2 text-right font-mono text-cyan-400">{r.ping.avg_ms.toFixed(0)}ms</td>
-                            <td className="px-3 py-2 text-right font-mono text-green-400">{r.ping.min_ms.toFixed(0)}ms</td>
-                            <td className="px-3 py-2 text-right font-mono text-yellow-400">{r.ping.max_ms.toFixed(0)}ms</td>
+                            <td className="px-3 py-2 text-right font-mono text-emerald-400">{r.ping.min_ms.toFixed(0)}ms</td>
+                            <td className="px-3 py-2 text-right font-mono text-amber-400">{r.ping.max_ms.toFixed(0)}ms</td>
                             <td className={`px-3 py-2 text-right font-mono ${r.ping.packet_loss > 0 ? "text-red-400" : "text-muted-foreground"}`}>
                               {r.ping.packet_loss}%
                             </td>
@@ -288,7 +288,7 @@ function DnsAutoTestSection({
 
             {bestPreset && (
               <div className="flex items-center gap-3">
-                <p className="text-xs text-green-400 flex items-center gap-1.5 flex-1">
+                <p className="text-xs text-emerald-400 flex items-center gap-1.5 flex-1">
                   <CheckCircle2 size={12} />
                   最速DNS: <span className="font-semibold">{PRESET_LABEL[bestPreset] ?? bestPreset}</span>
                   <span className="text-muted-foreground">（低遅延・パケットロスなし）</span>
@@ -297,10 +297,10 @@ function DnsAutoTestSection({
                   type="button"
                   onClick={applyBestDns}
                   disabled={bestApplyStatus === "applying"}
-                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium border rounded-md transition-all shrink-0
-                    ${bestApplyStatus === "done" ? "bg-green-500/10 border-green-500/30 text-green-400"
+                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium border rounded-lg transition-all shrink-0
+                    ${bestApplyStatus === "done" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                       : bestApplyStatus === "error" ? "bg-destructive/10 border-destructive/30 text-destructive"
-                      : "bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20 disabled:opacity-40"
+                      : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-green-500/20 disabled:opacity-40"
                     }`}
                 >
                   {bestApplyStatus === "applying" ? <Loader2 size={10} className="animate-spin" />
@@ -318,9 +318,9 @@ function DnsAutoTestSection({
               <button
                 type="button"
                 onClick={copyContext}
-                className="flex items-center gap-1.5 px-3 py-2 bg-secondary border border-border rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-all self-start"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#05080c] border border-white/[0.10] rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-all self-start"
               >
-                {copyStatus === "copied" ? <CheckCircle2 size={12} className="text-green-400" /> : <Copy size={12} />}
+                {copyStatus === "copied" ? <CheckCircle2 size={12} className="text-emerald-400" /> : <Copy size={12} />}
                 {copyStatus === "copied" ? "コピーしました！" : "AIコンテキストをコピー"}
               </button>
             </div>
@@ -333,7 +333,7 @@ function DnsAutoTestSection({
                 placeholder='{"adapter_name": "...", "dns_preset": "cloudflare", "apply_network_gaming": true, "explanation": "..."}'
                 rows={4}
                 aria-label="AI推奨JSONを入力"
-                className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-xs font-mono placeholder:text-muted-foreground/55 focus:outline-none focus:border-primary resize-y"
+                className="w-full bg-[#05080c] border border-white/[0.10] rounded-lg px-3 py-2 text-xs font-mono placeholder:text-muted-foreground/55 focus:outline-none focus:border-primary resize-y"
               />
               {parseError && (
                 <p className="text-xs text-destructive flex items-center gap-1">
@@ -344,7 +344,7 @@ function DnsAutoTestSection({
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-blue-500/10 border border-blue-500/30 rounded-md p-3 flex flex-col gap-2"
+                  className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex flex-col gap-2"
                 >
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-xs text-blue-300 font-semibold flex items-center gap-1.5">
@@ -362,7 +362,7 @@ function DnsAutoTestSection({
                     type="button"
                     onClick={applyRec}
                     disabled={applyStatus === "running"}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all self-start
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all self-start
                       ${applyStatus === "running"
                         ? "bg-primary/20 text-primary/60 cursor-not-allowed border border-primary/20"
                         : "bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] border border-primary/20"
@@ -413,8 +413,8 @@ function PingSection() {
   const maxPingMs = Math.max(...pingResults.flatMap((r) => r.times_ms), 1);
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+    <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/[0.08] flex items-center gap-2">
         <Activity size={16} className="text-muted-foreground" />
         <span className="text-sm font-semibold">Ping テスト</span>
       </div>
@@ -427,10 +427,10 @@ function PingSection() {
               key={t.host}
               onClick={() => runPing(t.host)}
               disabled={pingingHost !== null}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md transition-all
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-all
                 ${pingingHost === t.host
                   ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
-                  : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                  : "bg-white/[0.04] border-white/[0.10] text-muted-foreground hover:text-foreground hover:border-white/[0.20]"
                 }
                 disabled:opacity-40 disabled:cursor-not-allowed`}
             >
@@ -447,13 +447,13 @@ function PingSection() {
             onChange={(e) => setCustomHost(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && runPing(customHost)}
             placeholder="カスタムホスト (例: example.com)"
-            className="flex-1 bg-secondary border border-border rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary"
+            className="flex-1 bg-[#05080c] border border-white/[0.10] rounded-lg px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary"
           />
           <button
             type="button"
             onClick={() => runPing(customHost)}
             disabled={!customHost.trim() || pingingHost !== null}
-            className="px-4 py-2 bg-secondary border border-border rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-[#05080c] border border-white/[0.10] rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Ping
           </button>
@@ -462,14 +462,14 @@ function PingSection() {
         {pingResults.length > 0 && (
           <div className="flex flex-col gap-3 mt-1">
             {pingResults.map((r) => (
-              <div key={r.host} className="bg-secondary/50 rounded-lg p-3">
+              <div key={r.host} className="bg-white/[0.04]/50 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium font-mono">{r.host}</span>
                   {r.success ? (
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>最小 <span className="text-green-400 font-mono">{r.min_ms.toFixed(0)}ms</span></span>
+                      <span>最小 <span className="text-emerald-400 font-mono">{r.min_ms.toFixed(0)}ms</span></span>
                       <span>平均 <span className="text-cyan-400 font-mono">{r.avg_ms.toFixed(0)}ms</span></span>
-                      <span>最大 <span className="text-yellow-400 font-mono">{r.max_ms.toFixed(0)}ms</span></span>
+                      <span>最大 <span className="text-amber-400 font-mono">{r.max_ms.toFixed(0)}ms</span></span>
                       {r.packet_loss > 0 && <span className="text-red-400">損失 {r.packet_loss}%</span>}
                     </div>
                   ) : (
@@ -515,7 +515,7 @@ export function NetworkDiagnosticsPanel() {
   };
 
   return (
-    <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+    <div className="p-6 flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-lg font-bold">ネットワーク診断</h2>
@@ -526,7 +526,7 @@ export function NetworkDiagnosticsPanel() {
             aria-label="診断対象アダプターを選択"
             value={selectedAdapter}
             onChange={(e) => setSelectedAdapter(e.target.value)}
-            className="bg-secondary border border-border rounded-md px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary"
+            className="bg-[#05080c] border border-white/[0.10] rounded-lg px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary"
           >
             {adapters.map((a) => (
               <option key={a.name} value={a.name}>{a.name}</option>

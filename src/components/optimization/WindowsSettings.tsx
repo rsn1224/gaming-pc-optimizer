@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useAppStore } from "@/stores/useAppStore";
 import {
   Monitor,
   Zap,
@@ -72,10 +73,10 @@ function VisualFXSelector({
           disabled={disabled}
           onClick={() => onChange(opt.value)}
           className={`
-            px-3 py-1.5 text-xs rounded-md border transition-all
+            px-3 py-1.5 text-xs rounded-lg border transition-all
             ${value === opt.value
               ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-medium"
-              : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+              : "bg-white/[0.04] border-white/[0.10] text-muted-foreground hover:text-foreground"
             }
             ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
           `}
@@ -107,7 +108,7 @@ function PresetCard({
       className={`flex-1 text-left rounded-lg border px-3 py-2.5 transition-all ${
         isSelected
           ? "bg-primary/10 border-primary/40 text-primary"
-          : "bg-card border-border text-foreground hover:border-primary/30 hover:bg-secondary/50"
+          : "bg-[#05080c] border-white/[0.12] text-foreground hover:border-primary/30 hover:bg-white/[0.04]/50"
       }`}
     >
       <div className="flex items-center justify-between gap-1">
@@ -119,7 +120,7 @@ function PresetCard({
           <ChevronRight size={12} className="text-primary shrink-0" />
         )}
         {isSelected && isCurrent && (
-          <CheckCircle2 size={12} className="text-green-400 shrink-0" />
+          <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />
         )}
       </div>
       <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
@@ -134,16 +135,16 @@ function PresetCard({
 function DiffTable({ diff }: { diff: ReturnType<typeof diffWindowsSettings> }) {
   if (!diff.hasChanges) {
     return (
-      <div className="flex items-center gap-2 text-sm text-green-400 px-1">
+      <div className="flex items-center gap-2 text-sm text-emerald-400 px-1">
         <CheckCircle2 size={14} />
         現在の設定と同じです
       </div>
     );
   }
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="rounded-lg border border-white/[0.10] overflow-hidden">
       <table className="w-full text-xs">
-        <thead className="bg-secondary/50 border-b border-border">
+        <thead className="bg-white/[0.04]/50 border-b border-white/[0.08]">
           <tr>
             <th className="px-3 py-1.5 text-left text-muted-foreground font-medium">設定項目</th>
             <th className="px-3 py-1.5 text-left text-muted-foreground font-medium">現在</th>
@@ -151,7 +152,7 @@ function DiffTable({ diff }: { diff: ReturnType<typeof diffWindowsSettings> }) {
             <th className="px-3 py-1.5 text-left text-primary font-medium">変更後</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-border/50">
+        <tbody className="divide-y divide-white/[0.05]">
           {diff.items.map((item) => (
             <tr key={item.key}>
               <td className="px-3 py-2 font-medium">{item.label}</td>
@@ -171,6 +172,7 @@ function DiffTable({ diff }: { diff: ReturnType<typeof diffWindowsSettings> }) {
 type ActionStatus = "idle" | "running" | "success" | "error";
 
 export function WindowsSettings() {
+  const { hasApiKey } = useAppStore();
   const [settings, setSettings] = useState<WS | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionStatus, setActionStatus] = useState<ActionStatus>("idle");
@@ -341,7 +343,7 @@ export function WindowsSettings() {
   const isApplying = actionStatus === "running";
 
   return (
-    <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+    <div className="p-6 flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 bg-gradient-to-br from-violet-500/20 to-purple-500/10 border border-violet-500/30 rounded-xl shadow-[0_0_12px_rgba(139,92,246,0.1)]">
@@ -362,8 +364,8 @@ export function WindowsSettings() {
       </div>
 
       {/* Preset Selector */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+      <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles size={15} className="text-violet-400" />
             <span className="text-sm font-semibold">プリセット</span>
@@ -378,8 +380,9 @@ export function WindowsSettings() {
             <button
               type="button"
               onClick={handleAiRecommend}
-              disabled={isLoading || isAiLoading || actionStatus === "running"}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium border rounded-md transition-colors disabled:opacity-40
+              disabled={isLoading || isAiLoading || actionStatus === "running" || !hasApiKey}
+              title={!hasApiKey ? "設定ページでAPIキーを登録してください" : undefined}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium border rounded-lg transition-colors disabled:opacity-40
                 ${isAiLoading
                   ? "bg-purple-500/20 border-purple-500/50 text-purple-300"
                   : "bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20"
@@ -393,10 +396,10 @@ export function WindowsSettings() {
               onClick={handleCopyContext}
               disabled={isLoading}
               title="AIでプリセットを生成するためのコンテキストJSONをコピー"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-muted-foreground rounded-md transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground border border-white/[0.10] hover:border-muted-foreground rounded-lg transition-colors disabled:opacity-40"
             >
               {copied ? (
-                <Check size={11} className="text-green-400" />
+                <Check size={11} className="text-emerald-400" />
               ) : (
                 <Copy size={11} />
               )}
@@ -430,7 +433,7 @@ export function WindowsSettings() {
 
         {/* AI recommendation banner */}
         {aiRec && !aiError && (
-          <div className="mx-3 mb-2 px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-md flex items-start gap-2">
+          <div className="mx-3 mb-2 px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-lg flex items-start gap-2">
             <Brain size={12} className="text-purple-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -480,8 +483,8 @@ export function WindowsSettings() {
       </div>
 
       {/* Individual Settings Card */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+      <div className="bg-[#05080c] border border-white/[0.12] rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/[0.08] flex items-center gap-2">
           <Zap size={16} className="text-muted-foreground" />
           <span className="text-sm font-semibold">個別設定</span>
         </div>
@@ -492,7 +495,7 @@ export function WindowsSettings() {
             <span className="text-sm">読み込み中...</span>
           </div>
         ) : settings ? (
-          <div className="divide-y divide-border/50">
+          <div className="divide-y divide-white/[0.05]">
             <div className="px-4 py-3">
               <p className="text-sm font-medium mb-1">視覚効果</p>
               <p className="text-xs text-muted-foreground mb-2">
@@ -584,10 +587,10 @@ export function WindowsSettings() {
             className={`
               flex items-center gap-2 px-4 py-3 rounded-lg border text-sm
               ${actionStatus === "success"
-                ? "bg-green-500/10 border-green-500/30 text-green-400"
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                 : actionStatus === "error"
                 ? "bg-destructive/10 border-destructive/30 text-destructive"
-                : "bg-secondary border-border text-muted-foreground"
+                : "bg-white/[0.04] border-white/[0.10] text-muted-foreground"
               }
             `}
           >
@@ -634,7 +637,7 @@ export function WindowsSettings() {
             px-5 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 border
             ${isApplying || !settings
               ? "opacity-40 cursor-not-allowed border-border text-muted-foreground"
-              : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+              : "border-white/[0.10] text-muted-foreground hover:text-foreground hover:border-white/[0.20]"
             }
           `}
         >

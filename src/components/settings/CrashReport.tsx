@@ -21,7 +21,7 @@ function ErrorRow({ entry }: { entry: ErrorEntry }) {
     <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="shrink-0 text-[10px] font-mono bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-md">
+          <span className="shrink-0 text-[10px] font-mono bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-lg">
             {entry.command}
           </span>
           <p className="text-sm text-white/90 truncate">{entry.error_message}</p>

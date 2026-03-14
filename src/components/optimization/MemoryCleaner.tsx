@@ -109,11 +109,11 @@ export function MemoryCleaner() {
   const maxConsumer = info?.top_consumers[0]?.memory_mb ?? 1;
 
   return (
-    <div className="p-5 flex flex-col gap-5 h-full overflow-y-auto">
+    <div className="p-5 flex flex-col gap-5">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-foreground tracking-tight">メモリクリーナ�E</h1>
-        <p className="text-xs text-muted-foreground/60 mt-0.5">ワーキングセチE��を解放してRAM使用量を削渁E/p>
+        <h1 className="text-xl font-bold text-foreground tracking-tight">メモリクリーナー</h1>
+        <p className="text-xs text-muted-foreground/60 mt-0.5">ワーキングセットを解放してRAM使用量を削減</p>
       </div>
 
       {/* Main card */}
@@ -130,7 +130,7 @@ export function MemoryCleaner() {
 
           <div className="flex-1 flex flex-col gap-2">
             <div>
-              <p className="text-sm font-semibold text-foreground">RAM 使用釁E/p>
+              <p className="text-sm font-semibold text-foreground">RAM 使用量</p>
               {info ? (
                 <p className="text-[11px] text-muted-foreground/60 mt-0.5">
                   使用中: {info.used_mb >= 1024 ? `${(info.used_mb / 1024).toFixed(1)} GB` : `${info.used_mb.toFixed(0)} MB`}
@@ -168,7 +168,7 @@ export function MemoryCleaner() {
         <div className="bg-emerald-500/8 border border-emerald-500/25 rounded-xl p-4 flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-            <p className="text-sm font-semibold text-emerald-400">クリーン完亁E/p>
+            <p className="text-sm font-semibold text-emerald-400">クリーン完了</p>
             <span className="ml-auto text-[10px] text-muted-foreground/50 bg-white/[0.04] px-2 py-0.5 rounded">
               {result.method}
             </span>
@@ -178,14 +178,14 @@ export function MemoryCleaner() {
               <p className="text-lg font-bold text-white tabular-nums">
                 {result.before_percent.toFixed(1)}%
               </p>
-              <p className="text-[10px] text-muted-foreground/50">クリーン剁E/p>
+              <p className="text-[10px] text-muted-foreground/50">クリーン前</p>
             </div>
             <ArrowRight size={14} className="text-muted-foreground/55" />
             <div className="text-center">
               <p className="text-lg font-bold text-emerald-400 tabular-nums">
                 {result.after_percent.toFixed(1)}%
               </p>
-              <p className="text-[10px] text-muted-foreground/50">クリーン征E/p>
+              <p className="text-[10px] text-muted-foreground/50">クリーン後</p>
             </div>
             <div className="ml-auto text-right">
               <p className="text-xl font-bold text-cyan-400 tabular-nums">
@@ -193,7 +193,7 @@ export function MemoryCleaner() {
                   ? `${(result.freed_mb / 1024).toFixed(2)} GB`
                   : `${result.freed_mb.toFixed(1)} MB`}
               </p>
-              <p className="text-[10px] text-muted-foreground/50">解放釁E/p>
+              <p className="text-[10px] text-muted-foreground/50">解放量</p>
             </div>
           </div>
         </div>
@@ -210,8 +210,8 @@ export function MemoryCleaner() {
       <div className="flex items-start gap-2.5 bg-amber-500/8 border border-amber-500/20 rounded-xl p-3.5">
         <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
         <p className="text-[11px] text-amber-300/70 leading-relaxed">
-          プロセスのパフォーマンスに一時的な影響が�Eる場合があります、E
-          ゲームプレイ中の使用は推奨しません、E
+          プロセスのパフォーマンスに一時的な影響が出る場合があります。
+          ゲームプレイ中の使用は推奨しません。
         </p>
       </div>
 
@@ -221,7 +221,7 @@ export function MemoryCleaner() {
           <div className="h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
           <div className="p-4">
             <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest mb-3">
-              メモリ使用釁ETOP 5
+              メモリ使用量 TOP 5
             </p>
             <div className="flex flex-col gap-3">
               {info.top_consumers.map((c) => (
