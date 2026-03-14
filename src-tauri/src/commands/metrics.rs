@@ -40,7 +40,11 @@ pub(crate) fn capture_metrics() -> SessionMetrics {
 
     let total = sys.total_memory() as f64 / 1024.0 / 1024.0;
     let used = sys.used_memory() as f64 / 1024.0 / 1024.0;
-    let pct = if total > 0.0 { (used / total) * 100.0 } else { 0.0 };
+    let pct = if total > 0.0 {
+        (used / total) * 100.0
+    } else {
+        0.0
+    };
 
     SessionMetrics {
         process_count: sys.processes().len(),

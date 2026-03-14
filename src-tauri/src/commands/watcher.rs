@@ -40,17 +40,30 @@ pub fn set_auto_start(enabled: bool) -> Result<(), String> {
 
 #[tauri::command]
 pub fn get_auto_optimize(state: tauri::State<AppState>) -> bool {
-    state.0.lock().unwrap_or_else(|p| p.into_inner()).auto_optimize
+    state
+        .0
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .auto_optimize
 }
 
 #[tauri::command]
 pub fn set_auto_optimize(enabled: bool, state: tauri::State<AppState>) {
-    state.0.lock().unwrap_or_else(|p| p.into_inner()).auto_optimize = enabled;
+    state
+        .0
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .auto_optimize = enabled;
 }
 
 #[tauri::command]
 pub fn get_active_profile(state: tauri::State<AppState>) -> Option<String> {
-    state.0.lock().unwrap_or_else(|p| p.into_inner()).active_profile_id.clone()
+    state
+        .0
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .active_profile_id
+        .clone()
 }
 
 // ── restore_all ───────────────────────────────────────────────────────────────
@@ -90,8 +103,13 @@ pub fn restore_all_internal() -> Result<String, String> {
 #[tauri::command]
 pub fn restore_all(state: tauri::State<AppState>, app: tauri::AppHandle) -> Result<String, String> {
     let result = restore_all_internal()?;
-    state.0.lock().unwrap_or_else(|p| p.into_inner()).active_profile_id = None;
-    app.emit("active_profile_changed", Option::<String>::None).ok();
+    state
+        .0
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .active_profile_id = None;
+    app.emit("active_profile_changed", Option::<String>::None)
+        .ok();
     Ok(result)
 }
 
@@ -270,7 +288,11 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                 }
                 if exe_matches(&profile.exe_path, &running) {
                     // Guard: set is_applying = true before the async call
-                    state.0.lock().unwrap_or_else(|p| p.into_inner()).is_applying = true;
+                    state
+                        .0
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .is_applying = true;
 
                     let result = super::profiles::apply_profile_internal(&profile.id).await;
 
@@ -289,10 +311,7 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                                 .ok();
                             send_notification(
                                 &handle,
-                                &format!(
-                                    "{} 用プロファイルを適用しました",
-                                    profile.name
-                                ),
+                                &format!("{} 用プロファイルを適用しました", profile.name),
                             );
                             super::event_log::add_event_internal(
                                 "profile_applied",

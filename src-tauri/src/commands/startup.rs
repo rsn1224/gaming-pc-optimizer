@@ -130,10 +130,7 @@ pub fn enable_startup_entry(name: String, source: String) -> Result<(), String> 
     // Write back to Run key
     let run_key = hkcu
         .open_subkey_with_flags(HKCU_RUN, KEY_READ | KEY_WRITE)
-        .or_else(|_| {
-            hkcu.create_subkey(HKCU_RUN)
-                .map(|(k, _)| k)
-        })
+        .or_else(|_| hkcu.create_subkey(HKCU_RUN).map(|(k, _)| k))
         .map_err(|e| format!("Run キーを開けませんでした: {}", e))?;
 
     run_key

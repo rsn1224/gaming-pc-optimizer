@@ -1,6 +1,6 @@
+use super::rollback::{self, ChangeRecord, RiskLevel, SessionMode};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use super::rollback::{self, ChangeRecord, RiskLevel, SessionMode};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -103,9 +103,9 @@ pub fn list_presets() -> Vec<PresetInfo> {
 #[tauri::command]
 pub async fn apply_preset(preset: String) -> Result<PresetResult, String> {
     let kind = match preset.as_str() {
-        "esports"   => PresetKind::Esports,
+        "esports" => PresetKind::Esports,
         "streaming" => PresetKind::Streaming,
-        "quiet"     => PresetKind::Quiet,
+        "quiet" => PresetKind::Quiet,
         _ => return Err(format!("不明なプリセット: {}", preset)),
     };
 
@@ -131,9 +131,12 @@ pub async fn apply_preset(preset: String) -> Result<PresetResult, String> {
 
     // ── Step 1: Kill processes ────────────────────────────────────────────
     let keep: std::collections::HashSet<&'static str> = match kind {
-        PresetKind::Esports   => std::collections::HashSet::new(),
+        PresetKind::Esports => std::collections::HashSet::new(),
         PresetKind::Streaming => STREAMING_KEEP.iter().cloned().collect(),
-        PresetKind::Quiet     => super::process::BLOATWARE_PROCESSES.iter().cloned().collect(), // keep all — we provide our own list below
+        PresetKind::Quiet => super::process::BLOATWARE_PROCESSES
+            .iter()
+            .cloned()
+            .collect(), // keep all — we provide our own list below
     };
 
     let targets_opt: Option<Vec<String>> = match kind {
@@ -169,12 +172,10 @@ pub async fn apply_preset(preset: String) -> Result<PresetResult, String> {
 
     // ── Step 2: Power plan ────────────────────────────────────────────────
     match kind {
-        PresetKind::Esports => {
-            match super::power::set_ultimate_performance().await {
-                Ok(_) => result.power_plan_set = true,
-                Err(e) => result.errors.push(format!("電源プラン: {}", e)),
-            }
-        }
+        PresetKind::Esports => match super::power::set_ultimate_performance().await {
+            Ok(_) => result.power_plan_set = true,
+            Err(e) => result.errors.push(format!("電源プラン: {}", e)),
+        },
         PresetKind::Streaming => {
             // High Performance: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
             match tokio::task::spawn_blocking(|| {
@@ -217,11 +218,11 @@ pub async fn apply_preset(preset: String) -> Result<PresetResult, String> {
         PresetKind::Streaming => {
             // Partial: disable Game DVR + zero menu delay, keep transparency + animations
             let streaming_ws = super::windows_settings::WindowsSettings {
-                visual_fx: 0,           // auto
-                transparency: false,    // minor tweak, no distractions
-                game_dvr: false,        // always worth disabling
-                menu_show_delay: 0,     // instant
-                animate_windows: true,  // keep for visual quality on stream
+                visual_fx: 0,          // auto
+                transparency: false,   // minor tweak, no distractions
+                game_dvr: false,       // always worth disabling
+                menu_show_delay: 0,    // instant
+                animate_windows: true, // keep for visual quality on stream
             };
             match tokio::task::spawn_blocking(move || {
                 super::windows_settings::apply_windows_preset(streaming_ws)
@@ -256,9 +257,9 @@ pub async fn apply_preset(preset: String) -> Result<PresetResult, String> {
         if let Ok(mut session) = rollback::load_session(sid) {
             let snapshot = &session.snapshot;
             let power_after = match kind {
-                PresetKind::Esports   => "ultimate_performance",
+                PresetKind::Esports => "ultimate_performance",
                 PresetKind::Streaming => "high_performance",
-                PresetKind::Quiet     => "balanced",
+                PresetKind::Quiet => "balanced",
             };
 
             let mut changes = vec![

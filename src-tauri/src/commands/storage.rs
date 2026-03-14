@@ -175,18 +175,18 @@ pub fn scan_storage() -> Vec<StorageCategory> {
             "chrome_cache",
             "Chrome キャッシュ",
             "Google Chrome のウェブキャッシュ",
-            local_app.as_ref().map(|p| {
-                p.join("Google\\Chrome\\User Data\\Default\\Cache")
-            }),
+            local_app
+                .as_ref()
+                .map(|p| p.join("Google\\Chrome\\User Data\\Default\\Cache")),
         ),
         // Edge cache
         make_category(
             "edge_cache",
             "Edge キャッシュ",
             "Microsoft Edge のウェブキャッシュ",
-            local_app.as_ref().map(|p| {
-                p.join("Microsoft\\Edge\\User Data\\Default\\Cache")
-            }),
+            local_app
+                .as_ref()
+                .map(|p| p.join("Microsoft\\Edge\\User Data\\Default\\Cache")),
         ),
         // Windows Update download cache
         make_category(
@@ -200,9 +200,9 @@ pub fn scan_storage() -> Vec<StorageCategory> {
             "thumbnails",
             "サムネイルキャッシュ",
             "エクスプローラーのサムネイルデータベース",
-            local_app.as_ref().map(|p| {
-                p.join("Microsoft\\Windows\\Explorer")
-            }),
+            local_app
+                .as_ref()
+                .map(|p| p.join("Microsoft\\Windows\\Explorer")),
         ),
         // NVIDIA DX shader cache
         make_category(
@@ -244,7 +244,9 @@ pub fn scan_storage() -> Vec<StorageCategory> {
             "wer_reports",
             "Windows エラーレポート",
             "クラッシュレポートのキュー (WER\\ReportQueue)",
-            local_app.as_ref().map(|p| p.join("Microsoft\\Windows\\WER\\ReportQueue")),
+            local_app
+                .as_ref()
+                .map(|p| p.join("Microsoft\\Windows\\WER\\ReportQueue")),
         ),
         // Windows Prefetch
         make_category(

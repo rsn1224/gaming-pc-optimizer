@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Play, Tag, Zap } from "lucide-react";
+import { Loader2, Play, Tag, Zap, ExternalLink } from "lucide-react";
 import type { GameProfile } from "@/types";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 
@@ -86,6 +86,11 @@ interface GameCardProps {
   onModeChange: (mode: "competitive" | "balanced" | "quality") => void;
   /** Hardware compatibility hint — only set when ENABLE_HARDWARE_SUGGESTIONS is ON */
   hardwareHint?: "ok" | "warn" | null;
+  /**
+   * When provided (ENABLE_PROFILE_SSOT = true), the inline mode selector is replaced
+   * by a "Profiles で設定 →" link that calls this callback.
+   */
+  onEditProfile?: () => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -97,6 +102,7 @@ export function GameCard({
   onLaunchOptimize,
   onModeChange,
   hardwareHint,
+  onEditProfile,
 }: GameCardProps) {
   const launcher =
     profile.launcher ?? (profile.exe_path ? detectLauncher(profile.exe_path) : "custom");
@@ -178,55 +184,83 @@ export function GameCard({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-muted-foreground/50 shrink-0 uppercase tracking-wider">モード</span>
-            <select
-              aria-label="最適化モードを選択"
-              value={profile.recommended_mode ?? ""}
-              onChange={(e) => {
-                const v = e.target.value as "competitive" | "balanced" | "quality";
-                if (v) onModeChange(v);
-              }}
-              className={`flex-1 appearance-none bg-[#07090e] border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:border-primary/60 transition-colors cursor-pointer ${
-                profile.recommended_mode
-                  ? `${MODE_BADGE_CLASS[profile.recommended_mode]} border`
-                  : "border-amber-500/25 text-amber-400/80 bg-amber-500/8"
-              }`}
-            >
-              {!profile.recommended_mode && (
-                <option value="" disabled>AI未設定</option>
-              )}
-              {MODE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value} className="bg-[#05080c] text-foreground">
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            {profile.recommended_reason && (
-              <span
-                className="text-[10px] text-muted-foreground/40 truncate max-w-[80px] cursor-help"
-                title={profile.recommended_reason}
-              >
-                {profile.recommended_reason}
-              </span>
-            )}
-            {profile.recommended_confidence != null && (
-              <ConfidenceBadge confidence={profile.recommended_confidence} showLabel={false} />
-            )}
-            {/* [HW SUGGESTIONS] Hardware compatibility badge */}
-            {hardwareHint === "ok" && (
-              <span
-                title="このモードはあなたのハードウェアに最適です"
-                className="text-[10px] text-emerald-400/80 shrink-0 cursor-help"
-              >
-                ✓HW
-              </span>
-            )}
-            {hardwareHint === "warn" && (
-              <span
-                title="このモードはあなたのハードウェアには重い可能性があります。「balanced」または「quality」を推奨します。"
-                className="text-[10px] text-amber-400/80 shrink-0 cursor-help"
-              >
-                ⚠HW
-              </span>
+
+            {/* [PROFILE_SSOT] When onEditProfile is set, replace selector with a read-only badge + link */}
+            {onEditProfile ? (
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {/* Read-only mode badge */}
+                {profile.recommended_mode ? (
+                  <span className={`inline-flex items-center text-[11px] border rounded-lg px-2.5 py-1 font-medium ${MODE_BADGE_CLASS[profile.recommended_mode]}`}>
+                    {MODE_OPTIONS.find((o) => o.value === profile.recommended_mode)?.label ?? profile.recommended_mode}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center text-[10px] border rounded-lg px-2.5 py-1 border-amber-500/25 text-amber-400/70 bg-amber-500/[0.06]">
+                    未設定
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={onEditProfile}
+                  className="ml-auto inline-flex items-center gap-1 text-[10px] text-cyan-400/70 hover:text-cyan-300 transition-colors shrink-0"
+                >
+                  <ExternalLink size={9} />
+                  Profilesで設定
+                </button>
+              </div>
+            ) : (
+              /* Original inline selector (ENABLE_PROFILE_SSOT = false) */
+              <>
+                <select
+                  aria-label="最適化モードを選択"
+                  value={profile.recommended_mode ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value as "competitive" | "balanced" | "quality";
+                    if (v) onModeChange(v);
+                  }}
+                  className={`flex-1 appearance-none bg-[#07090e] border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:border-primary/60 transition-colors cursor-pointer ${
+                    profile.recommended_mode
+                      ? `${MODE_BADGE_CLASS[profile.recommended_mode]} border`
+                      : "border-amber-500/25 text-amber-400/80 bg-amber-500/8"
+                  }`}
+                >
+                  {!profile.recommended_mode && (
+                    <option value="" disabled>AI未設定</option>
+                  )}
+                  {MODE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value} className="bg-[#05080c] text-foreground">
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                {profile.recommended_reason && (
+                  <span
+                    className="text-[10px] text-muted-foreground/40 truncate max-w-[80px] cursor-help"
+                    title={profile.recommended_reason}
+                  >
+                    {profile.recommended_reason}
+                  </span>
+                )}
+                {profile.recommended_confidence != null && (
+                  <ConfidenceBadge confidence={profile.recommended_confidence} showLabel={false} />
+                )}
+                {/* [HW SUGGESTIONS] Hardware compatibility badge */}
+                {hardwareHint === "ok" && (
+                  <span
+                    title="このモードはあなたのハードウェアに最適です"
+                    className="text-[10px] text-emerald-400/80 shrink-0 cursor-help"
+                  >
+                    ✓HW
+                  </span>
+                )}
+                {hardwareHint === "warn" && (
+                  <span
+                    title="このモードはあなたのハードウェアには重い可能性があります。「balanced」または「quality」を推奨します。"
+                    className="text-[10px] text-amber-400/80 shrink-0 cursor-help"
+                  >
+                    ⚠HW
+                  </span>
+                )}
+              </>
             )}
           </div>
 

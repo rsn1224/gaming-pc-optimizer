@@ -119,9 +119,12 @@ pub fn get_game_stats() -> Vec<GameStats> {
     let sessions = load_game_log();
 
     // Group by game_name
-    let mut map: std::collections::HashMap<String, Vec<&GameSession>> = std::collections::HashMap::new();
+    let mut map: std::collections::HashMap<String, Vec<&GameSession>> =
+        std::collections::HashMap::new();
     for session in &sessions {
-        map.entry(session.game_name.clone()).or_default().push(session);
+        map.entry(session.game_name.clone())
+            .or_default()
+            .push(session);
     }
 
     let mut stats: Vec<GameStats> = map

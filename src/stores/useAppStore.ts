@@ -1,3 +1,15 @@
+/**
+ * useAppStore — アプリグローバル状態
+ *
+ * 責務の区分:
+ *   [ナビゲーション]    activePage
+ *   [実行状態]         optimizationStatus / optimizationMessage / gameModeActive / freedMemoryMb
+ *   [キャッシュ]        bloatwareProcesses
+ *   [永続設定]         theme / disabledProcesses
+ *
+ * 編集状態 (editingProfileId など) は useEditingStore に分離済み。
+ * ウォッチャー実行状態 (activeProfileId, autoOptimize) は useWatcherStore 参照。
+ */
 import { create } from "zustand";
 import type { ProcessInfo, OptimizationStatus, ActivePage } from "@/types";
 
@@ -23,35 +35,29 @@ const storedDisabled = (() => {
 })();
 
 interface AppState {
-  // Navigation
+  // ── ナビゲーション ──────────────────────────────────────────────────────────
   activePage: ActivePage;
   setActivePage: (page: ActivePage) => void;
 
-  // Process list
+  // ── キャッシュ ──────────────────────────────────────────────────────────────
   bloatwareProcesses: ProcessInfo[];
   setBloatwareProcesses: (procs: ProcessInfo[]) => void;
 
-  // Optimization status
+  // ── 実行状態 (Execution State) ──────────────────────────────────────────────
   optimizationStatus: OptimizationStatus;
   setOptimizationStatus: (status: OptimizationStatus) => void;
   optimizationMessage: string;
   setOptimizationMessage: (msg: string) => void;
-
-  // Game mode
   gameModeActive: boolean;
   setGameModeActive: (active: boolean) => void;
   freedMemoryMb: number;
   setFreedMemoryMb: (mb: number) => void;
 
-  // Settings
+  // ── 永続設定 ────────────────────────────────────────────────────────────────
   theme: Theme;
   setTheme: (theme: Theme) => void;
   disabledProcesses: string[];
   setDisabledProcesses: (names: string[]) => void;
-
-  // Games library → Profiles page deep-link
-  editingProfileId: string | null;
-  setEditingProfileId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -83,7 +89,4 @@ export const useAppStore = create<AppState>((set) => ({
     localStorage.setItem("disabledProcesses", JSON.stringify(names));
     set({ disabledProcesses: names });
   },
-
-  editingProfileId: null,
-  setEditingProfileId: (id) => set({ editingProfileId: id }),
 }));

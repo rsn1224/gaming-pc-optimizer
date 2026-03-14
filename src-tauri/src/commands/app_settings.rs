@@ -3,9 +3,9 @@ use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AppearanceSettings {
-    pub accent_color: String,     // "cyan" | "purple" | "orange" | "green" | "pink"
-    pub font_size: String,        // "small" | "medium" | "large"
-    pub sidebar_compact: bool,    // compact sidebar (icon-only mode)
+    pub accent_color: String,  // "cyan" | "purple" | "orange" | "green" | "pink"
+    pub font_size: String,     // "small" | "medium" | "large"
+    pub sidebar_compact: bool, // compact sidebar (icon-only mode)
     pub animations_enabled: bool,
 }
 

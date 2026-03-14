@@ -88,7 +88,10 @@ $disks | ConvertTo-Json -Compress
             .trim()
             .to_string();
         let media_raw = item["MediaType"].as_str().unwrap_or("").to_string();
-        let health_raw = item["HealthStatus"].as_str().unwrap_or("Unknown").to_string();
+        let health_raw = item["HealthStatus"]
+            .as_str()
+            .unwrap_or("Unknown")
+            .to_string();
         let size_bytes = item["Size"].as_f64().unwrap_or(0.0);
         let serial = item["SerialNumber"]
             .as_str()

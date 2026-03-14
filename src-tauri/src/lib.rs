@@ -3,11 +3,11 @@ mod error;
 pub use error::AppError;
 
 use commands::{
-    ai, app_settings, backup, bandwidth, benchmark, clipboard_opt, crash_report, disk_health,
-    event_log, fps, game_log, hardware, hotkeys, icons, memory_cleaner, metrics, network,
-    optimizer, osd, power, presets, process, profiles, profile_share, registry_opt, cpu_affinity,
-    game_integrity, uninstaller, report, rollback, scheduler, self_improve, startup,
-    steam, storage, system_info, update_check, updates, watcher, windows_settings,
+    ai, app_settings, backup, bandwidth, benchmark, clipboard_opt, cpu_affinity, crash_report,
+    disk_health, event_log, fps, game_integrity, game_log, hardware, hotkeys, icons,
+    memory_cleaner, metrics, network, optimizer, osd, power, presets, process, profile_share,
+    profiles, registry_opt, report, rollback, scheduler, self_improve, startup, steam, storage,
+    system_info, uninstaller, update_check, updates, watcher, windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -41,8 +41,7 @@ pub fn run() {
         })))
         .setup(|app| {
             // ── System tray ────────────────────────────────────────────────
-            let show =
-                MenuItem::with_id(app, "show", "ダッシュボードを開く", true, None::<&str>)?;
+            let show = MenuItem::with_id(app, "show", "ダッシュボードを開く", true, None::<&str>)?;
             let auto_check = CheckMenuItem::with_id(
                 app,
                 "toggle_auto",
@@ -56,8 +55,7 @@ pub fn run() {
             let sep = PredefinedMenuItem::separator(app)?;
             let quit = MenuItem::with_id(app, "quit", "終了", true, None::<&str>)?;
 
-            let menu =
-                Menu::with_items(app, &[&show, &auto_check, &restore_item, &sep, &quit])?;
+            let menu = Menu::with_items(app, &[&show, &auto_check, &restore_item, &sep, &quit])?;
 
             let tray_icon = app
                 .default_window_icon()
@@ -92,7 +90,11 @@ pub fn run() {
                             Err(e) => eprintln!("[tray restore] error: {}", e),
                         }
                         let state = app.state::<AppState>();
-                        state.0.lock().unwrap_or_else(|p| p.into_inner()).active_profile_id = None;
+                        state
+                            .0
+                            .lock()
+                            .unwrap_or_else(|p| p.into_inner())
+                            .active_profile_id = None;
                         app.emit("active_profile_changed", Option::<String>::None)
                             .ok();
                     }

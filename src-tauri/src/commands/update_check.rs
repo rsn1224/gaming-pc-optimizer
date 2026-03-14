@@ -84,10 +84,7 @@ pub async fn check_for_updates() -> Result<UpdateInfo, String> {
         None => return Ok(no_update_response()),
     };
 
-    let release_url = body["html_url"]
-        .as_str()
-        .unwrap_or("")
-        .to_string();
+    let release_url = body["html_url"].as_str().unwrap_or("").to_string();
 
     let release_notes = body["body"]
         .as_str()

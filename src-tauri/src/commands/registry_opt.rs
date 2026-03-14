@@ -218,25 +218,21 @@ fn read_current_value(def: &TweakDef) -> (String, bool) {
     };
 
     match def.value_type {
-        "DWORD" => {
-            match key.get_value::<u32, _>(def.value_name) {
-                Ok(v) => {
-                    let current_str = v.to_string();
-                    let is_applied = current_str == def.value_data;
-                    (current_str, is_applied)
-                }
-                Err(_) => ("未設定".to_string(), false),
+        "DWORD" => match key.get_value::<u32, _>(def.value_name) {
+            Ok(v) => {
+                let current_str = v.to_string();
+                let is_applied = current_str == def.value_data;
+                (current_str, is_applied)
             }
-        }
-        "STRING" => {
-            match key.get_value::<String, _>(def.value_name) {
-                Ok(v) => {
-                    let is_applied = v == def.value_data;
-                    (v, is_applied)
-                }
-                Err(_) => ("未設定".to_string(), false),
+            Err(_) => ("未設定".to_string(), false),
+        },
+        "STRING" => match key.get_value::<String, _>(def.value_name) {
+            Ok(v) => {
+                let is_applied = v == def.value_data;
+                (v, is_applied)
             }
-        }
+            Err(_) => ("未設定".to_string(), false),
+        },
         _ => ("未設定".to_string(), false),
     }
 }
@@ -250,7 +246,10 @@ fn apply_tweak_def(def: &TweakDef) -> Result<(), String> {
         let mut applied = false;
         for subkey_name in interfaces.enum_keys().flatten() {
             if let Ok(subkey) = interfaces.open_subkey_with_flags(&subkey_name, KEY_SET_VALUE) {
-                let val: u32 = def.value_data.parse().map_err(|e| format!("値の解析失敗: {}", e))?;
+                let val: u32 = def
+                    .value_data
+                    .parse()
+                    .map_err(|e| format!("値の解析失敗: {}", e))?;
                 if subkey.set_value(def.value_name, &val).is_ok() {
                     applied = true;
                 }
@@ -270,7 +269,10 @@ fn apply_tweak_def(def: &TweakDef) -> Result<(), String> {
 
     match def.value_type {
         "DWORD" => {
-            let val: u32 = def.value_data.parse().map_err(|e| format!("値の解析失敗: {}", e))?;
+            let val: u32 = def
+                .value_data
+                .parse()
+                .map_err(|e| format!("値の解析失敗: {}", e))?;
             key.set_value(def.value_name, &val)
                 .map_err(|e| format!("値の書き込み失敗: {}", e))?;
         }

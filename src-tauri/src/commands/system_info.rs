@@ -26,7 +26,9 @@ pub fn get_gpu_info() -> Vec<GpuInfo> {
     let Ok(o) = out else { return vec![] };
     let raw = String::from_utf8_lossy(&o.stdout);
     let raw = raw.trim();
-    if raw.is_empty() { return vec![]; }
+    if raw.is_empty() {
+        return vec![];
+    }
 
     // 単一オブジェクトの場合は配列に正規化
     let json_str = if raw.starts_with('[') {
@@ -85,12 +87,8 @@ pub async fn get_system_info() -> Result<SystemInfo, String> {
         sys.refresh_cpu_usage();
         sys.refresh_memory();
 
-        let cpu_usage = sys
-            .cpus()
-            .iter()
-            .map(|cpu| cpu.cpu_usage())
-            .sum::<f32>()
-            / sys.cpus().len() as f32;
+        let cpu_usage =
+            sys.cpus().iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / sys.cpus().len() as f32;
 
         let cpu_name = sys
             .cpus()

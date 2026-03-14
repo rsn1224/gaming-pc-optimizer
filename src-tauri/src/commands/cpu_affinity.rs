@@ -13,8 +13,15 @@ pub struct ProcessAffinityInfo {
 // Windows API FFI
 #[link(name = "kernel32")]
 extern "system" {
-    fn OpenProcess(dw_desired_access: u32, b_inherit_handle: i32, dw_process_id: u32) -> *mut std::ffi::c_void;
-    fn SetProcessAffinityMask(h_process: *mut std::ffi::c_void, dw_process_affinity_mask: usize) -> i32;
+    fn OpenProcess(
+        dw_desired_access: u32,
+        b_inherit_handle: i32,
+        dw_process_id: u32,
+    ) -> *mut std::ffi::c_void;
+    fn SetProcessAffinityMask(
+        h_process: *mut std::ffi::c_void,
+        dw_process_affinity_mask: usize,
+    ) -> i32;
     fn GetProcessAffinityMask(
         h_process: *mut std::ffi::c_void,
         lp_process_affinity_mask: *mut usize,
@@ -30,7 +37,11 @@ const PROCESS_SET_INFORMATION: u32 = 0x0200;
 
 fn get_cpu_count() -> u32 {
     let count = unsafe { GetActiveProcessorCount(ALL_PROCESSOR_GROUPS) };
-    if count == 0 { 1 } else { count }
+    if count == 0 {
+        1
+    } else {
+        count
+    }
 }
 
 fn get_affinity_mask_for_pid(pid: u32) -> Option<u64> {
@@ -40,9 +51,7 @@ fn get_affinity_mask_for_pid(pid: u32) -> Option<u64> {
     }
     let mut process_mask: usize = 0;
     let mut system_mask: usize = 0;
-    let result = unsafe {
-        GetProcessAffinityMask(handle, &mut process_mask, &mut system_mask)
-    };
+    let result = unsafe { GetProcessAffinityMask(handle, &mut process_mask, &mut system_mask) };
     unsafe { CloseHandle(handle) };
     if result == 0 {
         None
@@ -102,16 +111,18 @@ pub fn get_process_affinities() -> Result<Vec<ProcessAffinityInfo>, String> {
 
 #[tauri::command]
 pub fn set_process_affinity(pid: u32, affinity_mask: u64) -> Result<(), String> {
-    let handle = unsafe {
-        OpenProcess(PROCESS_SET_INFORMATION | PROCESS_QUERY_INFORMATION, 0, pid)
-    };
+    let handle =
+        unsafe { OpenProcess(PROCESS_SET_INFORMATION | PROCESS_QUERY_INFORMATION, 0, pid) };
     if handle.is_null() {
         return Err(format!("プロセス {} を開けません（権限不足の可能性）", pid));
     }
     let result = unsafe { SetProcessAffinityMask(handle, affinity_mask as usize) };
     unsafe { CloseHandle(handle) };
     if result == 0 {
-        Err(format!("CPUアフィニティの設定に失敗しました (PID: {})", pid))
+        Err(format!(
+            "CPUアフィニティの設定に失敗しました (PID: {})",
+            pid
+        ))
     } else {
         Ok(())
     }

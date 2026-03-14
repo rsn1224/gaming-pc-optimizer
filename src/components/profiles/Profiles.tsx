@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap, FilePlus, Sparkles, ShieldCheck, AlertTriangle, Zap as ZapIcon } from "lucide-react";
-import { useAppStore } from "@/stores/useAppStore";
+import { useEditingStore } from "@/stores/useEditingStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
+import { RiskSummary } from "@/components/ui/RiskSummary";
 import type { GameProfile, SimulationResult, PreviewChange, RiskLevel } from "@/types";
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
@@ -70,24 +71,12 @@ function ApplyPreviewModal({ profileName, sim, applying, onConfirm, onCancel }: 
 
         {/* Risk summary */}
         <div className="flex items-center gap-3 px-5 py-3 border-b border-white/[0.04] shrink-0">
-          {sim.safe_count > 0 && (
-            <span className="flex items-center gap-1.5 text-xs text-emerald-400">
-              <ShieldCheck size={12} /> 安全 {sim.safe_count}
-            </span>
-          )}
-          {sim.caution_count > 0 && (
-            <span className="flex items-center gap-1.5 text-xs text-amber-400">
-              <AlertTriangle size={12} /> 注意 {sim.caution_count}
-            </span>
-          )}
-          {sim.advanced_count > 0 && (
-            <span className="flex items-center gap-1.5 text-xs text-red-400">
-              <ZapIcon size={12} /> 上級 {sim.advanced_count}
-            </span>
-          )}
-          {sim.changes.length === 0 && (
-            <span className="text-xs text-muted-foreground/50">変更なし（現在の設定と同じ）</span>
-          )}
+          <RiskSummary
+            safe={sim.safe_count}
+            caution={sim.caution_count}
+            advanced={sim.advanced_count}
+            emptyLabel="変更なし（現在の設定と同じ）"
+          />
         </div>
 
         {/* Change list */}
@@ -584,7 +573,7 @@ function QuickDraftModal({ onSave, onClose }: QuickDraftProps) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function Profiles() {
-  const { editingProfileId, setEditingProfileId } = useAppStore();
+  const { editingProfileId, setEditingProfileId } = useEditingStore();
   const { activeProfileId } = useWatcherStore();
   const [profiles, setProfiles] = useState<GameProfile[]>([]);
   const [loading, setLoading] = useState(true);

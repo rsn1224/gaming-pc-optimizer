@@ -9,10 +9,10 @@ const TASK_NAME: &str = "GamingPCOptimizer_AutoOptimize";
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ScheduleConfig {
     pub enabled: bool,
-    pub trigger: String,   // "daily" | "weekly" | "onlogon" | "onboot"
-    pub time: String,      // "HH:MM" format
-    pub day_of_week: u8,   // 0=Sun..6=Sat
-    pub preset: String,    // "esports" | "streaming" | "quiet" | "all"
+    pub trigger: String, // "daily" | "weekly" | "onlogon" | "onboot"
+    pub time: String,    // "HH:MM" format
+    pub day_of_week: u8, // 0=Sun..6=Sat
+    pub preset: String,  // "esports" | "streaming" | "quiet" | "all"
     pub run_as_admin: bool,
 }
 
@@ -48,10 +48,7 @@ pub fn create_schedule(config: ScheduleConfig) -> Result<(), String> {
             } else {
                 config.time.clone()
             };
-            format!(
-                "$trigger = New-ScheduledTaskTrigger -Daily -At '{}'",
-                time
-            )
+            format!("$trigger = New-ScheduledTaskTrigger -Daily -At '{}'", time)
         }
         "weekly" => {
             let time = if config.time.is_empty() {

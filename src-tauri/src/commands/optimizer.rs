@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::rollback::{self, ChangeRecord, RiskLevel, SessionMode};
+use serde::{Deserialize, Serialize};
 use sysinfo::{ProcessesToUpdate, System};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -62,7 +62,11 @@ fn analyze_what_would_change(snapshot: &rollback::SystemSnapshot) -> Vec<Preview
     changes.push(PreviewChange {
         category: "power".to_string(),
         target: "電源プラン".to_string(),
-        current_value: serde_json::json!(if current_guid.is_empty() { "不明" } else { current_guid.as_str() }),
+        current_value: serde_json::json!(if current_guid.is_empty() {
+            "不明"
+        } else {
+            current_guid.as_str()
+        }),
         new_value: serde_json::json!("Ultimate Performance"),
         risk_level: RiskLevel::Caution,
         will_apply: !is_ultimate,
@@ -71,7 +75,9 @@ fn analyze_what_would_change(snapshot: &rollback::SystemSnapshot) -> Vec<Preview
 
     // 3. Windows settings — compare current vs gaming preset
     if let Some(ws_val) = &snapshot.windows_settings {
-        if let Ok(ws) = serde_json::from_value::<super::windows_settings::WindowsSettings>(ws_val.clone()) {
+        if let Ok(ws) =
+            serde_json::from_value::<super::windows_settings::WindowsSettings>(ws_val.clone())
+        {
             let already_gaming = ws.visual_fx == 2
                 && !ws.transparency
                 && !ws.game_dvr
@@ -121,7 +127,8 @@ fn analyze_what_would_change(snapshot: &rollback::SystemSnapshot) -> Vec<Preview
         }),
         risk_level: RiskLevel::Advanced,
         will_apply: !already_gaming_net,
-        description: "NetworkThrottling 無効化・Nagle アルゴリズム無効化（管理者権限必要）".to_string(),
+        description: "NetworkThrottling 無効化・Nagle アルゴリズム無効化（管理者権限必要）"
+            .to_string(),
     });
 
     changes
@@ -136,11 +143,10 @@ fn analyze_what_would_change(snapshot: &rollback::SystemSnapshot) -> Vec<Preview
 pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> {
     // ── Phase 1: Rollback — capture before-state ──────────────────────────────
     let session_id: Option<String> = if rollback::ROLLBACK_CONFIG.enabled {
-        let maybe = tokio::task::spawn_blocking(|| {
-            rollback::begin_session(SessionMode::Real, None)
-        })
-        .await
-        .ok();
+        let maybe =
+            tokio::task::spawn_blocking(|| rollback::begin_session(SessionMode::Real, None))
+                .await
+                .ok();
         maybe.map(|s| s.id)
     } else {
         None
@@ -172,7 +178,8 @@ pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> 
     }
 
     // 3. Apply gaming Windows settings (sync fn → spawn_blocking)
-    match tokio::task::spawn_blocking(super::windows_settings::apply_gaming_windows_settings).await {
+    match tokio::task::spawn_blocking(super::windows_settings::apply_gaming_windows_settings).await
+    {
         Ok(Ok(_)) => result.windows_applied = true,
         Ok(Err(e)) => result.errors.push(format!("Windows設定: {}", e)),
         Err(e) => result.errors.push(format!("Windows設定(spawn): {}", e)),
@@ -281,9 +288,17 @@ pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> 
             "プロセス停止: {}件, {:.0}MB解放{}",
             result.process_killed,
             result.process_freed_mb,
-            if result.errors.is_empty() { "" } else { " (一部エラー)" }
+            if result.errors.is_empty() {
+                ""
+            } else {
+                " (一部エラー)"
+            }
         ),
-        if result.errors.is_empty() { "success" } else { "warning" },
+        if result.errors.is_empty() {
+            "success"
+        } else {
+            "warning"
+        },
     );
 
     Ok(result)
@@ -294,11 +309,9 @@ pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> 
 #[tauri::command]
 pub async fn simulate_all_optimizations() -> Result<SimulationResult, String> {
     // Begin a Sim session — captures snapshot, nothing is changed
-    let session = tokio::task::spawn_blocking(|| {
-        rollback::begin_session(SessionMode::Sim, None)
-    })
-    .await
-    .map_err(|e| e.to_string())?;
+    let session = tokio::task::spawn_blocking(|| rollback::begin_session(SessionMode::Sim, None))
+        .await
+        .map_err(|e| e.to_string())?;
 
     let snapshot = session.snapshot.clone();
     let session_id = session.id.clone();

@@ -1,9 +1,9 @@
+use super::profiles::{load_profiles, save_profiles, GameProfile};
 use serde::{Deserialize, Serialize};
-use super::profiles::{GameProfile, load_profiles, save_profiles};
 
 #[derive(Serialize, Deserialize)]
 pub struct SharedProfile {
-    pub schema: String,      // "gaming-pc-optimizer-profile-v1"
+    pub schema: String, // "gaming-pc-optimizer-profile-v1"
     pub exported_at: String,
     pub profile: GameProfile,
     pub system_hint: String,
@@ -29,7 +29,8 @@ fn now_iso() -> String {
 fn days_to_ymd(mut days: u32) -> (u32, u32, u32) {
     let mut year = 1970u32;
     loop {
-        let leap = (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400);
+        let leap =
+            (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400);
         let days_in_year = if leap { 366 } else { 365 };
         if days < days_in_year {
             break;
@@ -41,7 +42,16 @@ fn days_to_ymd(mut days: u32) -> (u32, u32, u32) {
     let days_in_month: [u32; 12] = [
         31,
         if leap { 29 } else { 28 },
-        31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
     ];
     let mut month = 1u32;
     for &dim in &days_in_month {
@@ -56,9 +66,8 @@ fn days_to_ymd(mut days: u32) -> (u32, u32, u32) {
 
 fn get_cpu_name() -> String {
     use sysinfo::{CpuRefreshKind, RefreshKind, System};
-    let mut sys = System::new_with_specifics(
-        RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()),
-    );
+    let mut sys =
+        System::new_with_specifics(RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()));
     sys.refresh_cpu_list(CpuRefreshKind::nothing());
     sys.cpus()
         .first()
@@ -89,14 +98,11 @@ pub fn export_profile_share(profile_id: String) -> Result<String, String> {
 /// Import a shared profile JSON string
 #[tauri::command]
 pub fn import_profile_share(json: String) -> Result<String, String> {
-    let shared: SharedProfile = serde_json::from_str(&json)
-        .map_err(|e| format!("JSON パースエラー: {}", e))?;
+    let shared: SharedProfile =
+        serde_json::from_str(&json).map_err(|e| format!("JSON パースエラー: {}", e))?;
 
     if shared.schema != "gaming-pc-optimizer-profile-v1" {
-        return Err(format!(
-            "非対応のスキーマです: {}",
-            shared.schema
-        ));
+        return Err(format!("非対応のスキーマです: {}", shared.schema));
     }
 
     let mut profile = shared.profile;

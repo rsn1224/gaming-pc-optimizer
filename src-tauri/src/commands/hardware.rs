@@ -23,12 +23,7 @@ pub(crate) fn fetch_gpu_status_sync() -> Result<Vec<GpuStatus>, String> {
     let query = "name,memory.total,memory.used,temperature.gpu,power.draw,power.limit,power.default_limit,fan.speed,utilization.gpu,driver_version";
 
     let output = Command::new("nvidia-smi")
-        .args([
-            "--query-gpu",
-            query,
-            "--format",
-            "csv,noheader,nounits",
-        ])
+        .args(["--query-gpu", query, "--format", "csv,noheader,nounits"])
         .output()
         .map_err(|_| "NVIDIA GPUが見つかりません（nvidia-smiが利用できません）".to_string())?;
 
@@ -263,7 +258,10 @@ pub fn get_gpu_power_info() -> Result<GpuPowerLimit, String> {
     }
 
     let parse_w = |s: &str| -> u32 {
-        s.trim().parse::<f32>().map(|v| v.round() as u32).unwrap_or(0)
+        s.trim()
+            .parse::<f32>()
+            .map(|v| v.round() as u32)
+            .unwrap_or(0)
     };
 
     Ok(GpuPowerLimit {

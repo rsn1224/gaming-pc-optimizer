@@ -103,11 +103,19 @@ pub fn get_steam_games_for_verify() -> Result<Vec<serde_json::Value>, String> {
     // merge: avoid duplicates by app_id
     let existing_ids: std::collections::HashSet<String> = games
         .iter()
-        .filter_map(|g| g.get("app_id").and_then(|v| v.as_str()).map(|s| s.to_string()))
+        .filter_map(|g| {
+            g.get("app_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+        })
         .collect();
 
     for g in profile_games {
-        let id = g.get("app_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let id = g
+            .get("app_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
         if !existing_ids.contains(&id) {
             games.push(g);
         }
@@ -117,7 +125,10 @@ pub fn get_steam_games_for_verify() -> Result<Vec<serde_json::Value>, String> {
 }
 
 #[tauri::command]
-pub async fn verify_game_files(app_id: String, game_name: String) -> Result<GameIntegrityResult, String> {
+pub async fn verify_game_files(
+    app_id: String,
+    game_name: String,
+) -> Result<GameIntegrityResult, String> {
     let url = format!("steam://validate/{}", app_id);
     Command::new("cmd")
         .args(["/c", "start", "", &url])
@@ -129,6 +140,8 @@ pub async fn verify_game_files(app_id: String, game_name: String) -> Result<Game
         app_id,
         status: "started".to_string(),
         issues_found: 0,
-        message: "Steamでファイル検証を開始しました。Steamクライアントで進行状況を確認してください。".to_string(),
+        message:
+            "Steamでファイル検証を開始しました。Steamクライアントで進行状況を確認してください。"
+                .to_string(),
     })
 }

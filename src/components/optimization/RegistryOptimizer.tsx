@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "@/stores/useToastStore";
 import { cn } from "@/lib/utils";
+import { RiskBadge } from "@/components/ui/RiskBadge";
 import type { RegTweak, RegTweakResult } from "@/types";
 import { DatabaseZap, RefreshCw, Zap, RotateCcw, AlertTriangle } from "lucide-react";
 
@@ -23,17 +24,6 @@ const RISK_LABELS: Record<RiskFilter, string> = {
   advanced: "上級",
 };
 
-const RISK_BADGE: Record<string, string> = {
-  safe: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  caution: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  advanced: "bg-red-500/20 text-red-400 border-red-500/30",
-};
-
-const RISK_LABEL_TEXT: Record<string, string> = {
-  safe: "安全",
-  caution: "注意",
-  advanced: "上級",
-};
 
 export function RegistryOptimizer() {
   const [tweaks, setTweaks] = useState<RegTweak[]>([]);
@@ -217,14 +207,7 @@ export function RegistryOptimizer() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium text-white">{tweak.name}</span>
-                  <span
-                    className={cn(
-                      "text-[10px] px-1.5 py-0.5 rounded border font-medium",
-                      RISK_BADGE[tweak.risk_level] ?? "bg-white/10 text-slate-400 border-white/10"
-                    )}
-                  >
-                    {RISK_LABEL_TEXT[tweak.risk_level] ?? tweak.risk_level}
-                  </span>
+                  <RiskBadge level={tweak.risk_level} />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{tweak.description}</p>
                 <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">

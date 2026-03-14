@@ -40,8 +40,8 @@ pub fn export_backup() -> Result<String, String> {
 /// Parses a BackupData JSON string and writes profiles back to disk.
 #[tauri::command]
 pub fn import_backup(json: String) -> Result<String, String> {
-    let backup: BackupData = serde_json::from_str(&json)
-        .map_err(|e| format!("バックアップのJSONパース失敗: {}", e))?;
+    let backup: BackupData =
+        serde_json::from_str(&json).map_err(|e| format!("バックアップのJSONパース失敗: {}", e))?;
 
     if backup.version != "1" {
         return Err(format!(
@@ -50,21 +50,19 @@ pub fn import_backup(json: String) -> Result<String, String> {
         ));
     }
 
-    let profiles_count = backup
-        .profiles
-        .as_array()
-        .map(|a| a.len())
-        .unwrap_or(0);
+    let profiles_count = backup.profiles.as_array().map(|a| a.len()).unwrap_or(0);
 
     let pretty = serde_json::to_string_pretty(&backup.profiles)
         .map_err(|e| format!("JSONシリアライズ失敗: {}", e))?;
 
     let path = profiles_path();
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| format!("ディレクトリ作成失敗: {}", e))?;
+        std::fs::create_dir_all(parent).map_err(|e| format!("ディレクトリ作成失敗: {}", e))?;
     }
     std::fs::write(&path, pretty).map_err(|e| format!("ファイル書き込み失敗: {}", e))?;
 
-    Ok(format!("インポートしました: {}個のプロファイル", profiles_count))
+    Ok(format!(
+        "インポートしました: {}個のプロファイル",
+        profiles_count
+    ))
 }

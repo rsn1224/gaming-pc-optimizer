@@ -124,11 +124,7 @@ fn load_api_key() -> Result<String, String> {
 
 // ── Shared Claude API helper ──────────────────────────────────────────────────
 
-async fn call_claude_api(
-    api_key: &str,
-    prompt: &str,
-    max_tokens: u32,
-) -> Result<String, String> {
+async fn call_claude_api(api_key: &str, prompt: &str, max_tokens: u32) -> Result<String, String> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
         "model": "claude-haiku-4-5-20251001",
@@ -356,7 +352,7 @@ pub async fn get_ai_update_priorities() -> Result<Vec<AiUpdatePriority>, String>
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiWindowsRecommendation {
-    pub preset_id: String,  // "default" | "gaming" | "balanced"
+    pub preset_id: String, // "default" | "gaming" | "balanced"
     pub explanation: String,
     #[serde(default)]
     pub confidence: u8,
@@ -366,11 +362,10 @@ pub struct AiWindowsRecommendation {
 pub async fn get_ai_windows_recommendation() -> Result<AiWindowsRecommendation, String> {
     let api_key = load_api_key()?;
 
-    let context = tokio::task::spawn_blocking(
-        super::windows_settings::export_windows_settings_context,
-    )
-    .await
-    .map_err(|e| format!("コンテキスト取得エラー: {}", e))??;
+    let context =
+        tokio::task::spawn_blocking(super::windows_settings::export_windows_settings_context)
+            .await
+            .map_err(|e| format!("コンテキスト取得エラー: {}", e))??;
 
     let prompt = format!(
         r#"あなたはゲーミングPC最適化の専門家です。以下のJSONはWindowsPCの視覚効果・Game DVR・メニュー遅延等の現在設定と利用可能なプリセット一覧です。
@@ -587,7 +582,10 @@ pub async fn get_game_settings_advice(game_name: String) -> Result<GameSettingsA
         let gpus = super::system_info::get_gpu_info();
         let first = gpus.into_iter().next();
         (
-            first.as_ref().map(|g| g.name.clone()).unwrap_or_else(|| "不明".to_string()),
+            first
+                .as_ref()
+                .map(|g| g.name.clone())
+                .unwrap_or_else(|| "不明".to_string()),
             first.map(|g| g.vram_total_mb as u64).unwrap_or(0),
         )
     };

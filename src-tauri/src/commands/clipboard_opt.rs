@@ -45,11 +45,17 @@ pub fn get_clipboard_status() -> Result<ClipboardStatus, String> {
 
     let content_type = if !has_content {
         "empty".to_string()
-    } else if formats_str.contains("bitmap") || formats_str.contains("png") || formats_str.contains("jpg") {
+    } else if formats_str.contains("bitmap")
+        || formats_str.contains("png")
+        || formats_str.contains("jpg")
+    {
         "image".to_string()
     } else if formats_str.contains("filedrop") || formats_str.contains("filename") {
         "files".to_string()
-    } else if formats_str.contains("text") || formats_str.contains("unicodetext") || formats_str.contains("oemtext") {
+    } else if formats_str.contains("text")
+        || formats_str.contains("unicodetext")
+        || formats_str.contains("oemtext")
+    {
         "text".to_string()
     } else if has_content {
         "unknown".to_string()
@@ -149,7 +155,8 @@ pub fn clear_clipboard() -> Result<(), String> {
 /// Clean clipboard-related temp files
 #[tauri::command]
 pub fn clean_clipboard_temps() -> Result<ClipboardCleanResult, String> {
-    let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| std::env::temp_dir().to_string_lossy().to_string());
+    let temp_dir = std::env::var("TEMP")
+        .unwrap_or_else(|_| std::env::temp_dir().to_string_lossy().to_string());
 
     let one_hour_ago = Duration::from_secs(3600);
 
@@ -180,9 +187,7 @@ pub fn clean_clipboard_temps() -> Result<ClipboardCleanResult, String> {
                     .metadata()
                     .ok()
                     .and_then(|m| m.modified().ok())
-                    .and_then(|modified| {
-                        modified.elapsed().ok().map(|age| age > one_hour_ago)
-                    })
+                    .and_then(|modified| modified.elapsed().ok().map(|age| age > one_hour_ago))
                     .unwrap_or(false)
             } else if name_lower.ends_with(".xlsb") || name_lower.ends_with(".docx") {
                 // Office clipboard temps in %TEMP% — remove if older than 1 hour
@@ -190,9 +195,7 @@ pub fn clean_clipboard_temps() -> Result<ClipboardCleanResult, String> {
                     .metadata()
                     .ok()
                     .and_then(|m| m.modified().ok())
-                    .and_then(|modified| {
-                        modified.elapsed().ok().map(|age| age > one_hour_ago)
-                    })
+                    .and_then(|modified| modified.elapsed().ok().map(|age| age > one_hour_ago))
                     .unwrap_or(false)
             } else {
                 false
@@ -228,4 +231,3 @@ pub fn clean_clipboard_temps() -> Result<ClipboardCleanResult, String> {
         files_removed,
     })
 }
-

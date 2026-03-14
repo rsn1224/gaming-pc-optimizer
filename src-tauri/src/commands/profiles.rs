@@ -83,13 +83,11 @@ pub fn load_profiles() -> Vec<GameProfile> {
 pub(crate) fn save_profiles(profiles: &[GameProfile]) -> Result<(), String> {
     let path = profiles_path();
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| format!("ディレクトリ作成失敗: {}", e))?;
+        std::fs::create_dir_all(parent).map_err(|e| format!("ディレクトリ作成失敗: {}", e))?;
     }
     let json = serde_json::to_string_pretty(profiles)
         .map_err(|e| format!("JSON シリアライズ失敗: {}", e))?;
-    std::fs::write(&path, json)
-        .map_err(|e| format!("ファイル書き込み失敗: {}", e))
+    std::fs::write(&path, json).map_err(|e| format!("ファイル書き込み失敗: {}", e))
 }
 
 // ── is_draft helper ──────────────────────────────────────────────────────────
@@ -156,11 +154,11 @@ pub fn export_profiles_context() -> Result<String, String> {
 
     let (cpu_name, cpu_cores) = {
         use sysinfo::CpuRefreshKind;
-        let mut s2 = System::new_with_specifics(
-            RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()),
-        );
+        let mut s2 =
+            System::new_with_specifics(RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()));
         s2.refresh_cpu_list(CpuRefreshKind::nothing());
-        let name = s2.cpus()
+        let name = s2
+            .cpus()
             .first()
             .map(|c| c.brand().to_string())
             .unwrap_or_else(|| "Unknown".to_string());
@@ -248,16 +246,37 @@ fn unix_to_ymd_hms(secs: u64) -> (u64, u64, u64, u64, u64, u64) {
     let mut days = total_hr / 24;
     let mut y = 1970u64;
     loop {
-        let dy = if y.is_multiple_of(4) && (!y.is_multiple_of(100) || y.is_multiple_of(400)) { 366 } else { 365 };
-        if days < dy { break; }
+        let dy = if y.is_multiple_of(4) && (!y.is_multiple_of(100) || y.is_multiple_of(400)) {
+            366
+        } else {
+            365
+        };
+        if days < dy {
+            break;
+        }
         days -= dy;
         y += 1;
     }
     let leap = y.is_multiple_of(4) && (!y.is_multiple_of(100) || y.is_multiple_of(400));
-    let months = [31u64, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let months = [
+        31u64,
+        if leap { 29 } else { 28 },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
     let mut mo = 1u64;
     for dm in &months {
-        if days < *dm { break; }
+        if days < *dm {
+            break;
+        }
         days -= dm;
         mo += 1;
     }
@@ -446,7 +465,8 @@ fn build_profile_preview_changes(
             new_value: serde_json::json!("既知のブロートウェアプロセスを停止"),
             risk_level: RiskLevel::Safe,
             will_apply: true,
-            description: "OneDrive, Cortana, Xbox Game Bar 等の不要プロセスを停止します".to_string(),
+            description: "OneDrive, Cortana, Xbox Game Bar 等の不要プロセスを停止します"
+                .to_string(),
         });
     }
 
@@ -458,7 +478,11 @@ fn build_profile_preview_changes(
             changes.push(PreviewChange {
                 category: "power".to_string(),
                 target: "電源プラン".to_string(),
-                current_value: serde_json::json!(if guid.is_empty() { "不明" } else { guid.as_str() }),
+                current_value: serde_json::json!(if guid.is_empty() {
+                    "不明"
+                } else {
+                    guid.as_str()
+                }),
                 new_value: serde_json::json!("Ultimate Performance"),
                 risk_level: RiskLevel::Caution,
                 will_apply: !already,
@@ -471,7 +495,11 @@ fn build_profile_preview_changes(
             changes.push(PreviewChange {
                 category: "power".to_string(),
                 target: "電源プラン".to_string(),
-                current_value: serde_json::json!(if guid.is_empty() { "不明" } else { guid.as_str() }),
+                current_value: serde_json::json!(if guid.is_empty() {
+                    "不明"
+                } else {
+                    guid.as_str()
+                }),
                 new_value: serde_json::json!("High Performance"),
                 risk_level: RiskLevel::Caution,
                 will_apply: !already,
@@ -500,7 +528,10 @@ fn build_profile_preview_changes(
             changes.push(PreviewChange {
                 category: "windows".to_string(),
                 target: "Windows 視覚効果・ゲーム設定".to_string(),
-                current_value: snapshot.windows_settings.clone().unwrap_or(serde_json::Value::Null),
+                current_value: snapshot
+                    .windows_settings
+                    .clone()
+                    .unwrap_or(serde_json::Value::Null),
                 new_value: serde_json::json!({
                     "visual_fx": 2, "transparency": false,
                     "game_dvr": false, "menu_show_delay": 0, "animate_windows": false
@@ -514,7 +545,10 @@ fn build_profile_preview_changes(
             changes.push(PreviewChange {
                 category: "windows".to_string(),
                 target: "Windows 設定をデフォルトに復元".to_string(),
-                current_value: snapshot.windows_settings.clone().unwrap_or(serde_json::Value::Null),
+                current_value: snapshot
+                    .windows_settings
+                    .clone()
+                    .unwrap_or(serde_json::Value::Null),
                 new_value: serde_json::json!("default"),
                 risk_level: RiskLevel::Caution,
                 will_apply: true,
@@ -542,10 +576,16 @@ fn build_profile_preview_changes(
                 category: "storage".to_string(),
                 target: "ストレージクリーン（ディープ）".to_string(),
                 current_value: serde_json::Value::Null,
-                new_value: serde_json::json!(["user_temp", "win_temp", "browser_cache", "shader_cache"]),
+                new_value: serde_json::json!([
+                    "user_temp",
+                    "win_temp",
+                    "browser_cache",
+                    "shader_cache"
+                ]),
                 risk_level: RiskLevel::Caution,
                 will_apply: true,
-                description: "一時ファイル・ブラウザキャッシュ・シェーダーキャッシュを削除します".to_string(),
+                description: "一時ファイル・ブラウザキャッシュ・シェーダーキャッシュを削除します"
+                    .to_string(),
             });
         }
         _ => {}
@@ -566,7 +606,8 @@ fn build_profile_preview_changes(
             }),
             risk_level: RiskLevel::Advanced,
             will_apply: !already,
-            description: "NetworkThrottling 無効化・Nagle アルゴリズム無効化（管理者権限必要）".to_string(),
+            description: "NetworkThrottling 無効化・Nagle アルゴリズム無効化（管理者権限必要）"
+                .to_string(),
         });
     }
 
@@ -613,11 +654,10 @@ pub async fn simulate_profile(id: String) -> Result<super::optimizer::Simulation
     let session_id = session.id.clone();
 
     // Analyze changes (read-only, blocking)
-    let changes: Vec<PreviewChange> = tokio::task::spawn_blocking(move || {
-        build_profile_preview_changes(&profile, &snapshot)
-    })
-    .await
-    .map_err(|e| e.to_string())?;
+    let changes: Vec<PreviewChange> =
+        tokio::task::spawn_blocking(move || build_profile_preview_changes(&profile, &snapshot))
+            .await
+            .map_err(|e| e.to_string())?;
 
     let safe_count = changes
         .iter()

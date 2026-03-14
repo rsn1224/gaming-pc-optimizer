@@ -1,7 +1,7 @@
+use super::runner::{CommandRunner, SystemRunner};
 use serde::{Deserialize, Serialize};
 use winreg::enums::*;
 use winreg::RegKey;
-use super::runner::{CommandRunner, SystemRunner};
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -88,7 +88,10 @@ pub fn apply_network_gaming() -> Result<NetworkSettings, String> {
     }
 
     let s = get_network_settings();
-    super::log_observation("apply_network_gaming", serde_json::json!({ "applied": true }));
+    super::log_observation(
+        "apply_network_gaming",
+        serde_json::json!({ "applied": true }),
+    );
     Ok(s)
 }
 
@@ -118,8 +121,11 @@ pub(crate) fn restore_network_to(settings: &NetworkSettings) -> Result<(), Strin
 
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     if let Ok((key, _)) = hkcu.create_subkey(MSMQ_PATH) {
-        key.set_value("TCPNoDelay", &(if settings.nagle_disabled { 1u32 } else { 0u32 }))
-            .ok();
+        key.set_value(
+            "TCPNoDelay",
+            &(if settings.nagle_disabled { 1u32 } else { 0u32 }),
+        )
+        .ok();
     }
     Ok(())
 }
@@ -154,9 +160,9 @@ pub fn get_network_adapters() -> Vec<AdapterInfo> {
         .unwrap_or_default();
 
     // Enumerate TCP/IP interface configs
-    if let Ok(ifaces) = hklm.open_subkey(
-        "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces",
-    ) {
+    if let Ok(ifaces) =
+        hklm.open_subkey("SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces")
+    {
         for guid in ifaces.enum_keys().flatten() {
             let friendly = match name_map.get(&guid) {
                 Some(n) => n.clone(),
@@ -172,9 +178,7 @@ pub fn get_network_adapters() -> Vec<AdapterInfo> {
                 .or_else(|_| iface_key.get_value::<String, _>("DhcpNameServer"))
                 .unwrap_or_default();
 
-            let mut parts = dns_str
-                .split([',', ' '])
-                .filter(|s| !s.is_empty());
+            let mut parts = dns_str.split([',', ' ']).filter(|s| !s.is_empty());
 
             adapters.push(AdapterInfo {
                 name: friendly,
@@ -215,7 +219,15 @@ pub(crate) fn set_adapter_dns_inner(
         "dhcp" => {
             let (code, _, stderr) = runner.run(
                 "netsh",
-                &["interface", "ip", "set", "dns", "name", adapter_name, "source=dhcp"],
+                &[
+                    "interface",
+                    "ip",
+                    "set",
+                    "dns",
+                    "name",
+                    adapter_name,
+                    "source=dhcp",
+                ],
             )?;
             return if code == 0 {
                 Ok(())
@@ -230,10 +242,15 @@ pub(crate) fn set_adapter_dns_inner(
     let (code, _, stderr) = runner.run(
         "netsh",
         &[
-            "interface", "ip", "set", "dns",
-            "name", adapter_name,
+            "interface",
+            "ip",
+            "set",
+            "dns",
+            "name",
+            adapter_name,
             "source=static",
-            "address", primary,
+            "address",
+            primary,
         ],
     )?;
     if code != 0 {
@@ -245,9 +262,14 @@ pub(crate) fn set_adapter_dns_inner(
         .run(
             "netsh",
             &[
-                "interface", "ip", "add", "dns",
-                "name", adapter_name,
-                "address", secondary,
+                "interface",
+                "ip",
+                "add",
+                "dns",
+                "name",
+                adapter_name,
+                "address",
+                secondary,
                 "index=2",
             ],
         )
@@ -337,8 +359,8 @@ pub fn ping_host(host: String) -> PingResult {
 
 #[derive(Debug, Serialize)]
 pub struct DnsPingSummary {
-    pub preset: String,           // "google" | "cloudflare" | "opendns" | "current"
-    pub primary: String,          // e.g. "8.8.8.8"
+    pub preset: String,  // "google" | "cloudflare" | "opendns" | "current"
+    pub primary: String, // e.g. "8.8.8.8"
     pub secondary: Option<String>,
     pub ping: PingResult,
 }
@@ -416,8 +438,7 @@ pub fn export_network_advisor_context(adapter_name: String) -> Result<String, St
         dns_tests,
     };
 
-    serde_json::to_string_pretty(&context)
-        .map_err(|e| format!("JSONシリアライズ失敗: {}", e))
+    serde_json::to_string_pretty(&context).map_err(|e| format!("JSONシリアライズ失敗: {}", e))
 }
 
 pub(crate) fn parse_packet_loss(output: &str) -> u32 {
@@ -458,8 +479,8 @@ pub(crate) fn extract_percent(s: &str) -> Option<u32> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::runner::MockRunner;
+    use super::*;
 
     // ── validate_adapter_name ─────────────────────────────────────────────────
 
@@ -489,7 +510,10 @@ mod tests {
 
     #[test]
     fn extract_percent_finds_value_before_percent_sign() {
-        assert_eq!(extract_percent("Packets: Sent=4, Lost=0 (0% loss)"), Some(0));
+        assert_eq!(
+            extract_percent("Packets: Sent=4, Lost=0 (0% loss)"),
+            Some(0)
+        );
         assert_eq!(extract_percent("(25% loss)"), Some(25));
         assert_eq!(extract_percent("100% loss"), Some(100));
     }

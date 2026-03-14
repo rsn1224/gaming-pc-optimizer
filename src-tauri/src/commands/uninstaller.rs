@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use winreg::{enums::*, RegKey};
 use std::process::Command;
+use winreg::{enums::*, RegKey};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct InstalledApp {
@@ -81,7 +81,11 @@ pub fn get_installed_apps() -> Result<Vec<InstalledApp>, String> {
     apps.retain(|a| seen.insert(a.display_name.clone()));
 
     // Sort by size_mb descending
-    apps.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap_or(std::cmp::Ordering::Equal));
+    apps.sort_by(|a, b| {
+        b.size_mb
+            .partial_cmp(&a.size_mb)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     Ok(apps)
 }

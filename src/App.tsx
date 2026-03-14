@@ -2,11 +2,12 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, LayoutGrid, TrendingDown, Loader2, X, Thermometer, Zap } from "lucide-react";
-import type { AppearanceSettings, OptimizationScore, TempSnapshot, GpuPowerLimit } from "@/types";
+import type { AppearanceSettings, OptimizationScore, TempSnapshot, GpuPowerLimit, OptimizationSession } from "@/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
+import { useSafetyStore } from "@/stores/useSafetyStore";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { DashboardV2 } from "@/components/dashboard/DashboardV2";
 import { GameMode } from "@/components/optimization/GameMode";
@@ -32,6 +33,7 @@ import { EventLog } from "@/components/notifications/EventLog";
 import { SettingsHub } from "@/components/settings/SettingsHub";
 import { OsdOverlay } from "@/components/osd/OsdOverlay";
 import { ToastContainer } from "@/components/ui/Toast";
+import { RiskSummary } from "@/components/ui/RiskSummary";
 import type { ActivePage } from "@/types";
 
 // ── Synergy #3: Score Regression Watcher ──────────────────────────────────────
@@ -254,6 +256,119 @@ function ThermalWatcher() {
   );
 }
 
+// ── Phase 2F: Global Rollback Header ─────────────────────────────────────────
+// Feature flag — set to `true` to show a persistent rollback/result/risk strip
+// at the top of every screen. Default: false — no visible change.
+const ENABLE_GLOBAL_ROLLBACK_HEADER = false;
+
+function GlobalRollbackHeader() {
+  const { sessions, setSessions } = useSafetyStore();
+  const { setActivePage } = useAppStore();
+  const [showRiskLegend, setShowRiskLegend] = useState(false);
+  const [showLastResult, setShowLastResult] = useState(false);
+
+  // Populate sessions if the store is empty (RollbackCenter not yet visited)
+  useEffect(() => {
+    if (sessions.length === 0) {
+      invoke<OptimizationSession[]>("list_sessions").then(setSessions).catch(() => {});
+    }
+  // Only run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const latestSession = sessions.length > 0
+    ? [...sessions].sort((a, b) => b.started_at.localeCompare(a.started_at))[0]
+    : null;
+  const rollbackableCount = sessions.filter((s) => s.status === "applied").length;
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-1.5 bg-[#05080c] border-b border-white/[0.04] text-xs text-muted-foreground/60 shrink-0">
+      {/* Rollback Center link with count badge */}
+      <button
+        type="button"
+        onClick={() => setActivePage("rollback")}
+        className="flex items-center gap-1.5 hover:text-white transition-colors"
+      >
+        <ShieldCheck size={12} className="text-cyan-400/60" />
+        <span>ロールバック</span>
+        {rollbackableCount > 0 && (
+          <span className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-full px-1.5 text-[10px] tabular-nums leading-4">
+            {rollbackableCount}
+          </span>
+        )}
+      </button>
+
+      <div className="w-px h-3 bg-white/[0.06]" />
+
+      {/* Last optimization result */}
+      <div className="relative">
+        <button
+          type="button"
+          onMouseEnter={() => setShowLastResult(true)}
+          onMouseLeave={() => setShowLastResult(false)}
+          className="flex items-center gap-1.5 hover:text-white transition-colors"
+        >
+          <Activity size={12} />
+          <span>
+            {latestSession
+              ? `最終: ${latestSession.changes.length}件 · ${latestSession.status}`
+              : "最終: なし"}
+          </span>
+        </button>
+        {showLastResult && latestSession && (
+          <div className="absolute top-full left-0 mt-1 z-50 w-60 bg-popover border border-border rounded-md shadow-xl p-3 text-xs pointer-events-none">
+            <p className="font-semibold text-foreground mb-1">最終最適化セッション</p>
+            <p className="text-muted-foreground/70">{new Date(latestSession.started_at).toLocaleString("ja-JP")}</p>
+            <p className="mt-1.5">変更数: <span className="text-foreground tabular-nums">{latestSession.changes.length}</span></p>
+            <div className="mt-1">
+              <RiskSummary
+                safe={latestSession.changes.filter((c) => c.risk_level === "safe").length}
+                caution={latestSession.changes.filter((c) => c.risk_level === "caution").length}
+                advanced={latestSession.changes.filter((c) => c.risk_level === "advanced").length}
+                emptyLabel="変更なし"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="w-px h-3 bg-white/[0.06]" />
+
+      {/* Risk Legend */}
+      <div className="relative">
+        <button
+          type="button"
+          onMouseEnter={() => setShowRiskLegend(true)}
+          onMouseLeave={() => setShowRiskLegend(false)}
+          className="flex items-center gap-1.5 hover:text-white transition-colors"
+        >
+          <Shield size={12} />
+          <span>リスク凡例</span>
+        </button>
+        {showRiskLegend && (
+          <div className="absolute top-full left-0 mt-1 z-50 w-52 bg-popover border border-border rounded-md shadow-xl p-3 text-xs pointer-events-none">
+            <p className="font-semibold text-foreground mb-2">リスクレベル</p>
+            <div className="flex flex-col gap-1.5 text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
+                <span><span className="text-green-400 font-medium">safe</span> — 安全・影響小</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                <span><span className="text-amber-400 font-medium">caution</span> — 要注意・要再起動</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                <span><span className="text-red-400 font-medium">advanced</span> — 高度・慎重に</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 type NavEntry =
@@ -463,8 +578,12 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden content-glow relative">
-        <PageContent page={activePage} />
+      <main className="flex-1 overflow-hidden content-glow relative flex flex-col">
+        {/* [GLOBAL_ROLLBACK_HEADER] Persistent rollback/result/risk strip */}
+        {ENABLE_GLOBAL_ROLLBACK_HEADER && <GlobalRollbackHeader />}
+        <div className="flex-1 overflow-hidden">
+          <PageContent page={activePage} />
+        </div>
       </main>
 
       {/* Global toast notifications */}

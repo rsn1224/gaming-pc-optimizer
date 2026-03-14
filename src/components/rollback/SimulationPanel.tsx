@@ -1,47 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Zap, X, AlertTriangle, Loader2, ShieldAlert, Shield } from "lucide-react";
+import { Zap, X, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMetricsStore } from "@/stores/useMetricsStore";
 import { useSafetyStore } from "@/stores/useSafetyStore";
 import { RiskBadge } from "@/components/ui/RiskBadge";
+import { RiskSummary } from "@/components/ui/RiskSummary";
 import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "@/stores/useToastStore";
 import type { AllOptimizationResult } from "@/types";
-
-// ── Risk level summary bar ────────────────────────────────────────────────────
-
-function RiskSummary({
-  safe,
-  caution,
-  advanced,
-}: {
-  safe: number;
-  caution: number;
-  advanced: number;
-}) {
-  return (
-    <div className="flex items-center gap-3 text-[12px]">
-      {safe > 0 && (
-        <span className="flex items-center gap-1.5 text-emerald-400">
-          <Shield size={12} />
-          安全 {safe}件
-        </span>
-      )}
-      {caution > 0 && (
-        <span className="flex items-center gap-1.5 text-amber-400">
-          <AlertTriangle size={12} />
-          注意 {caution}件
-        </span>
-      )}
-      {advanced > 0 && (
-        <span className="flex items-center gap-1.5 text-red-400">
-          <ShieldAlert size={12} />
-          上級 {advanced}件
-        </span>
-      )}
-    </div>
-  );
-}
 
 // ── Main panel ────────────────────────────────────────────────────────────────
 

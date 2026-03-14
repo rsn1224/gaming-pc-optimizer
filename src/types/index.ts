@@ -591,7 +591,7 @@ export interface RegTweak {
   name: string;
   description: string;
   category: string;
-  risk_level: string;
+  risk_level: RiskLevel;
   current_value: string;
   recommended_value: string;
   is_applied: boolean;

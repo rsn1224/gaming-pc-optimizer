@@ -1,6 +1,6 @@
+use super::metrics::SessionMetrics;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use super::metrics::SessionMetrics;
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
 
@@ -104,7 +104,8 @@ fn now_unix_secs() -> u64 {
 fn days_to_ymd(mut days: u32) -> (u32, u32, u32) {
     let mut year = 1970u32;
     loop {
-        let leap = (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400);
+        let leap =
+            (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400);
         let days_in_year = if leap { 366 } else { 365 };
         if days < days_in_year {
             break;
@@ -116,7 +117,16 @@ fn days_to_ymd(mut days: u32) -> (u32, u32, u32) {
     let days_in_month: [u32; 12] = [
         31,
         if leap { 29 } else { 28 },
-        31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
     ];
     let mut month = 1u32;
     for &dim in &days_in_month {
@@ -330,10 +340,7 @@ fn prune_old_sessions() {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension().is_some_and(|e| e == "json") {
-                let stem = path
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("");
+                let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
                 if !keep_ids.contains(stem) {
                     std::fs::remove_file(&path).ok();
                 }
@@ -417,7 +424,11 @@ fn session_stats_internal() -> SessionStats {
         // Track most recent
         let ts = s.ended_at.as_deref().or(Some(&s.started_at));
         if let Some(ts) = ts {
-            if stats.last_session_at.as_deref().is_none_or(|prev| ts > prev) {
+            if stats
+                .last_session_at
+                .as_deref()
+                .is_none_or(|prev| ts > prev)
+            {
                 stats.last_session_at = Some(ts.to_string());
             }
         }
@@ -473,10 +484,7 @@ mod tests {
 
     #[test]
     fn risk_level_serializes_to_snake_case() {
-        assert_eq!(
-            serde_json::to_string(&RiskLevel::Safe).unwrap(),
-            "\"safe\""
-        );
+        assert_eq!(serde_json::to_string(&RiskLevel::Safe).unwrap(), "\"safe\"");
         assert_eq!(
             serde_json::to_string(&RiskLevel::Caution).unwrap(),
             "\"caution\""

@@ -74,7 +74,10 @@ pub async fn get_running_processes() -> Result<Vec<ProcessInfo>, String> {
                 name: p.name().to_string_lossy().to_string(),
                 memory_mb: p.memory() as f64 / 1024.0 / 1024.0,
                 cpu_percent: p.cpu_usage(),
-                exe_path: p.exe().map(|e| e.to_string_lossy().to_string()).unwrap_or_default(),
+                exe_path: p
+                    .exe()
+                    .map(|e| e.to_string_lossy().to_string())
+                    .unwrap_or_default(),
             })
             .collect::<Vec<_>>()
     })
@@ -104,12 +107,19 @@ pub async fn get_all_processes() -> Result<Vec<ProcessInfo>, String> {
                 name: p.name().to_string_lossy().to_string(),
                 memory_mb: p.memory() as f64 / 1024.0 / 1024.0,
                 cpu_percent: p.cpu_usage(),
-                exe_path: p.exe().map(|e| e.to_string_lossy().to_string()).unwrap_or_default(),
+                exe_path: p
+                    .exe()
+                    .map(|e| e.to_string_lossy().to_string())
+                    .unwrap_or_default(),
             })
             .collect();
 
         // Sort by CPU descending
-        procs.sort_by(|a, b| b.cpu_percent.partial_cmp(&a.cpu_percent).unwrap_or(std::cmp::Ordering::Equal));
+        procs.sort_by(|a, b| {
+            b.cpu_percent
+                .partial_cmp(&a.cpu_percent)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         procs
     })
     .await
@@ -147,10 +157,7 @@ pub async fn kill_bloatware(targets: Option<Vec<String>>) -> Result<KillResult, 
 
         let target_set: std::collections::HashSet<String> = match targets {
             Some(t) => t.into_iter().collect(),
-            None => BLOATWARE_PROCESSES
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
+            None => BLOATWARE_PROCESSES.iter().map(|s| s.to_string()).collect(),
         };
 
         let mut killed = Vec::new();

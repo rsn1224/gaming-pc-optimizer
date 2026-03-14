@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Library, Loader2, Sparkles, ScanLine, Thermometer, Gauge, Clock, StopCircle } from "lucide-react";
 import { useAppStore } from "@/stores/useAppStore";
+import { useEditingStore } from "@/stores/useEditingStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
 import type { GameProfile, OptimizationScore, TempSnapshot, FpsEstimate, AiHardwareMode } from "@/types";
 import { GameCard } from "./GameCard";
@@ -16,6 +17,12 @@ const ENABLE_LAUNCH_MONITORING = false;
 // Shows hardware tier banner and per-game compatibility hints.
 // Default: false — no UI changes when false.
 const ENABLE_HARDWARE_SUGGESTIONS = false;
+
+// Set to `true` to enforce Profile SSOT (Single Source of Truth).
+// When ON: AI tuning button and per-card mode editor are hidden.
+// Profile editing is delegated exclusively to the Profiles page.
+// Default: false — existing inline mode selector is unchanged when false.
+const ENABLE_PROFILE_SSOT = false;
 
 // ── Hardware suggestion helpers ────────────────────────────────────────────────
 
@@ -191,6 +198,7 @@ const MODE_PRESETS: Record<
 
 export function GamesLibrary() {
   const { setActivePage } = useAppStore();
+  const { setEditingProfileId } = useEditingStore();
   const { activeProfileId } = useWatcherStore();
   const [profiles, setProfiles] = useState<GameProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -397,6 +405,17 @@ export function GamesLibrary() {
     }
   };
 
+  // ── Edit profile (ENABLE_PROFILE_SSOT) ───────────────────────────────────────
+
+  /** Navigate to the Profiles page with the given profile pre-selected for editing. */
+  const handleEditProfile = useCallback(
+    (profileId: string) => {
+      setEditingProfileId(profileId);
+      setActivePage("profiles");
+    },
+    [setEditingProfileId, setActivePage]
+  );
+
   // ── Launch ───────────────────────────────────────────────────────────────────
 
   const handleLaunchOptimize = async (profile: GameProfile) => {
@@ -478,7 +497,8 @@ export function GamesLibrary() {
             {scanLabel === "AIチューニング中…" ? "Steamスキャン" : scanLabel}
           </button>
 
-          {hasDrafts && (
+          {/* [PROFILE_SSOT] AI tuning hidden when SSOT is ON — editing goes through Profiles page */}
+          {!ENABLE_PROFILE_SSOT && hasDrafts && (
             <button
               type="button"
               onClick={handleAiTuning}
@@ -592,6 +612,8 @@ export function GamesLibrary() {
                   ? hwCompatible(p.recommended_mode, hwMode.mode)
                   : undefined
               }
+              // [PROFILE_SSOT] when ON, card shows "Edit in Profiles" link
+              onEditProfile={ENABLE_PROFILE_SSOT ? () => handleEditProfile(p.id) : undefined}
             />
           ))}
         </div>

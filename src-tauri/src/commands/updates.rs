@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::runner::{CommandRunner, SystemRunner};
+use serde::{Deserialize, Serialize};
 
 // ── Data types ────────────────────────────────────────────────────────────────
 
@@ -59,8 +59,7 @@ pub(crate) fn parse_winget_output(output: &str) -> Vec<AppUpdate> {
         .iter()
         .position(|line| {
             let trimmed = line.trim();
-            !trimmed.is_empty()
-                && trimmed.chars().all(|c| c == '-' || c == '─' || c == ' ')
+            !trimmed.is_empty() && trimmed.chars().all(|c| c == '-' || c == '─' || c == ' ')
         })
         .map(|i| i + header_idx + 1);
 
@@ -80,7 +79,8 @@ pub(crate) fn parse_winget_output(output: &str) -> Vec<AppUpdate> {
             continue;
         }
         // Stop at summary lines
-        if line.contains("件") && (line.contains("アップグレード") || line.contains("upgrade")) {
+        if line.contains("件") && (line.contains("アップグレード") || line.contains("upgrade"))
+        {
             break;
         }
         if line.len() < available_start {
@@ -88,9 +88,15 @@ pub(crate) fn parse_winget_output(output: &str) -> Vec<AppUpdate> {
         }
 
         let name = extract_col(line, 0, id_start).trim().to_string();
-        let id = extract_col(line, id_start, version_start).trim().to_string();
-        let current_version = extract_col(line, version_start, available_start).trim().to_string();
-        let available_version = extract_col(line, available_start, source_start).trim().to_string();
+        let id = extract_col(line, id_start, version_start)
+            .trim()
+            .to_string();
+        let current_version = extract_col(line, version_start, available_start)
+            .trim()
+            .to_string();
+        let available_version = extract_col(line, available_start, source_start)
+            .trim()
+            .to_string();
         let source = if line.len() > source_start {
             line[source_start..].trim().to_string()
         } else {
@@ -130,7 +136,9 @@ pub(crate) fn parse_wmi_date(raw: &str) -> String {
 
 // ── Inner functions (runner-based, testable) ──────────────────────────────────
 
-pub(crate) fn check_app_updates_inner(runner: &impl CommandRunner) -> Result<Vec<AppUpdate>, String> {
+pub(crate) fn check_app_updates_inner(
+    runner: &impl CommandRunner,
+) -> Result<Vec<AppUpdate>, String> {
     let (code, stdout, stderr) = runner.run(
         "winget",
         &[
@@ -173,10 +181,17 @@ pub(crate) fn upgrade_app_inner(runner: &impl CommandRunner, id: &str) -> String
 
 const DRIVER_QUERY_SCRIPT: &str = r#"Get-WmiObject Win32_PnPSignedDriver | Where-Object { $_.DeviceName -ne $null -and $_.DriverVersion -ne $null -and ($_.DeviceClass -match 'Display|Net|Media|USB|SCSIAdapter|HDC') } | Select-Object DeviceName, Manufacturer, DriverVersion, DriverDate, DeviceClass | ConvertTo-Json -Compress"#;
 
-pub(crate) fn check_driver_info_inner(runner: &impl CommandRunner) -> Result<Vec<DriverInfo>, String> {
+pub(crate) fn check_driver_info_inner(
+    runner: &impl CommandRunner,
+) -> Result<Vec<DriverInfo>, String> {
     let (_, stdout, _) = runner.run(
         "powershell",
-        &["-NonInteractive", "-NoProfile", "-Command", DRIVER_QUERY_SCRIPT],
+        &[
+            "-NonInteractive",
+            "-NoProfile",
+            "-Command",
+            DRIVER_QUERY_SCRIPT,
+        ],
     )?;
 
     let trimmed = stdout.trim();
@@ -230,7 +245,9 @@ pub async fn check_app_updates() -> Result<Vec<AppUpdate>, String> {
 #[tauri::command]
 pub async fn upgrade_apps(ids: Vec<String>) -> Result<Vec<String>, String> {
     tokio::task::spawn_blocking(move || {
-        ids.iter().map(|id| upgrade_app_inner(&SystemRunner, id)).collect()
+        ids.iter()
+            .map(|id| upgrade_app_inner(&SystemRunner, id))
+            .collect()
     })
     .await
     .map_err(|e| e.to_string())

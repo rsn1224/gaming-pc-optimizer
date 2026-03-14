@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useAppStore } from "../useAppStore";
+import { useEditingStore } from "../useEditingStore";
 
 describe("useAppStore", () => {
   beforeEach(() => {
@@ -9,7 +10,6 @@ describe("useAppStore", () => {
       freedMemoryMb: 0,
       optimizationStatus: "idle",
       optimizationMessage: "",
-      editingProfileId: null,
     });
   });
 
@@ -36,11 +36,17 @@ describe("useAppStore", () => {
     useAppStore.getState().setOptimizationStatus("idle");
     expect(useAppStore.getState().optimizationStatus).toBe("idle");
   });
+});
+
+describe("useEditingStore", () => {
+  beforeEach(() => {
+    useEditingStore.setState({ editingProfileId: null });
+  });
 
   it("setEditingProfileId stores and clears profile id", () => {
-    useAppStore.getState().setEditingProfileId("profile-abc");
-    expect(useAppStore.getState().editingProfileId).toBe("profile-abc");
-    useAppStore.getState().setEditingProfileId(null);
-    expect(useAppStore.getState().editingProfileId).toBeNull();
+    useEditingStore.getState().setEditingProfileId("profile-abc");
+    expect(useEditingStore.getState().editingProfileId).toBe("profile-abc");
+    useEditingStore.getState().setEditingProfileId(null);
+    expect(useEditingStore.getState().editingProfileId).toBeNull();
   });
 });

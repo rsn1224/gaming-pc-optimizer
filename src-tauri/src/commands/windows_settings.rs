@@ -4,7 +4,7 @@ use winreg::RegKey;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WindowsSettings {
-    pub visual_fx: u32,       // 0=auto, 1=best appearance, 2=best performance, 3=custom
+    pub visual_fx: u32, // 0=auto, 1=best appearance, 2=best performance, 3=custom
     pub transparency: bool,
     pub game_dvr: bool,
     pub menu_show_delay: u32, // ms (0–400)
@@ -156,10 +156,10 @@ pub fn apply_gaming_windows_settings() -> Result<WindowsSettings, String> {
     }
 
     // Apply gaming-optimized values
-    set_visual_fx(2)?;           // Best performance
-    set_transparency(false)?;    // No transparency
-    set_game_dvr(false)?;        // Disable Game DVR
-    set_menu_show_delay(0)?;     // Instant menus
+    set_visual_fx(2)?; // Best performance
+    set_transparency(false)?; // No transparency
+    set_game_dvr(false)?; // Disable Game DVR
+    set_menu_show_delay(0)?; // Instant menus
     set_animate_windows(false)?; // No animations
 
     super::log_observation(

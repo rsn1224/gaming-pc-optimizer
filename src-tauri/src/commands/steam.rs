@@ -20,8 +20,8 @@ fn find_steam_root() -> Option<PathBuf> {
     use winreg::RegKey;
 
     // Most common on 64-bit Windows
-    if let Ok(key) = RegKey::predef(HKEY_LOCAL_MACHINE)
-        .open_subkey("SOFTWARE\\WOW6432Node\\Valve\\Steam")
+    if let Ok(key) =
+        RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey("SOFTWARE\\WOW6432Node\\Valve\\Steam")
     {
         if let Ok(path) = key.get_value::<String, _>("InstallPath") {
             let p = PathBuf::from(&path);
@@ -32,9 +32,7 @@ fn find_steam_root() -> Option<PathBuf> {
     }
 
     // Per-user install
-    if let Ok(key) =
-        RegKey::predef(HKEY_CURRENT_USER).open_subkey("Software\\Valve\\Steam")
-    {
+    if let Ok(key) = RegKey::predef(HKEY_CURRENT_USER).open_subkey("Software\\Valve\\Steam") {
         if let Ok(path) = key.get_value::<String, _>("SteamPath") {
             let p = PathBuf::from(&path);
             if p.exists() {
@@ -102,12 +100,24 @@ fn library_steamapps_dirs(steam_root: &Path) -> Vec<PathBuf> {
 
 /// Substrings that indicate a helper/redistributable exe — not the main game.
 const SKIP_PATTERNS: &[&str] = &[
-    "unins", "uninst", "uninstall",
-    "vcredist", "dxsetup", "dxwebsetup", "directx",
-    "dotnet", "physx", "openal",
-    "crashhandler", "crashreport", "bugreport",
-    "setup", "install", "redist",
-    "upc", "uplay_r1_loader",
+    "unins",
+    "uninst",
+    "uninstall",
+    "vcredist",
+    "dxsetup",
+    "dxwebsetup",
+    "directx",
+    "dotnet",
+    "physx",
+    "openal",
+    "crashhandler",
+    "crashreport",
+    "bugreport",
+    "setup",
+    "install",
+    "redist",
+    "upc",
+    "uplay_r1_loader",
 ];
 
 /// Try to identify the main game executable inside `dir`.
@@ -118,8 +128,7 @@ fn find_main_exe(dir: &Path) -> Option<String> {
         .flatten()
         .filter(|e| {
             let name = e.file_name().to_string_lossy().to_lowercase();
-            name.ends_with(".exe")
-                && !SKIP_PATTERNS.iter().any(|pat| name.contains(pat))
+            name.ends_with(".exe") && !SKIP_PATTERNS.iter().any(|pat| name.contains(pat))
         })
         .filter_map(|e| {
             let size = e.metadata().ok()?.len();
@@ -141,8 +150,7 @@ fn find_main_exe(dir: &Path) -> Option<String> {
 /// Scan all Steam library folders and return the list of installed games.
 #[tauri::command]
 pub fn discover_steam_games() -> Result<Vec<DiscoveredGame>, String> {
-    let steam_root =
-        find_steam_root().ok_or("Steam がインストールされていません")?;
+    let steam_root = find_steam_root().ok_or("Steam がインストールされていません")?;
     let steamapps_dirs = library_steamapps_dirs(&steam_root);
 
     let mut games: Vec<DiscoveredGame> = Vec::new();
@@ -227,7 +235,9 @@ pub fn discover_and_create_steam_drafts() -> Result<Vec<GameProfile>, String> {
     for game in discovered {
         // Find a matching existing profile (by exe_path or by name+launcher)
         let existing_idx = if let Some(ref exe) = game.exe_path {
-            profiles.iter().position(|p| !p.exe_path.is_empty() && p.exe_path == *exe)
+            profiles
+                .iter()
+                .position(|p| !p.exe_path.is_empty() && p.exe_path == *exe)
         } else {
             profiles.iter().position(|p| {
                 p.name.to_lowercase() == game.name.to_lowercase()

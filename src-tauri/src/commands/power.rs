@@ -1,6 +1,6 @@
+use super::runner::{CommandRunner, SystemRunner};
 use std::path::PathBuf;
 use std::process::Command;
-use super::runner::{CommandRunner, SystemRunner};
 
 /// Extract the active power scheme GUID from `powercfg /getactivescheme` output.
 /// Returns the raw GUID string (e.g. "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c").
@@ -59,7 +59,8 @@ pub async fn set_ultimate_performance() -> Result<String, String> {
                     .map(|s| s.to_string())
             });
 
-        let guid = ultimate_guid.unwrap_or_else(|| "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c".to_string());
+        let guid =
+            ultimate_guid.unwrap_or_else(|| "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c".to_string());
 
         let set_output = Command::new("powercfg")
             .args(["/setactive", &guid])
@@ -79,17 +80,21 @@ pub async fn set_ultimate_performance() -> Result<String, String> {
         if set_output.status.success() {
             Command::new("powercfg")
                 .args([
-                    "/SETACVALUEINDEX", "SCHEME_CURRENT",
+                    "/SETACVALUEINDEX",
+                    "SCHEME_CURRENT",
                     "2a737441-1930-4402-8d77-b2bebba308a3",
-                    "48e6b7a6-50f5-4782-a5d4-53bb8f07e226", "0",
+                    "48e6b7a6-50f5-4782-a5d4-53bb8f07e226",
+                    "0",
                 ])
                 .output()
                 .ok();
             Command::new("powercfg")
                 .args([
-                    "/SETACVALUEINDEX", "SCHEME_CURRENT",
+                    "/SETACVALUEINDEX",
+                    "SCHEME_CURRENT",
                     "54533251-82be-4824-96c1-47b60b740d00",
-                    "893dee8e-2bef-41e0-89c6-b55d0929964c", "100",
+                    "893dee8e-2bef-41e0-89c6-b55d0929964c",
+                    "100",
                 ])
                 .output()
                 .ok();
@@ -232,9 +237,11 @@ fn parse_power_plan_list(output: &str) -> Vec<PowerPlanInfo> {
             continue;
         }
         // Extract GUID (36-char hex with dashes)
-        let guid = match line.split_whitespace()
-            .find(|part| part.len() == 36 && part.contains('-') && part.chars().all(|c| c.is_ascii_hexdigit() || c == '-'))
-        {
+        let guid = match line.split_whitespace().find(|part| {
+            part.len() == 36
+                && part.contains('-')
+                && part.chars().all(|c| c.is_ascii_hexdigit() || c == '-')
+        }) {
             Some(g) => g.to_string(),
             None => continue,
         };
@@ -249,7 +256,11 @@ fn parse_power_plan_list(output: &str) -> Vec<PowerPlanInfo> {
         };
         // Active plan ends with " *" (after stripping trailing whitespace)
         let is_active = line.ends_with('*');
-        plans.push(PowerPlanInfo { guid, name, is_active });
+        plans.push(PowerPlanInfo {
+            guid,
+            name,
+            is_active,
+        });
     }
     plans
 }
@@ -312,9 +323,15 @@ pub fn get_power_plan() -> Result<String, String> {
     let stdout = String::from_utf8_lossy(&out.stdout).to_lowercase();
     if stdout.contains("e9a42b02") || stdout.contains("ultimate") {
         Ok("ultimate".to_string())
-    } else if stdout.contains("8c5e7fda") || stdout.contains("high performance") || stdout.contains("高パフォーマンス") {
+    } else if stdout.contains("8c5e7fda")
+        || stdout.contains("high performance")
+        || stdout.contains("高パフォーマンス")
+    {
         Ok("high_performance".to_string())
-    } else if stdout.contains("381b4222") || stdout.contains("balanced") || stdout.contains("バランス") {
+    } else if stdout.contains("381b4222")
+        || stdout.contains("balanced")
+        || stdout.contains("バランス")
+    {
         Ok("balanced".to_string())
     } else {
         Ok("unknown".to_string())
@@ -325,8 +342,8 @@ pub fn get_power_plan() -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::runner::MockRunner;
+    use super::*;
 
     // ── parse_active_guid ─────────────────────────────────────────────────────
 
@@ -354,7 +371,10 @@ mod tests {
         let mock_output = "Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c\r\n";
         let runner = MockRunner::success(mock_output);
         let result = current_power_plan_inner(&runner).unwrap();
-        assert_eq!(result, "Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+        assert_eq!(
+            result,
+            "Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+        );
     }
 
     #[test]
