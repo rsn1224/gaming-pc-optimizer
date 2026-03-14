@@ -40,17 +40,17 @@ pub fn set_auto_start(enabled: bool) -> Result<(), String> {
 
 #[tauri::command]
 pub fn get_auto_optimize(state: tauri::State<AppState>) -> bool {
-    state.0.lock().unwrap().auto_optimize
+    state.0.lock().unwrap_or_else(|p| p.into_inner()).auto_optimize
 }
 
 #[tauri::command]
 pub fn set_auto_optimize(enabled: bool, state: tauri::State<AppState>) {
-    state.0.lock().unwrap().auto_optimize = enabled;
+    state.0.lock().unwrap_or_else(|p| p.into_inner()).auto_optimize = enabled;
 }
 
 #[tauri::command]
 pub fn get_active_profile(state: tauri::State<AppState>) -> Option<String> {
-    state.0.lock().unwrap().active_profile_id.clone()
+    state.0.lock().unwrap_or_else(|p| p.into_inner()).active_profile_id.clone()
 }
 
 // ── restore_all ───────────────────────────────────────────────────────────────
@@ -90,7 +90,7 @@ pub fn restore_all_internal() -> Result<String, String> {
 #[tauri::command]
 pub fn restore_all(state: tauri::State<AppState>, app: tauri::AppHandle) -> Result<String, String> {
     let result = restore_all_internal()?;
-    state.0.lock().unwrap().active_profile_id = None;
+    state.0.lock().unwrap_or_else(|p| p.into_inner()).active_profile_id = None;
     app.emit("active_profile_changed", Option::<String>::None).ok();
     Ok(result)
 }
@@ -118,6 +118,46 @@ fn exe_matches(profile_exe: &str, running: &std::collections::HashSet<String>) -
     false
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn running(paths: &[&str]) -> std::collections::HashSet<String> {
+        paths.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn exe_matches_exact_lowercase_path() {
+        let r = running(&["c:\\games\\r5apex.exe"]);
+        assert!(exe_matches("c:\\games\\r5apex.exe", &r));
+    }
+
+    #[test]
+    fn exe_matches_is_case_insensitive() {
+        let r = running(&["c:\\games\\r5apex.exe"]);
+        assert!(exe_matches("C:\\Games\\R5Apex.exe", &r));
+    }
+
+    #[test]
+    fn exe_matches_by_filename_only() {
+        let r = running(&["c:\\games\\apex legends\\r5apex.exe"]);
+        // Profile stores just the filename
+        assert!(exe_matches("r5apex.exe", &r));
+    }
+
+    #[test]
+    fn exe_matches_returns_false_for_no_match() {
+        let r = running(&["c:\\games\\other.exe"]);
+        assert!(!exe_matches("r5apex.exe", &r));
+    }
+
+    #[test]
+    fn exe_matches_returns_false_for_empty_running_set() {
+        let r = running(&[]);
+        assert!(!exe_matches("r5apex.exe", &r));
+    }
+}
+
 fn send_notification(handle: &tauri::AppHandle, body: &str) {
     use tauri_plugin_notification::NotificationExt;
     handle
@@ -132,14 +172,28 @@ fn send_notification(handle: &tauri::AppHandle, body: &str) {
 pub async fn watcher_loop(handle: tauri::AppHandle) {
     let mut sys = System::new();
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(4)).await;
-
-        // Read shared state (short critical section)
+        // Read shared state first to determine the sleep duration
         let state = handle.state::<AppState>();
         let (auto_on, active_id, is_applying) = {
-            let w = state.0.lock().unwrap();
+            let w = state.0.lock().unwrap_or_else(|p| p.into_inner());
             (w.auto_optimize, w.active_profile_id.clone(), w.is_applying)
         };
+
+        // Dynamic interval based on current watcher state:
+        //   auto off   → 30 s  (no work to do, save resources)
+        //   applying   →  1 s  (wait for profile apply to finish)
+        //   game on    →  2 s  (detect game exit quickly)
+        //   searching  →  4 s  (normal polling rate)
+        let secs = if !auto_on {
+            30
+        } else if is_applying {
+            1
+        } else if active_id.is_some() {
+            2
+        } else {
+            4
+        };
+        tokio::time::sleep(std::time::Duration::from_secs(secs)).await;
 
         if !auto_on || is_applying {
             continue;
@@ -165,10 +219,44 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                 .unwrap_or(false);
 
             if !still_running {
-                if let Err(e) = restore_all_internal() {
-                    eprintln!("[watcher] restore error: {e}");
+                // Grab the current session id before restoring
+                let session_id_opt = state
+                    .0
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner())
+                    .current_game_session_id
+                    .clone();
+
+                match restore_all_internal() {
+                    Ok(_) => {
+                        super::event_log::add_event_internal(
+                            "restore",
+                            "元の設定に復元しました",
+                            "ゲーム終了を検知して自動復元",
+                            "info",
+                        );
+                        // Record game end in performance log
+                        if let Some(ref sid) = session_id_opt {
+                            let sid_clone = sid.clone();
+                            tokio::task::spawn_blocking(move || {
+                                let score = super::optimizer::compute_optimization_score();
+                                super::game_log::record_game_end(
+                                    &sid_clone,
+                                    score.overall as u32,
+                                    0.0,
+                                );
+                            })
+                            .await
+                            .ok();
+                        }
+                    }
+                    Err(e) => eprintln!("[watcher] restore error: {e}"),
                 }
-                state.0.lock().unwrap().active_profile_id = None;
+                {
+                    let mut w = state.0.lock().unwrap_or_else(|p| p.into_inner());
+                    w.active_profile_id = None;
+                    w.current_game_session_id = None;
+                }
                 handle
                     .emit("active_profile_changed", Option::<String>::None)
                     .ok();
@@ -182,12 +270,12 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                 }
                 if exe_matches(&profile.exe_path, &running) {
                     // Guard: set is_applying = true before the async call
-                    state.0.lock().unwrap().is_applying = true;
+                    state.0.lock().unwrap_or_else(|p| p.into_inner()).is_applying = true;
 
                     let result = super::profiles::apply_profile_internal(&profile.id).await;
 
                     {
-                        let mut w = state.0.lock().unwrap();
+                        let mut w = state.0.lock().unwrap_or_else(|p| p.into_inner());
                         w.is_applying = false;
                         if result.is_ok() {
                             w.active_profile_id = Some(profile.id.clone());
@@ -206,6 +294,34 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                                     profile.name
                                 ),
                             );
+                            super::event_log::add_event_internal(
+                                "profile_applied",
+                                &format!("「{}」を自動適用しました", profile.name),
+                                "ゲーム起動を検知してプロファイルを適用",
+                                "success",
+                            );
+                            // Save score snapshot and record game start
+                            let profile_id = profile.id.clone();
+                            let profile_name = profile.name.clone();
+                            let session_id = tokio::task::spawn_blocking(move || {
+                                let score = super::optimizer::compute_optimization_score();
+                                super::optimizer::save_score_snapshot_internal(&score);
+                                super::game_log::record_game_start(
+                                    &profile_id,
+                                    &profile_name,
+                                    score.overall as u32,
+                                )
+                            })
+                            .await
+                            .ok();
+
+                            if let Some(sid) = session_id {
+                                state
+                                    .0
+                                    .lock()
+                                    .unwrap_or_else(|p| p.into_inner())
+                                    .current_game_session_id = Some(sid);
+                            }
                         }
                         Err(e) => eprintln!("[watcher] apply error: {e}"),
                     }

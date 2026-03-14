@@ -174,6 +174,175 @@ pub async fn get_gpu_status() -> Result<Vec<GpuStatus>, String> {
         .map_err(|e| e.to_string())?
 }
 
+// ── Temperature snapshot ──────────────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TempSnapshot {
+    pub timestamp: u64,
+    pub gpu_temp_c: f32,
+    pub cpu_temp_c: f32,
+}
+
+#[tauri::command]
+pub async fn get_temperature_snapshot() -> Result<TempSnapshot, String> {
+    tokio::task::spawn_blocking(|| {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+
+        // GPU temperature via nvidia-smi
+        let gpu_temp_c = fetch_gpu_status_sync()
+            .ok()
+            .and_then(|gpus| gpus.into_iter().next())
+            .map(|g| g.temperature_c as f32)
+            .unwrap_or(0.0);
+
+        // CPU temperature via WMI MSAcpi_ThermalZoneTemperature (in tenths of Kelvin)
+        let cpu_temp_c = {
+            let output = Command::new("powershell")
+                .args([
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-Command",
+                    r#"try { $t = (Get-WmiObject MSAcpi_ThermalZoneTemperature -Namespace "root/wmi" -ErrorAction Stop | Select-Object -First 1); Write-Output ([math]::Round(($t.CurrentTemperature / 10.0) - 273.15, 1)) } catch { Write-Output '0' }"#,
+                ])
+                .output()
+                .ok()
+                .and_then(|o| {
+                    let s = String::from_utf8_lossy(&o.stdout).trim().to_string();
+                    s.parse::<f32>().ok()
+                })
+                .unwrap_or(0.0);
+            // Sanity-check: valid CPU temp is between 0 and 120°C
+            if output > 0.0 && output < 120.0 { output } else { 0.0 }
+        };
+
+        Ok(TempSnapshot {
+            timestamp,
+            gpu_temp_c,
+            cpu_temp_c,
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+// ── GPU power limit info ──────────────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct GpuPowerLimit {
+    pub current_w: u32,
+    pub default_w: u32,
+    pub min_w: u32,
+    pub max_w: u32,
+}
+
+#[tauri::command]
+pub fn get_gpu_power_info() -> Result<GpuPowerLimit, String> {
+    let output = Command::new("nvidia-smi")
+        .args([
+            "--query-gpu=power.limit,power.default_limit,power.min_limit,power.max_limit",
+            "--format=csv,noheader,nounits",
+        ])
+        .output()
+        .map_err(|_| "NVIDIA GPUが見つかりません".to_string())?;
+
+    if !output.status.success() {
+        return Err("nvidia-smiの実行に失敗しました。NVIDIA GPUが必要です。".to_string());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let line = stdout.lines().next().unwrap_or("").trim().to_string();
+    let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+
+    if parts.len() < 4 {
+        return Err("GPU電力情報を解析できませんでした".to_string());
+    }
+
+    let parse_w = |s: &str| -> u32 {
+        s.trim().parse::<f32>().map(|v| v.round() as u32).unwrap_or(0)
+    };
+
+    Ok(GpuPowerLimit {
+        current_w: parse_w(parts[0]),
+        default_w: parse_w(parts[1]),
+        min_w: parse_w(parts[2]),
+        max_w: parse_w(parts[3]),
+    })
+}
+
+#[tauri::command]
+pub async fn reset_gpu_power_limit() -> Result<(), String> {
+    let info = tokio::task::spawn_blocking(get_gpu_power_info)
+        .await
+        .map_err(|e| e.to_string())??;
+
+    let default_w = info.default_w;
+    tokio::task::spawn_blocking(move || {
+        let output = Command::new("nvidia-smi")
+            .args(["--power-limit", &default_w.to_string()])
+            .output()
+            .map_err(|e| format!("nvidia-smiの実行に失敗しました: {}", e))?;
+
+        if output.status.success() {
+            Ok(())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+            Err(format!(
+                "デフォルト電力制限の設定に失敗しました（管理者権限が必要な場合があります）: {}",
+                stderr
+            ))
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn set_gpu_fan_speed(percent: Option<u32>) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        match percent {
+            None => {
+                // Auto mode: enable persistence + auto boost
+                let r1 = Command::new("nvidia-smi")
+                    .args(["-pm", "1"])
+                    .output()
+                    .map_err(|e| format!("nvidia-smiの実行に失敗しました: {}", e))?;
+                if !r1.status.success() {
+                    let stderr = String::from_utf8_lossy(&r1.stderr).to_string();
+                    return Err(format!("NVIDIA GPUが見つかりません: {}", stderr));
+                }
+                Command::new("nvidia-smi")
+                    .args(["--auto-boost-default=0"])
+                    .output()
+                    .map_err(|e| format!("nvidia-smiの実行に失敗しました: {}", e))?;
+                Ok(())
+            }
+            Some(n) => {
+                let output = Command::new("nvidia-smi")
+                    .args(["-fan", &n.to_string()])
+                    .output()
+                    .map_err(|e| format!("nvidia-smiの実行に失敗しました: {}", e))?;
+
+                if output.status.success() {
+                    Ok(())
+                } else {
+                    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                    Err(format!(
+                        "ファン速度の設定に失敗しました（管理者権限が必要な場合があります）: {}",
+                        stderr
+                    ))
+                }
+            }
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Set GPU power limit in watts for a given GPU index.
 /// Requires administrator privileges and nvidia-smi.
 #[tauri::command]

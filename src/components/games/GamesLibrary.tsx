@@ -1,10 +1,159 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Library, Loader2, Sparkles, ScanLine } from "lucide-react";
+import { Library, Loader2, Sparkles, ScanLine, Thermometer, Gauge, Clock, StopCircle } from "lucide-react";
 import { useAppStore } from "@/stores/useAppStore";
-import type { GameProfile } from "@/types";
+import { useWatcherStore } from "@/stores/useWatcherStore";
+import type { GameProfile, OptimizationScore, TempSnapshot, FpsEstimate, AiHardwareMode } from "@/types";
 import { GameCard } from "./GameCard";
 import { GameFilters } from "./GameFilters";
+
+// ── Feature flags ─────────────────────────────────────────────────────────────
+// Set to `true` to enable launch monitoring chain (captures score/temp/FPS during session).
+// Default: false — existing launch behavior is unchanged when false.
+const ENABLE_LAUNCH_MONITORING = false;
+
+// Set to `true` to enable hardware-aware profile suggestions.
+// Shows hardware tier banner and per-game compatibility hints.
+// Default: false — no UI changes when false.
+const ENABLE_HARDWARE_SUGGESTIONS = false;
+
+// ── Hardware suggestion helpers ────────────────────────────────────────────────
+
+/** Maps AI hardware mode → recommended game profile mode */
+const HW_MODE_TO_GAME_MODE: Record<AiHardwareMode["mode"], string> = {
+  performance: "competitive",
+  balanced:    "balanced",
+  efficiency:  "quality",
+};
+
+/** Determines if a game profile mode is compatible with hardware recommendation */
+function hwCompatible(
+  profileMode: string | undefined,
+  hwMode: AiHardwareMode["mode"]
+): "ok" | "warn" | null {
+  if (!profileMode) return null; // no mode set — no opinion
+  const suggested = HW_MODE_TO_GAME_MODE[hwMode];
+  // "warn" only when competitive is used on efficiency hardware (most impactful mismatch)
+  if (hwMode === "efficiency" && profileMode === "competitive") return "warn";
+  // "ok" when it matches perfectly
+  if (profileMode === suggested) return "ok";
+  return null; // neutral (mild mismatch — not worth warning)
+}
+
+// ── Hardware banner ───────────────────────────────────────────────────────────
+
+function HardwareBanner({ hwMode }: { hwMode: AiHardwareMode }) {
+  const labels: Record<AiHardwareMode["mode"], string> = {
+    performance: "ハイパフォーマンス",
+    balanced:    "バランス",
+    efficiency:  "省電力",
+  };
+  const colors: Record<AiHardwareMode["mode"], string> = {
+    performance: "border-cyan-500/30 bg-cyan-500/5 text-cyan-300",
+    balanced:    "border-emerald-500/30 bg-emerald-500/5 text-emerald-300",
+    efficiency:  "border-amber-500/30 bg-amber-500/5 text-amber-300",
+  };
+  return (
+    <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-xs ${colors[hwMode.mode]}`}>
+      <span className="font-semibold shrink-0">
+        🖥 ハードウェア判定: {labels[hwMode.mode]}
+      </span>
+      <span className="text-muted-foreground/70 leading-relaxed">{hwMode.reason}</span>
+    </div>
+  );
+}
+
+// ── Session monitor types ─────────────────────────────────────────────────────
+
+interface ActiveSession {
+  profileId: string;
+  gameName: string;
+  startedAt: number;
+  scoreBefore: OptimizationScore | null;
+  liveTemp: TempSnapshot | null;
+  liveFps: FpsEstimate | null;
+}
+
+// ── Session monitor panel ─────────────────────────────────────────────────────
+
+function GameSessionMonitorPanel({
+  session,
+  onStop,
+}: {
+  session: ActiveSession;
+  onStop: () => void;
+}) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - session.startedAt) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [session.startedAt]);
+
+  const fmt = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const gpuTemp = session.liveTemp?.gpu_temp_c ?? 0;
+  const tempColor =
+    gpuTemp >= 85 ? "text-red-400" : gpuTemp >= 70 ? "text-amber-400" : "text-emerald-400";
+  const fps = session.liveFps?.estimated_fps ?? 0;
+
+  return (
+    <div className="bg-[#05080c] border border-cyan-500/30 rounded-xl overflow-hidden">
+      <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+      <div className="px-4 py-3 flex items-center gap-4 flex-wrap">
+        {/* Game name + elapsed */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)] shrink-0 animate-pulse" />
+          <span className="text-sm font-semibold text-white truncate">{session.gameName}</span>
+          <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1 shrink-0">
+            <Clock size={10} />
+            {fmt(elapsed)}
+          </span>
+        </div>
+
+        {/* Live metrics */}
+        <div className="flex items-center gap-4 shrink-0">
+          {gpuTemp > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Thermometer size={12} className={tempColor} />
+              <span className={`text-xs tabular-nums font-medium ${tempColor}`}>
+                {gpuTemp.toFixed(0)}°C
+              </span>
+            </div>
+          )}
+          {fps > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Gauge size={12} className="text-cyan-400" />
+              <span className="text-xs tabular-nums font-medium text-cyan-400">{fps} FPS</span>
+            </div>
+          )}
+          {session.scoreBefore && (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
+              <span>最適化前スコア:</span>
+              <span className="text-white font-semibold tabular-nums">
+                {session.scoreBefore.overall.toFixed(0)}
+              </span>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={onStop}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] border border-white/[0.08] text-muted-foreground/60 hover:text-white hover:border-white/20 rounded-lg transition-colors"
+          >
+            <StopCircle size={11} />
+            終了
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Mode → optimization preset mapping ───────────────────────────────────────
 
@@ -41,7 +190,8 @@ const MODE_PRESETS: Record<
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function GamesLibrary() {
-  const { activeProfileId, setActivePage } = useAppStore();
+  const { setActivePage } = useAppStore();
+  const { activeProfileId } = useWatcherStore();
   const [profiles, setProfiles] = useState<GameProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [launchingId, setLaunchingId] = useState<string | null>(null);
@@ -51,6 +201,59 @@ export function GamesLibrary() {
   const [scanning, setScanning] = useState(false);
   const [scanPhase, setScanPhase] = useState<"idle" | "scanning" | "tuning">("idle");
   const [scanLog, setScanLog] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  // ── Hardware suggestions (ENABLE_HARDWARE_SUGGESTIONS = true でのみ使用) ──────
+  const [hwMode, setHwMode] = useState<AiHardwareMode | null>(null);
+
+  useEffect(() => {
+    if (!ENABLE_HARDWARE_SUGGESTIONS) return;
+    invoke<AiHardwareMode>("get_ai_hardware_mode")
+      .then(setHwMode)
+      .catch(() => {}); // non-fatal
+  }, []);
+
+  // ── Launch Monitoring (ENABLE_LAUNCH_MONITORING = true でのみ使用) ───────────
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
+  const monitorIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopSession = useCallback(() => {
+    if (monitorIntervalRef.current) {
+      clearInterval(monitorIntervalRef.current);
+      monitorIntervalRef.current = null;
+    }
+    setActiveSession(null);
+  }, []);
+
+  // Poll temp + FPS while session is active
+  useEffect(() => {
+    if (!ENABLE_LAUNCH_MONITORING || !activeSession) return;
+    const poll = async () => {
+      const [tempResult, fpsResult] = await Promise.allSettled([
+        invoke<TempSnapshot>("get_temperature_snapshot"),
+        invoke<FpsEstimate>("detect_game_fps"),
+      ]);
+      setActiveSession((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          liveTemp: tempResult.status === "fulfilled" ? tempResult.value : prev.liveTemp,
+          liveFps: fpsResult.status === "fulfilled" ? fpsResult.value : prev.liveFps,
+        };
+      });
+    };
+    poll();
+    monitorIntervalRef.current = setInterval(poll, 5000);
+    return () => {
+      if (monitorIntervalRef.current) clearInterval(monitorIntervalRef.current);
+    };
+  }, [activeSession?.profileId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (monitorIntervalRef.current) clearInterval(monitorIntervalRef.current);
+    };
+  }, []);
 
   // Filter state
   const [search, setSearch] = useState("");
@@ -199,6 +402,17 @@ export function GamesLibrary() {
   const handleLaunchOptimize = async (profile: GameProfile) => {
     setLaunchingId(profile.id);
     setLaunchLog(null);
+
+    // [MONITORING] Capture score before optimization (only when flag is ON)
+    let scoreBefore: OptimizationScore | null = null;
+    if (ENABLE_LAUNCH_MONITORING) {
+      try {
+        scoreBefore = await invoke<OptimizationScore>("get_optimization_score");
+      } catch {
+        // non-fatal — monitoring data is optional
+      }
+    }
+
     try {
       await invoke("apply_profile", { id: profile.id });
       if (profile.exe_path) {
@@ -209,6 +423,19 @@ export function GamesLibrary() {
         msg: "最適化を適用しました" + (profile.exe_path ? "。ゲームを起動中…" : ""),
         ok: true,
       });
+
+      // [MONITORING] Start session tracking (only when flag is ON)
+      if (ENABLE_LAUNCH_MONITORING) {
+        stopSession(); // stop any previous session
+        setActiveSession({
+          profileId: profile.id,
+          gameName: profile.name,
+          startedAt: Date.now(),
+          scoreBefore,
+          liveTemp: null,
+          liveFps: null,
+        });
+      }
     } catch (e) {
       setLaunchLog({ id: profile.id, msg: String(e), ok: false });
     } finally {
@@ -268,6 +495,16 @@ export function GamesLibrary() {
           )}
         </div>
       </div>
+
+      {/* [MONITORING] Active session panel (only when flag is ON) */}
+      {ENABLE_LAUNCH_MONITORING && activeSession && (
+        <GameSessionMonitorPanel session={activeSession} onStop={stopSession} />
+      )}
+
+      {/* [HW SUGGESTIONS] Hardware banner (only when flag is ON) */}
+      {ENABLE_HARDWARE_SUGGESTIONS && hwMode && (
+        <HardwareBanner hwMode={hwMode} />
+      )}
 
       {/* Scan log */}
       {scanLog && (
@@ -350,6 +587,11 @@ export function GamesLibrary() {
               launching={launchingId === p.id}
               onLaunchOptimize={() => handleLaunchOptimize(p)}
               onModeChange={(mode) => handleModeChange(p, mode)}
+              hardwareHint={
+                ENABLE_HARDWARE_SUGGESTIONS && hwMode
+                  ? hwCompatible(p.recommended_mode, hwMode.mode)
+                  : undefined
+              }
             />
           ))}
         </div>

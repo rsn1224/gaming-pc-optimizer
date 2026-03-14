@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { GpuStatus, AiHardwareMode, MotherboardInfo, CpuDetailedInfo } from "@/types";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { getGpuVendorLogo, getCpuVendorLogo, VENDOR_ICON_BOX, DEFAULT_ICON_BOX, detectMbVendor, MB_VENDOR_CONFIG } from "@/lib/hardwareIcons";
 import { VendorIcon, MbVendorIcon } from "@/lib/VendorIcon";
 
@@ -478,12 +479,15 @@ export function Hardware() {
             <Sparkles size={14} className="text-purple-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-purple-300">
-              AI推奨モード: {MODE_CONFIG[aiResult.mode as GpuMode]?.label ?? aiResult.mode}
-              <span className="ml-2 text-[11px] font-normal opacity-60">
-                推奨電力比: {aiResult.suggested_power_limit_percent.toFixed(2)}（参考値）
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-purple-300">
+                AI推奨モード: {MODE_CONFIG[aiResult.mode as GpuMode]?.label ?? aiResult.mode}
+              </p>
+              {aiResult.confidence > 0 && <ConfidenceBadge confidence={aiResult.confidence} />}
+              <span className="text-[11px] text-purple-400/50">
+                推奨電力比: {aiResult.suggested_power_limit_percent.toFixed(2)}
               </span>
-            </p>
+            </div>
             <p className="text-xs text-purple-400/70 mt-0.5">{aiResult.reason}</p>
           </div>
           {gpus.length > 0 && (

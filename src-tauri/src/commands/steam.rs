@@ -64,8 +64,7 @@ fn vdf_value(content: &str, key: &str) -> Option<String> {
             continue;
         }
         let after = t[search.len()..].trim_start();
-        if after.starts_with('"') {
-            let inner = &after[1..];
+        if let Some(inner) = after.strip_prefix('"') {
             if let Some(end) = inner.find('"') {
                 return Some(inner[..end].to_string());
             }
@@ -258,6 +257,7 @@ pub fn discover_and_create_steam_drafts() -> Result<Vec<GameProfile>, String> {
             dns_preset: "none".to_string(),
             recommended_mode: None,
             recommended_reason: None,
+            recommended_confidence: None,
             launcher: Some("steam".to_string()),
             steam_app_id: Some(game.app_id),
         });

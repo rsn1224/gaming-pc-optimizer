@@ -12,6 +12,7 @@ import {
   Cpu,
 } from "lucide-react";
 import type { AppUpdate, AiUpdatePriority, DriverInfo } from "@/types";
+import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { VendorIcon } from "@/lib/VendorIcon";
 import type { VendorKey } from "@/lib/VendorIcon";
 
@@ -95,15 +96,18 @@ const PRIORITY_CONFIG = {
   skip:        { label: "スキップ",  cls: "bg-white/[0.06] text-muted-foreground border-white/10", rowCls: "" },
 } as const;
 
-function PriorityBadge({ priority, reason }: { priority: AiUpdatePriority["priority"]; reason: string }) {
+function PriorityBadge({ priority, reason, confidence }: { priority: AiUpdatePriority["priority"]; reason: string; confidence: number }) {
   const cfg = PRIORITY_CONFIG[priority] ?? PRIORITY_CONFIG.optional;
   return (
-    <span
-      className={`inline-flex items-center text-[10px] font-semibold border rounded-full px-2.5 py-0.5 cursor-help tracking-wide ${cfg.cls}`}
-      title={reason}
-    >
-      {priority === "critical" && <span className="mr-1 inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />}
-      {cfg.label}
+    <span className="inline-flex items-center gap-1.5 flex-wrap">
+      <span
+        className={`inline-flex items-center text-[10px] font-semibold border rounded-full px-2.5 py-0.5 cursor-help tracking-wide ${cfg.cls}`}
+        title={reason}
+      >
+        {priority === "critical" && <span className="mr-1 inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />}
+        {cfg.label}
+      </span>
+      {confidence > 0 && <ConfidenceBadge confidence={confidence} showLabel={false} />}
     </span>
   );
 }
@@ -385,7 +389,7 @@ export function Updates() {
                       {hasPriorities && (
                         <td className="px-3 py-3">
                           {prio ? (
-                            <PriorityBadge priority={prio.priority} reason={prio.reason} />
+                            <PriorityBadge priority={prio.priority} reason={prio.reason} confidence={prio.confidence ?? 0} />
                           ) : (
                             <span className="text-xs text-muted-foreground/40">—</span>
                           )}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Loader2, Play, Tag, Zap } from "lucide-react";
 import type { GameProfile } from "@/types";
+import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -83,6 +84,8 @@ interface GameCardProps {
   launching: boolean;
   onLaunchOptimize: () => void;
   onModeChange: (mode: "competitive" | "balanced" | "quality") => void;
+  /** Hardware compatibility hint — only set when ENABLE_HARDWARE_SUGGESTIONS is ON */
+  hardwareHint?: "ok" | "warn" | null;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -93,6 +96,7 @@ export function GameCard({
   launching,
   onLaunchOptimize,
   onModeChange,
+  hardwareHint,
 }: GameCardProps) {
   const launcher =
     profile.launcher ?? (profile.exe_path ? detectLauncher(profile.exe_path) : "custom");
@@ -202,6 +206,26 @@ export function GameCard({
                 title={profile.recommended_reason}
               >
                 {profile.recommended_reason}
+              </span>
+            )}
+            {profile.recommended_confidence != null && (
+              <ConfidenceBadge confidence={profile.recommended_confidence} showLabel={false} />
+            )}
+            {/* [HW SUGGESTIONS] Hardware compatibility badge */}
+            {hardwareHint === "ok" && (
+              <span
+                title="このモードはあなたのハードウェアに最適です"
+                className="text-[10px] text-emerald-400/80 shrink-0 cursor-help"
+              >
+                ✓HW
+              </span>
+            )}
+            {hardwareHint === "warn" && (
+              <span
+                title="このモードはあなたのハードウェアには重い可能性があります。「balanced」または「quality」を推奨します。"
+                className="text-[10px] text-amber-400/80 shrink-0 cursor-help"
+              >
+                ⚠HW
               </span>
             )}
           </div>

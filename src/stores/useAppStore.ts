@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { SystemInfo, ProcessInfo, OptimizationStatus, ActivePage } from "@/types";
+import type { ProcessInfo, OptimizationStatus, ActivePage } from "@/types";
 
 export type Theme = "dark" | "light";
 
@@ -27,10 +27,6 @@ interface AppState {
   activePage: ActivePage;
   setActivePage: (page: ActivePage) => void;
 
-  // System Info
-  systemInfo: SystemInfo | null;
-  setSystemInfo: (info: SystemInfo) => void;
-
   // Process list
   bloatwareProcesses: ProcessInfo[];
   setBloatwareProcesses: (procs: ProcessInfo[]) => void;
@@ -40,10 +36,6 @@ interface AppState {
   setOptimizationStatus: (status: OptimizationStatus) => void;
   optimizationMessage: string;
   setOptimizationMessage: (msg: string) => void;
-
-  // Power plan
-  currentPowerPlan: string;
-  setCurrentPowerPlan: (plan: string) => void;
 
   // Game mode
   gameModeActive: boolean;
@@ -57,11 +49,6 @@ interface AppState {
   disabledProcesses: string[];
   setDisabledProcesses: (names: string[]) => void;
 
-  // Watcher / tray state
-  activeProfileId: string | null;
-  setActiveProfileId: (id: string | null) => void;
-  autoOptimize: boolean;
-  setAutoOptimize: (enabled: boolean) => void;
   // Games library → Profiles page deep-link
   editingProfileId: string | null;
   setEditingProfileId: (id: string | null) => void;
@@ -71,9 +58,6 @@ export const useAppStore = create<AppState>((set) => ({
   activePage: "dashboard",
   setActivePage: (page) => set({ activePage: page }),
 
-  systemInfo: null,
-  setSystemInfo: (info) => set({ systemInfo: info }),
-
   bloatwareProcesses: [],
   setBloatwareProcesses: (procs) => set({ bloatwareProcesses: procs }),
 
@@ -81,9 +65,6 @@ export const useAppStore = create<AppState>((set) => ({
   setOptimizationStatus: (status) => set({ optimizationStatus: status }),
   optimizationMessage: "",
   setOptimizationMessage: (msg) => set({ optimizationMessage: msg }),
-
-  currentPowerPlan: "",
-  setCurrentPowerPlan: (plan) => set({ currentPowerPlan: plan }),
 
   gameModeActive: false,
   setGameModeActive: (active) => set({ gameModeActive: active }),
@@ -103,10 +84,6 @@ export const useAppStore = create<AppState>((set) => ({
     set({ disabledProcesses: names });
   },
 
-  activeProfileId: null,
-  setActiveProfileId: (id) => set({ activeProfileId: id }),
-  autoOptimize: false,
-  setAutoOptimize: (enabled) => set({ autoOptimize: enabled }),
   editingProfileId: null,
   setEditingProfileId: (id) => set({ editingProfileId: id }),
 }));

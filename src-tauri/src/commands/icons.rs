@@ -1,4 +1,32 @@
-use std::process::Command;
+use super::runner::{CommandRunner, SystemRunner};
+
+/// Inner function: run PowerShell icon-extraction script via `runner`.
+pub(crate) fn get_exe_icon_base64_inner(
+    runner: &impl CommandRunner,
+    script: &str,
+) -> Result<String, String> {
+    let (code, stdout, _stderr) = runner.run(
+        "powershell",
+        &[
+            "-NoProfile",
+            "-NonInteractive",
+            "-WindowStyle",
+            "Hidden",
+            "-Command",
+            script,
+        ],
+    )?;
+
+    if code != 0 {
+        return Err("icon extraction failed".to_string());
+    }
+
+    let b64 = stdout.trim().to_string();
+    if b64.is_empty() {
+        return Err("empty base64 output".to_string());
+    }
+    Ok(b64)
+}
 
 /// Extract the associated icon from an EXE and return it as a PNG base64 string.
 /// Uses PowerShell + System.Drawing to avoid the `windows` crate dependency.
@@ -28,25 +56,36 @@ try {{
         exe = exe_path.replace('\'', "''")
     );
 
-    let output = Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-WindowStyle",
-            "Hidden",
-            "-Command",
-            &script,
-        ])
-        .output()
-        .map_err(|e| e.to_string())?;
+    tokio::task::spawn_blocking(move || get_exe_icon_base64_inner(&SystemRunner, &script))
+        .await
+        .map_err(|e| e.to_string())?
+}
 
-    if !output.status.success() {
-        return Err("icon extraction failed".to_string());
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::commands::runner::MockRunner;
+
+    #[test]
+    fn get_exe_icon_base64_inner_returns_b64_on_success() {
+        let runner = MockRunner::success("iVBORw0KGgo=");
+        let result = get_exe_icon_base64_inner(&runner, "dummy script");
+        assert_eq!(result.unwrap(), "iVBORw0KGgo=");
     }
 
-    let b64 = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if b64.is_empty() {
-        return Err("empty base64 output".to_string());
+    #[test]
+    fn get_exe_icon_base64_inner_errors_on_nonzero_exit() {
+        let runner = MockRunner::failure("extraction failed");
+        let result = get_exe_icon_base64_inner(&runner, "dummy script");
+        assert_eq!(result.unwrap_err(), "icon extraction failed");
     }
-    Ok(b64)
+
+    #[test]
+    fn get_exe_icon_base64_inner_errors_on_empty_output() {
+        let runner = MockRunner::success("");
+        let result = get_exe_icon_base64_inner(&runner, "dummy script");
+        assert_eq!(result.unwrap_err(), "empty base64 output");
+    }
 }

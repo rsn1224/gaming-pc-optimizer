@@ -1,10 +1,10 @@
 import { useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useAppStore } from "@/stores/useAppStore";
+import { useSystemStore } from "@/stores/useSystemStore";
 import type { SystemInfo } from "@/types";
 
 export function useSystemInfo(intervalMs = 3000) {
-  const setSystemInfo = useAppStore((s) => s.setSystemInfo);
+  const setSystemInfo = useSystemStore((s) => s.setSystemInfo);
 
   const fetchInfo = useCallback(async () => {
     try {

@@ -73,46 +73,50 @@ pub struct SystemInfo {
 
 #[tauri::command]
 pub async fn get_system_info() -> Result<SystemInfo, String> {
-    let mut sys = System::new_with_specifics(
-        RefreshKind::nothing()
-            .with_cpu(CpuRefreshKind::everything())
-            .with_memory(MemoryRefreshKind::everything()),
-    );
+    tokio::task::spawn_blocking(|| {
+        let mut sys = System::new_with_specifics(
+            RefreshKind::nothing()
+                .with_cpu(CpuRefreshKind::everything())
+                .with_memory(MemoryRefreshKind::everything()),
+        );
 
-    // CPU使用率を正確に取得するため少し待つ
-    std::thread::sleep(std::time::Duration::from_millis(200));
-    sys.refresh_cpu_usage();
-    sys.refresh_memory();
+        // CPU使用率を正確に取得するため少し待つ (blocking thread なので安全)
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        sys.refresh_cpu_usage();
+        sys.refresh_memory();
 
-    let cpu_usage = sys
-        .cpus()
-        .iter()
-        .map(|cpu| cpu.cpu_usage())
-        .sum::<f32>()
-        / sys.cpus().len() as f32;
+        let cpu_usage = sys
+            .cpus()
+            .iter()
+            .map(|cpu| cpu.cpu_usage())
+            .sum::<f32>()
+            / sys.cpus().len() as f32;
 
-    let cpu_name = sys
-        .cpus()
-        .first()
-        .map(|cpu| cpu.brand().to_string())
-        .unwrap_or_else(|| "Unknown".to_string());
+        let cpu_name = sys
+            .cpus()
+            .first()
+            .map(|cpu| cpu.brand().to_string())
+            .unwrap_or_else(|| "Unknown".to_string());
 
-    let memory_total_mb = sys.total_memory() as f64 / 1024.0 / 1024.0;
-    let memory_used_mb = sys.used_memory() as f64 / 1024.0 / 1024.0;
-    let memory_percent = if sys.total_memory() > 0 {
-        (sys.used_memory() as f32 / sys.total_memory() as f32) * 100.0
-    } else {
-        0.0
-    };
+        let memory_total_mb = sys.total_memory() as f64 / 1024.0 / 1024.0;
+        let memory_used_mb = sys.used_memory() as f64 / 1024.0 / 1024.0;
+        let memory_percent = if sys.total_memory() > 0 {
+            (sys.used_memory() as f32 / sys.total_memory() as f32) * 100.0
+        } else {
+            0.0
+        };
 
-    Ok(SystemInfo {
-        cpu_usage,
-        cpu_name,
-        cpu_cores: sys.cpus().len(),
-        memory_total_mb,
-        memory_used_mb,
-        memory_percent,
-        os_name: System::name().unwrap_or_else(|| "Windows".to_string()),
-        os_version: System::os_version().unwrap_or_else(|| "Unknown".to_string()),
+        Ok(SystemInfo {
+            cpu_usage,
+            cpu_name,
+            cpu_cores: sys.cpus().len(),
+            memory_total_mb,
+            memory_used_mb,
+            memory_percent,
+            os_name: System::name().unwrap_or_else(|| "Windows".to_string()),
+            os_version: System::os_version().unwrap_or_else(|| "Unknown".to_string()),
+        })
     })
+    .await
+    .map_err(|e| e.to_string())?
 }

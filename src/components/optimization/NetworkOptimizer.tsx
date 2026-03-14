@@ -15,6 +15,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import type { NetworkSettings, AdapterInfo, PingResult, DnsPreset, DnsPingSummary, NetworkRecommendation } from "@/types";
 import { Toggle } from "@/components/ui/toggle";
+import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { applyNetworkRecommendation } from "@/lib/network_apply";
 
 // ── DNS preset definitions ──────────────────────────────────────────────────
@@ -592,9 +593,12 @@ function DnsAutoTestSection({
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-blue-500/10 border border-blue-500/30 rounded-md p-3 flex flex-col gap-2"
                 >
-                  <p className="text-xs text-blue-300 font-semibold flex items-center gap-1.5">
-                    <Brain size={12} /> AI推奨
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-xs text-blue-300 font-semibold flex items-center gap-1.5">
+                      <Brain size={12} /> AI推奨
+                    </p>
+                    {parsedRec.confidence > 0 && <ConfidenceBadge confidence={parsedRec.confidence} />}
+                  </div>
                   <p className="text-xs text-foreground">{parsedRec.explanation}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span>DNS: <span className="text-foreground font-semibold">{parsedRec.dns_preset}</span></span>

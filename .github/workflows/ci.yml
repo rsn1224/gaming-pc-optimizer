@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # ── Rust quality gates ──────────────────────────────────────────────────────
+  rust:
+    name: Rust (fmt / clippy / check / test)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: src-tauri
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo registry + build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: fmt
+        run: cargo fmt --check
+
+      - name: clippy
+        run: cargo clippy -- -D warnings
+
+      - name: check
+        run: cargo check
+
+      - name: test
+        run: cargo test
+
+  # ── Frontend quality gates ──────────────────────────────────────────────────
+  frontend:
+    name: Frontend (typecheck / test / build)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: test
+        run: npm test -- --run

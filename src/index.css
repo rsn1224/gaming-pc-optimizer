@@ -182,6 +182,38 @@
   background: linear-gradient(to right, rgba(34, 211, 238, 0.12), rgba(34, 211, 238, 0.02));
 }
 
+/* ── Accent color CSS variables ── */
+:root, [data-accent="cyan"] {
+  --accent-500: 34 211 238;
+  --accent-glow: rgba(34,211,238,0.2);
+  --accent-border: rgba(34,211,238,0.3);
+}
+[data-accent="purple"] {
+  --accent-500: 167 139 250;
+  --accent-glow: rgba(167,139,250,0.2);
+  --accent-border: rgba(167,139,250,0.3);
+}
+[data-accent="orange"] {
+  --accent-500: 251 146 60;
+  --accent-glow: rgba(251,146,60,0.2);
+  --accent-border: rgba(251,146,60,0.3);
+}
+[data-accent="green"] {
+  --accent-500: 52 211 153;
+  --accent-glow: rgba(52,211,153,0.2);
+  --accent-border: rgba(52,211,153,0.3);
+}
+[data-accent="pink"] {
+  --accent-500: 232 121 249;
+  --accent-glow: rgba(232,121,249,0.2);
+  --accent-border: rgba(232,121,249,0.3);
+}
+
+/* ── Font size scaling ── */
+[data-font-size="small"] { font-size: 13px; }
+[data-font-size="medium"] { font-size: 15px; }
+[data-font-size="large"] { font-size: 17px; }
+
 /* ── Step number circle ── */
 .step-number {
   width: 20px;

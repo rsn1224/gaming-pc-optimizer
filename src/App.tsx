@@ -1,74 +1,368 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu } from "lucide-react";
+import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, LayoutGrid, TrendingDown, Loader2, X, Thermometer, Zap } from "lucide-react";
+import type { AppearanceSettings, OptimizationScore, TempSnapshot, GpuPowerLimit } from "@/types";
 import { cn } from "@/lib/utils";
+import { toast } from "@/stores/useToastStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { useWatcherStore } from "@/stores/useWatcherStore";
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { DashboardV2 } from "@/components/dashboard/DashboardV2";
 import { GameMode } from "@/components/optimization/GameMode";
-import { WindowsSettings } from "@/components/optimization/WindowsSettings";
-import { StorageCleanup } from "@/components/optimization/StorageCleanup";
-import { NetworkOptimizer } from "@/components/optimization/NetworkOptimizer";
-import { Profiles } from "@/components/profiles/Profiles";
+import { Presets } from "@/components/optimization/Presets";
+import { ProcessManager } from "@/components/optimization/ProcessManager";
+import { WindowsOptimization } from "@/components/optimization/WindowsOptimization";
+import { StorageManager } from "@/components/optimization/StorageManager";
+import { NetworkHub } from "@/components/network/NetworkHub";
 import { GamesLibrary } from "@/components/games/GamesLibrary";
-import { Settings } from "@/components/settings/Settings";
-import { Updates } from "@/components/updates/Updates";
-import { Hardware } from "@/components/hardware/Hardware";
+import { ProfilesHub } from "@/components/profiles/ProfilesHub";
+import { GamePerformanceLog } from "@/components/games/GamePerformanceLog";
+import { GameSettingsAdvisor } from "@/components/games/GameSettingsAdvisor";
+import { GameIntegrity } from "@/components/games/GameIntegrity";
+import { HardwareHub } from "@/components/hardware/HardwareHub";
+import { Benchmark } from "@/components/benchmark/Benchmark";
+import { StartupManager } from "@/components/optimization/StartupManager";
+import { Scheduler } from "@/components/settings/Scheduler";
+import { AppUninstaller } from "@/components/settings/AppUninstaller";
+import { UpdatesHub } from "@/components/updates/UpdatesHub";
+import { RollbackCenter } from "@/components/rollback/RollbackCenter";
+import { SimulationPanel } from "@/components/rollback/SimulationPanel";
+import { EventLog } from "@/components/notifications/EventLog";
+import { SettingsHub } from "@/components/settings/SettingsHub";
+import { OsdOverlay } from "@/components/osd/OsdOverlay";
+import { ToastContainer } from "@/components/ui/Toast";
 import type { ActivePage } from "@/types";
 
-interface NavItem {
-  id: ActivePage;
-  icon: React.ReactNode;
-  label: string;
-  phase?: string;
+// ── Synergy #3: Score Regression Watcher ──────────────────────────────────────
+// Feature flag — set to `true` to enable background score monitoring.
+// Default: false — no polling, no UI changes.
+const ENABLE_SCORE_REGRESSION_WATCH = false;
+
+/** Score drop ≥ this many points triggers the regression alert */
+const REGRESSION_THRESHOLD = 15;
+/** Polling interval (ms). 5 minutes by default. */
+const REGRESSION_POLL_MS = 5 * 60 * 1000;
+
+function ScoreRegressionWatcher() {
+  const [baseline, setBaseline] = useState<number | null>(null);
+  const [alert, setAlert] = useState<{ current: number; delta: number } | null>(null);
+  const [reoptimizing, setReoptimizing] = useState(false);
+  const baselineRef = useRef<number | null>(null);
+
+  const poll = useCallback(async () => {
+    try {
+      const score = await invoke<OptimizationScore>("get_optimization_score");
+      if (baselineRef.current === null) {
+        // First poll — set baseline, no alert
+        baselineRef.current = score.overall;
+        setBaseline(score.overall);
+        return;
+      }
+      const drop = baselineRef.current - score.overall;
+      if (drop >= REGRESSION_THRESHOLD) {
+        setAlert({ current: score.overall, delta: Math.round(drop) });
+      }
+    } catch {
+      // silent — don't spam toasts from background polling
+    }
+  }, []);
+
+  useEffect(() => {
+    poll();
+    const id = setInterval(poll, REGRESSION_POLL_MS);
+    return () => clearInterval(id);
+  }, [poll]);
+
+  const handleReoptimize = async () => {
+    setReoptimizing(true);
+    try {
+      await invoke("apply_preset", { preset: "esports" });
+      toast.success("再最適化が完了しました");
+      setAlert(null);
+      // Refresh baseline after reoptimize
+      const fresh = await invoke<OptimizationScore>("get_optimization_score");
+      baselineRef.current = fresh.overall;
+      setBaseline(fresh.overall);
+    } catch (e) {
+      toast.error("再最適化に失敗しました: " + String(e));
+    } finally {
+      setReoptimizing(false);
+    }
+  };
+
+  const dismiss = () => {
+    setAlert(null);
+    // Reset baseline so next regression is measured from current state
+    baselineRef.current = null;
+  };
+
+  if (!alert) return null;
+
+  return (
+    <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 pointer-events-none">
+      <div className="pointer-events-auto bg-[#05080c] border border-amber-500/40 rounded-xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+        <div className="h-[1px] bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+        <div className="px-4 py-3 flex items-start gap-3">
+          <div className="p-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg shrink-0 mt-0.5">
+            <TrendingDown size={13} className="text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-300">スコアが低下しています</p>
+            <p className="text-xs text-muted-foreground/70 mt-0.5">
+              ベースライン: <span className="text-white tabular-nums">{baseline?.toFixed(0)}</span>
+              {" → "}現在: <span className="text-amber-300 tabular-nums">{alert.current.toFixed(0)}</span>
+              {" （"}
+              <span className="text-red-400 tabular-nums">−{alert.delta}</span>
+              {" ポイント）"}
+            </p>
+            <div className="flex items-center gap-2 mt-2.5">
+              <button
+                type="button"
+                onClick={handleReoptimize}
+                disabled={reoptimizing}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 rounded-lg hover:brightness-110 disabled:opacity-50 transition-all active:scale-[0.97]"
+              >
+                {reoptimizing ? <Loader2 size={11} className="animate-spin" /> : null}
+                {reoptimizing ? "最適化中..." : "Esports プリセットで再最適化"}
+              </button>
+              <button
+                type="button"
+                onClick={dismiss}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground/60 hover:text-white border border-white/[0.07] hover:border-white/20 rounded-lg transition-colors"
+              >
+                <X size={11} />
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: "dashboard", icon: <LayoutDashboard size={17} />, label: "ダッシュボード" },
-  { id: "games",     icon: <Library size={17} />,         label: "My Games" },
-  { id: "gamemode",  icon: <Gamepad2 size={17} />,        label: "ゲームモード" },
-  { id: "windows",   icon: <Monitor size={17} />,         label: "Windows設定" },
-  { id: "storage",   icon: <HardDrive size={17} />,       label: "ストレージ" },
-  { id: "network",   icon: <Wifi size={17} />,            label: "ネットワーク" },
-  { id: "profiles",  icon: <BookMarked size={17} />,      label: "プロファイル", phase: "詳細" },
-  { id: "updates",   icon: <Shield size={17} />,          label: "アップデート" },
-  { id: "hardware",  icon: <Cpu size={17} />,             label: "ハードウェア" },
-  { id: "settings",  icon: <SettingsIcon size={17} />,    label: "設定" },
+// ── Synergy #5: Thermal Watcher ───────────────────────────────────────────────
+// Feature flag — set to `true` to enable background GPU temperature monitoring.
+// Default: false — no polling, no UI changes.
+const ENABLE_THERMAL_AUTO_REDUCTION = false;
+
+/** GPU temp (°C) above which a warning is issued */
+const THERMAL_DANGER_TEMP = 85;
+/** Number of consecutive danger readings before showing the alert (~N × POLL_MS ms) */
+const THERMAL_SUSTAINED_COUNT = 3;
+/** Polling interval (ms) */
+const THERMAL_POLL_MS = 2000;
+/** How long (ms) to suppress re-alerts after user dismisses */
+const THERMAL_SNOOZE_MS = 10 * 60 * 1000; // 10 minutes
+
+function ThermalWatcher() {
+  const dangerCount = useRef(0);
+  const [alert, setAlert] = useState<{ gpuTemp: number } | null>(null);
+  const [reducing, setReducing] = useState(false);
+  const [snoozedUntil, setSnoozedUntil] = useState(0);
+
+  const poll = useCallback(async () => {
+    try {
+      const snap = await invoke<TempSnapshot>("get_temperature_snapshot");
+      const temp = snap.gpu_temp_c;
+
+      if (temp <= 0) return; // no GPU data available
+
+      if (temp >= THERMAL_DANGER_TEMP) {
+        dangerCount.current += 1;
+        if (dangerCount.current >= THERMAL_SUSTAINED_COUNT && Date.now() > snoozedUntil) {
+          setAlert({ gpuTemp: temp });
+        }
+      } else {
+        // Temperature returned to safe zone — reset counter and clear alert
+        dangerCount.current = 0;
+        setAlert(null);
+      }
+    } catch {
+      // silent — GPU may not be NVIDIA or sensor unavailable
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snoozedUntil]);
+
+  useEffect(() => {
+    const id = setInterval(poll, THERMAL_POLL_MS);
+    return () => clearInterval(id);
+  }, [poll]);
+
+  const handleReduce = async () => {
+    setReducing(true);
+    try {
+      const info = await invoke<GpuPowerLimit>("get_gpu_power_info");
+      const target = Math.max(info.min_w, Math.round(info.default_w * 0.8));
+      await invoke("set_gpu_power_limit", { gpuIndex: 0, watts: target });
+      toast.success(`GPU電力制限を ${target}W（デフォルトの80%）に引き下げました`);
+      setAlert(null);
+      dangerCount.current = 0;
+      setSnoozedUntil(Date.now() + THERMAL_SNOOZE_MS);
+    } catch (e) {
+      toast.error("GPU電力制限の変更に失敗しました: " + String(e));
+    } finally {
+      setReducing(false);
+    }
+  };
+
+  const handleSnooze = () => {
+    setAlert(null);
+    dangerCount.current = 0;
+    setSnoozedUntil(Date.now() + THERMAL_SNOOZE_MS);
+  };
+
+  if (!alert) return null;
+
+  return (
+    <div className="fixed bottom-16 right-4 z-50 w-80 pointer-events-none">
+      <div className="pointer-events-auto bg-[#05080c] border border-red-500/40 rounded-xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+        <div className="h-[1px] bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
+        <div className="px-4 py-3 flex items-start gap-3">
+          <div className="p-1.5 bg-red-500/10 border border-red-500/20 rounded-lg shrink-0 mt-0.5">
+            <Thermometer size={13} className="text-red-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-300">GPU過熱を検出</p>
+            <p className="text-xs text-muted-foreground/70 mt-0.5">
+              GPU温度が <span className="text-red-400 font-bold tabular-nums">{alert.gpuTemp.toFixed(0)}°C</span> を超えています（危険域 ≥{THERMAL_DANGER_TEMP}°C）
+            </p>
+            <div className="flex items-center gap-2 mt-2.5">
+              <button
+                type="button"
+                onClick={handleReduce}
+                disabled={reducing}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-red-500 to-amber-500 text-white rounded-lg hover:brightness-110 disabled:opacity-50 transition-all active:scale-[0.97]"
+              >
+                {reducing ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
+                {reducing ? "設定中..." : "GPU電力を80%に下げる"}
+              </button>
+              <button
+                type="button"
+                onClick={handleSnooze}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground/60 hover:text-white border border-white/[0.07] hover:border-white/20 rounded-lg transition-colors"
+              >
+                <X size={11} />
+                10分無視
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+type NavEntry =
+  | { type: "section"; label: string }
+  | { type?: "item"; id: ActivePage; icon: React.ReactNode; label: string; phase?: string };
+
+const NAV_ITEMS: NavEntry[] = [
+  { type: "section", label: "メイン" },
+  { id: "dashboard",    icon: <LayoutDashboard size={17} />, label: "ダッシュボード" },
+  { id: "dashboardv2",  icon: <LayoutGrid size={17} />,      label: "詳細ビュー" },
+
+  { type: "section", label: "最適化" },
+  { id: "gamemode",   icon: <Gamepad2 size={17} />,        label: "ゲームモード" },
+  { id: "presets",    icon: <SlidersHorizontal size={17} />, label: "プリセット" },
+  { id: "process",    icon: <Activity size={17} />,         label: "プロセス管理" },
+  { id: "windows",    icon: <Monitor size={17} />,          label: "Windows最適化" },
+  { id: "storage",    icon: <HardDrive size={17} />,        label: "ストレージ" },
+  { id: "network",    icon: <Wifi size={17} />,             label: "ネットワーク" },
+
+  { type: "section", label: "ゲーム" },
+  { id: "games",      icon: <Library size={17} />,          label: "Myゲーム" },
+  { id: "profiles",   icon: <BookMarked size={17} />,       label: "プロファイル" },
+  { id: "gamelog",    icon: <BarChart3 size={17} />,        label: "パフォーマンスログ" },
+  { id: "advisor",    icon: <Lightbulb size={17} />,        label: "設定アドバイザー" },
+  { id: "gameintegrity", icon: <FileSearch size={17} />,    label: "ファイル検証" },
+
+  { type: "section", label: "ハードウェア" },
+  { id: "hardware",   icon: <Cpu size={17} />,              label: "ハードウェア" },
+  { id: "benchmark",  icon: <Gauge size={17} />,            label: "ベンチマーク" },
+
+  { type: "section", label: "システム" },
+  { id: "startup",    icon: <Rocket size={17} />,           label: "スタートアップ" },
+  { id: "scheduler",  icon: <Calendar size={17} />,         label: "スケジューラー" },
+  { id: "uninstaller", icon: <Trash2 size={17} />,          label: "アプリ管理" },
+  { id: "updates",    icon: <Shield size={17} />,           label: "アップデート" },
+  { id: "rollback",   icon: <ShieldCheck size={17} />,      label: "ロールバック" },
+
+  { type: "section", label: "その他" },
+  { id: "notifications", icon: <Bell size={17} />,          label: "通知センター" },
+  { id: "settings",   icon: <SettingsIcon size={17} />,     label: "設定" },
 ];
 
 function PageContent({ page }: { page: ActivePage }) {
   switch (page) {
     case "dashboard":
       return <Dashboard />;
+    case "dashboardv2":
+      return <DashboardV2 />;
     case "gamemode":
       return <GameMode />;
+    case "presets":
+      return <Presets />;
+    case "process":
+      return <ProcessManager />;
     case "windows":
-      return <WindowsSettings />;
+      return <WindowsOptimization />;
     case "storage":
-      return <StorageCleanup />;
+      return <StorageManager />;
     case "network":
-      return <NetworkOptimizer />;
-    case "profiles":
-      return <Profiles />;
+      return <NetworkHub />;
     case "games":
       return <GamesLibrary />;
-    case "updates":
-      return <Updates />;
+    case "profiles":
+      return <ProfilesHub />;
+    case "gamelog":
+      return <GamePerformanceLog />;
+    case "advisor":
+      return <GameSettingsAdvisor />;
+    case "gameintegrity":
+      return <GameIntegrity />;
     case "hardware":
-      return <Hardware />;
+      return <HardwareHub />;
+    case "benchmark":
+      return <Benchmark />;
+    case "startup":
+      return <StartupManager />;
+    case "scheduler":
+      return <Scheduler />;
+    case "uninstaller":
+      return <AppUninstaller />;
+    case "updates":
+      return <UpdatesHub />;
+    case "rollback":
+      return <RollbackCenter />;
+    case "notifications":
+      return <EventLog />;
     case "settings":
-      return <Settings />;
+      return <SettingsHub />;
   }
 }
 
 export default function App() {
-  const {
-    activePage,
-    setActivePage,
-    gameModeActive,
-    activeProfileId,
-    setActiveProfileId,
-    setAutoOptimize,
-  } = useAppStore();
+  // OSD window detection: render only the overlay for the second window
+  if (typeof window !== "undefined" && window.location.hash === "#/osd") {
+    return <OsdOverlay />;
+  }
+
+  const { activePage, setActivePage, gameModeActive } = useAppStore();
+  const { activeProfileId, setActiveProfileId, setAutoOptimize } = useWatcherStore();
+
+  // Load saved appearance on mount
+  useEffect(() => {
+    invoke<AppearanceSettings>("get_appearance")
+      .then((s) => {
+        document.documentElement.setAttribute("data-accent", s.accent_color);
+        document.documentElement.setAttribute("data-font-size", s.font_size);
+      })
+      .catch(() => {});
+  }, []);
 
   // Listen for Rust-side events (watcher applies/restores, tray toggle)
   useEffect(() => {
@@ -107,7 +401,16 @@ export default function App() {
 
         {/* Nav */}
         <nav className="flex-1 p-2 pt-2.5 flex flex-col gap-0.5 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.map((item, i) => {
+            if (item.type === "section") {
+              return (
+                <div key={`section-${i}`} className="px-3 pt-3 pb-1 first:pt-1">
+                  <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.15em]">
+                    {item.label}
+                  </p>
+                </div>
+              );
+            }
             const isActive = activePage === item.id;
             return (
               <button
@@ -163,6 +466,15 @@ export default function App() {
       <main className="flex-1 overflow-hidden content-glow relative">
         <PageContent page={activePage} />
       </main>
+
+      {/* Global toast notifications */}
+      <ToastContainer />
+      {/* Phase 3: Simulation / confirmation overlay */}
+      <SimulationPanel />
+      {/* [SCORE REGRESSION] Background watcher — only mounts when flag is ON */}
+      {ENABLE_SCORE_REGRESSION_WATCH && <ScoreRegressionWatcher />}
+      {/* [THERMAL] Background GPU temperature watcher — only mounts when flag is ON */}
+      {ENABLE_THERMAL_AUTO_REDUCTION && <ThermalWatcher />}
     </div>
   );
 }

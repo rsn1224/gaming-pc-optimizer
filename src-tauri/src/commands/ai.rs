@@ -194,6 +194,8 @@ struct AiUpdate {
     #[serde(default)]
     recommended_reason: Option<String>,
     #[serde(default)]
+    recommended_confidence: Option<u8>,
+    #[serde(default)]
     kill_bloatware: Option<bool>,
     #[serde(default)]
     power_plan: Option<String>,
@@ -245,6 +247,7 @@ JSONのみを返してください（説明・マークダウン不要）：
     "id": "既存のID（変更しない）",
     "recommended_mode": "competitive" | "balanced" | "quality",
     "recommended_reason": "50文字以内の日本語で推薦理由",
+    "recommended_confidence": 0〜100の整数（100=確信、0=推測。プロファイル情報が少ない場合は低めに設定）,
     "kill_bloatware": true または false,
     "power_plan": "none" | "ultimate" | "high_performance",
     "windows_preset": "none" | "gaming" | "default",
@@ -272,6 +275,9 @@ JSONのみを返してください（説明・マークダウン不要）：
             }
             if let Some(v) = &upd.recommended_reason {
                 p.recommended_reason = Some(v.clone());
+            }
+            if let Some(v) = upd.recommended_confidence {
+                p.recommended_confidence = Some(v);
             }
             if let Some(v) = upd.kill_bloatware {
                 p.kill_bloatware = v;
@@ -305,6 +311,9 @@ pub struct AiUpdatePriority {
     pub id: String,
     pub priority: String, // "critical" | "recommended" | "optional" | "skip"
     pub reason: String,
+    /// AI confidence 0–100
+    #[serde(default)]
+    pub confidence: u8,
 }
 
 #[tauri::command]
@@ -324,7 +333,8 @@ pub async fn get_ai_update_priorities() -> Result<Vec<AiUpdatePriority>, String>
   {{
     "id": "winget package id（app_updatesのidフィールドと一致させること）",
     "priority": "critical" | "recommended" | "optional" | "skip",
-    "reason": "30文字以内の日本語の理由"
+    "reason": "30文字以内の日本語の理由",
+    "confidence": 0〜100の整数（100=確信。アプリの性質が不明な場合は低めに設定）
   }}
 ]
 
@@ -348,6 +358,8 @@ pub async fn get_ai_update_priorities() -> Result<Vec<AiUpdatePriority>, String>
 pub struct AiWindowsRecommendation {
     pub preset_id: String,  // "default" | "gaming" | "balanced"
     pub explanation: String,
+    #[serde(default)]
+    pub confidence: u8,
 }
 
 #[tauri::command]
@@ -370,7 +382,8 @@ JSONのみを返してください（説明・マークダウン不要）：
 
 {{
   "preset_id": "default" | "gaming" | "balanced",
-  "explanation": "なぜこのプリセットを選んだかの理由（日本語・1〜2文）"
+  "explanation": "なぜこのプリセットを選んだかの理由（日本語・1〜2文）",
+  "confidence": 0〜100の整数（100=確信。現在設定が明確であれば高く、情報が不十分なら低めに）
 }}"#,
         context
     );
@@ -442,6 +455,8 @@ pub struct AiNetworkRecommendation {
     pub dns_preset: String, // "google" | "cloudflare" | "opendns" | "current"
     pub explanation: String,
     pub apply_network_gaming: bool,
+    #[serde(default)]
+    pub confidence: u8,
 }
 
 #[tauri::command]
@@ -477,7 +492,8 @@ JSONのみを返してください（説明・マークダウン不要）：
   "adapter_name": "<上記JSONのadapter.nameをそのまま使用>",
   "dns_preset": "google" | "cloudflare" | "opendns" | "current",
   "apply_network_gaming": true または false,
-  "explanation": "なぜこのDNSと設定を選んだかの理由（日本語・2〜3文）"
+  "explanation": "なぜこのDNSと設定を選んだかの理由（日本語・2〜3文）",
+  "confidence": 0〜100の整数（100=確信。Pingデータが揃っていれば高く、データ不足なら低めに）
 }}"#,
         context
     );
@@ -495,6 +511,8 @@ pub struct AiHardwareMode {
     pub mode: String, // "performance" | "balanced" | "efficiency"
     pub reason: String,
     pub suggested_power_limit_percent: f32, // fraction of default (e.g. 1.0, 0.8, 0.65)
+    #[serde(default)]
+    pub confidence: u8,
 }
 
 #[tauri::command]
@@ -519,7 +537,8 @@ pub async fn get_ai_hardware_mode() -> Result<AiHardwareMode, String> {
 {{
   "mode": "performance" | "balanced" | "efficiency",
   "reason": "50文字以内の日本語の理由",
-  "suggested_power_limit_percent": 0.0から1.0の数値（デフォルト電力に対する割合、あくまで目安。アプリ側ではmodeに対応した固定比を使用します）
+  "suggested_power_limit_percent": 0.0から1.0の数値（デフォルト電力に対する割合、あくまで目安。アプリ側ではmodeに対応した固定比を使用します）,
+  "confidence": 0〜100の整数（100=確信。GPU情報が揃っていれば高く、GPUデータがない場合は低めに）
 }}
 
 モードの定義：
@@ -536,4 +555,100 @@ GPUデータが無い場合は balanced を推奨してください。"#,
     let json_str = extract_json_object(&content_text);
     serde_json::from_str::<AiHardwareMode>(json_str)
         .map_err(|e| format!("AIレスポンスの解析失敗: {}", e))
+}
+
+// ── Game Settings Advisor ─────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GameSettingItem {
+    pub category: String,
+    pub recommended: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GameSettingsAdvice {
+    pub game_name: String,
+    /// "最高" | "高" | "中" | "低"
+    pub overall_preset: String,
+    /// "144+" | "60+" | "30以上"
+    pub target_fps: String,
+    pub settings: Vec<GameSettingItem>,
+    pub notes: String,
+    pub confidence: u8,
+}
+
+#[tauri::command]
+pub async fn get_game_settings_advice(game_name: String) -> Result<GameSettingsAdvice, String> {
+    let api_key = load_api_key()?;
+
+    // Gather system specs
+    let (gpu_name, vram_mb) = {
+        let gpus = super::system_info::get_gpu_info();
+        let first = gpus.into_iter().next();
+        (
+            first.as_ref().map(|g| g.name.clone()).unwrap_or_else(|| "不明".to_string()),
+            first.map(|g| g.vram_total_mb as u64).unwrap_or(0),
+        )
+    };
+    let (cpu_name, cpu_cores, ram_gb) = tokio::task::spawn_blocking(|| {
+        use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
+        let mut sys = System::new_with_specifics(
+            RefreshKind::nothing()
+                .with_cpu(CpuRefreshKind::nothing())
+                .with_memory(MemoryRefreshKind::everything()),
+        );
+        sys.refresh_cpu_list(CpuRefreshKind::nothing());
+        sys.refresh_memory();
+        let cpu = sys
+            .cpus()
+            .first()
+            .map(|c| c.brand().to_string())
+            .unwrap_or_else(|| "不明".to_string());
+        let cores = sys.cpus().len();
+        let ram = sys.total_memory() / 1024 / 1024 / 1024;
+        (cpu, cores, ram)
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let prompt = format!(
+        r#"あなたはPCゲームの最適化専門家です。以下のシステムスペックに基づいて「{game}」の推奨グラフィック設定をJSONのみで回答してください（マークダウン・説明文不要）。
+
+システムスペック:
+- GPU: {gpu} (VRAM: {vram} MB)
+- CPU: {cpu} ({cores} コア)
+- RAM: {ram} GB
+
+以下の形式で回答してください:
+{{
+  "game_name": "{game}",
+  "overall_preset": "最高" または "高" または "中" または "低",
+  "target_fps": "144+" または "60+" または "30以上",
+  "settings": [
+    {{ "category": "解像度", "recommended": "1920x1080", "reason": "..." }},
+    {{ "category": "グラフィックプリセット", "recommended": "高", "reason": "..." }},
+    {{ "category": "シャドウ品質", "recommended": "中", "reason": "..." }},
+    {{ "category": "アンチエイリアス", "recommended": "TAA", "reason": "..." }},
+    {{ "category": "テクスチャ品質", "recommended": "高", "reason": "..." }},
+    {{ "category": "レンダースケール", "recommended": "100%", "reason": "..." }},
+    {{ "category": "垂直同期", "recommended": "オフ", "reason": "..." }}
+  ],
+  "notes": "全体的な注意点や追加アドバイス（100文字以内）",
+  "confidence": 75
+}}"#,
+        game = game_name,
+        gpu = gpu_name,
+        vram = vram_mb,
+        cpu = cpu_name,
+        cores = cpu_cores,
+        ram = ram_gb,
+    );
+
+    let content_text = call_claude_api(&api_key, &prompt, 1024).await?;
+    let json_str = extract_json_object(&content_text);
+    let advice: GameSettingsAdvice = serde_json::from_str(json_str)
+        .map_err(|e| format!("AIレスポンスの解析失敗: {}\n内容: {}", e, json_str))?;
+
+    Ok(advice)
 }

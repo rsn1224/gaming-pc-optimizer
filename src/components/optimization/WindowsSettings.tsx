@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import type { WindowsSettings as WS, WindowsPreset, AiWindowsRecommendation } from "@/types";
 import { Toggle } from "@/components/ui/toggle";
+import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { BUILTIN_WINDOWS_PRESETS } from "@/data/windows_presets";
 import { diffWindowsSettings } from "@/lib/windows_diff";
 
@@ -431,8 +432,11 @@ export function WindowsSettings() {
         {aiRec && !aiError && (
           <div className="mx-3 mb-2 px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-md flex items-start gap-2">
             <Brain size={12} className="text-purple-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-[11px] font-semibold text-purple-300">AI推奨: {BUILTIN_WINDOWS_PRESETS.find((p) => p.id === aiRec.preset_id)?.label}</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[11px] font-semibold text-purple-300">AI推奨: {BUILTIN_WINDOWS_PRESETS.find((p) => p.id === aiRec.preset_id)?.label}</p>
+                {aiRec.confidence > 0 && <ConfidenceBadge confidence={aiRec.confidence} />}
+              </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">{aiRec.explanation}</p>
             </div>
           </div>

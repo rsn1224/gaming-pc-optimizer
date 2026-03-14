@@ -1,8 +1,13 @@
 mod commands;
+mod error;
+pub use error::AppError;
 
 use commands::{
-    ai, hardware, icons, network, optimizer, power, process, profiles, self_improve, steam, storage,
-    system_info, updates, watcher, windows_settings,
+    ai, app_settings, backup, bandwidth, benchmark, clipboard_opt, crash_report, disk_health,
+    event_log, fps, game_log, hardware, hotkeys, icons, memory_cleaner, metrics, network,
+    optimizer, osd, power, presets, process, profiles, profile_share, registry_opt, cpu_affinity,
+    game_integrity, uninstaller, report, rollback, scheduler, self_improve, startup,
+    steam, storage, system_info, update_check, updates, watcher, windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -16,6 +21,7 @@ pub struct WatcherState {
     pub auto_optimize: bool,
     pub active_profile_id: Option<String>,
     pub is_applying: bool,
+    pub current_game_session_id: Option<String>,
 }
 
 pub struct AppState(pub std::sync::Mutex<WatcherState>);
@@ -31,6 +37,7 @@ pub fn run() {
             auto_optimize: false,
             active_profile_id: None,
             is_applying: false,
+            current_game_session_id: None,
         })))
         .setup(|app| {
             // ── System tray ────────────────────────────────────────────────
@@ -52,8 +59,13 @@ pub fn run() {
             let menu =
                 Menu::with_items(app, &[&show, &auto_check, &restore_item, &sep, &quit])?;
 
+            let tray_icon = app
+                .default_window_icon()
+                .ok_or("トレイアイコンが見つかりません")?
+                .clone();
+
             TrayIconBuilder::with_id("main")
-                .icon(app.default_window_icon().unwrap().clone())
+                .icon(tray_icon)
                 .menu(&menu)
                 .tooltip("Gaming PC Optimizer")
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -68,7 +80,7 @@ pub fn run() {
                         // mirror the new value into AppState and notify the frontend.
                         let state = app.state::<AppState>();
                         let enabled = {
-                            let mut w = state.0.lock().unwrap();
+                            let mut w = state.0.lock().unwrap_or_else(|p| p.into_inner());
                             w.auto_optimize = !w.auto_optimize;
                             w.auto_optimize
                         };
@@ -80,7 +92,7 @@ pub fn run() {
                             Err(e) => eprintln!("[tray restore] error: {}", e),
                         }
                         let state = app.state::<AppState>();
-                        state.0.lock().unwrap().active_profile_id = None;
+                        state.0.lock().unwrap_or_else(|p| p.into_inner()).active_profile_id = None;
                         app.emit("active_profile_changed", Option::<String>::None)
                             .ok();
                     }
@@ -131,12 +143,17 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // Process
             process::get_running_processes,
+            process::get_all_processes,
+            process::kill_process,
             process::kill_bloatware,
             icons::get_exe_icon_base64,
             // Power
             power::get_current_power_plan,
             power::set_ultimate_performance,
             power::restore_power_plan,
+            power::list_power_plans,
+            power::set_power_plan_by_guid,
+            power::get_power_plan,
             // System info
             system_info::get_system_info,
             system_info::get_gpu_info,
@@ -169,6 +186,7 @@ pub fn run() {
             profiles::save_profile,
             profiles::delete_profile,
             profiles::apply_profile,
+            profiles::simulate_profile,
             profiles::export_profiles_context,
             profiles::launch_game,
             // Steam
@@ -183,20 +201,46 @@ pub fn run() {
             ai::get_ai_network_recommendation,
             ai::get_ai_windows_recommendation,
             ai::get_ai_storage_recommendation,
+            ai::get_game_settings_advice,
             // Self-improvement
             self_improve::export_self_improve_context,
             // Optimizer
             optimizer::apply_all_optimizations,
+            optimizer::simulate_all_optimizations,
+            optimizer::get_optimization_score,
+            optimizer::get_score_history,
+            // Benchmark
+            benchmark::run_benchmark,
+            // Event Log
+            event_log::get_event_log,
+            event_log::clear_event_log,
+            // Metrics (Phase 2)
+            metrics::get_current_metrics,
             // Updates
             updates::check_app_updates,
             updates::upgrade_apps,
             updates::check_driver_info,
             updates::export_updates_context,
+            // Startup
+            startup::get_startup_entries,
+            startup::disable_startup_entry,
+            startup::enable_startup_entry,
             // Hardware
             hardware::get_gpu_status,
             hardware::set_gpu_power_limit,
+            hardware::get_gpu_power_info,
+            hardware::reset_gpu_power_limit,
+            hardware::set_gpu_fan_speed,
             hardware::get_motherboard_info,
             hardware::get_cpu_detailed_info,
+            hardware::get_temperature_snapshot,
+            // Memory Cleaner
+            memory_cleaner::get_memory_info,
+            memory_cleaner::clean_memory,
+            // Hotkeys
+            hotkeys::get_hotkey_config,
+            hotkeys::save_hotkey_config,
+            hotkeys::apply_hotkeys,
             // Watcher / tray commands
             watcher::get_auto_start,
             watcher::set_auto_start,
@@ -204,6 +248,73 @@ pub fn run() {
             watcher::set_auto_optimize,
             watcher::get_active_profile,
             watcher::restore_all,
+            // Rollback Center (Phase 1)
+            rollback::list_sessions,
+            rollback::get_latest_session,
+            rollback::restore_session,
+            rollback::delete_session,
+            rollback::rollback_enabled,
+            rollback::get_session_stats,
+            // Presets (Phase 3-2)
+            presets::list_presets,
+            presets::apply_preset,
+            // Backup
+            backup::export_backup,
+            backup::import_backup,
+            // FPS Monitor
+            fps::get_fps_estimate,
+            // Disk Health
+            disk_health::get_disk_health,
+            // Scheduler
+            scheduler::create_schedule,
+            scheduler::delete_schedule,
+            scheduler::get_schedule,
+            // Clipboard Optimizer
+            clipboard_opt::get_clipboard_status,
+            clipboard_opt::clear_clipboard,
+            clipboard_opt::clean_clipboard_temps,
+            // Game Performance Log
+            game_log::get_game_log,
+            game_log::get_game_stats,
+            game_log::clear_game_log,
+            game_log::delete_game_session,
+            // App Settings / Appearance
+            app_settings::get_appearance,
+            app_settings::save_appearance,
+            // Crash Report
+            crash_report::get_error_log,
+            crash_report::clear_error_log,
+            crash_report::export_crash_report,
+            // Bandwidth Monitor
+            bandwidth::get_bandwidth_snapshot,
+            // Registry Optimizer
+            registry_opt::get_registry_tweaks,
+            registry_opt::apply_registry_tweak,
+            registry_opt::revert_registry_tweak,
+            registry_opt::apply_all_safe_tweaks,
+            // CPU Affinity
+            cpu_affinity::get_process_affinities,
+            cpu_affinity::set_process_affinity,
+            cpu_affinity::reset_process_affinity,
+            // Game Integrity
+            game_integrity::get_steam_games_for_verify,
+            game_integrity::verify_game_files,
+            // Uninstaller
+            uninstaller::get_installed_apps,
+            uninstaller::uninstall_app,
+            // OSD Window
+            osd::show_osd_window,
+            osd::hide_osd_window,
+            osd::is_osd_visible,
+            // Profile Share
+            profile_share::export_profile_share,
+            profile_share::import_profile_share,
+            profile_share::export_all_profiles_share,
+            // Update Check
+            update_check::check_for_updates,
+            update_check::open_release_url,
+            // Performance Report
+            report::generate_performance_report,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

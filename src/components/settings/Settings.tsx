@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check, Copy, FlaskConical } from "lucide-react";
 import { useAppStore, type Theme } from "@/stores/useAppStore";
+import { useWatcherStore } from "@/stores/useWatcherStore";
 import { Toggle } from "@/components/ui/toggle";
 
 // Full default list (mirrors process.rs)
@@ -20,14 +21,8 @@ const DEFAULT_PROCESSES = [
 ];
 
 export function Settings() {
-  const {
-    theme,
-    setTheme,
-    disabledProcesses,
-    setDisabledProcesses,
-    autoOptimize,
-    setAutoOptimize,
-  } = useAppStore();
+  const { theme, setTheme, disabledProcesses, setDisabledProcesses } = useAppStore();
+  const { autoOptimize, setAutoOptimize } = useWatcherStore();
 
   const [autoStart, setAutoStartLocal] = useState(false);
   const [apiKey, setApiKey] = useState("");

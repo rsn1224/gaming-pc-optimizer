@@ -1,8 +1,121 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap, FilePlus, Sparkles } from "lucide-react";
+import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap, FilePlus, Sparkles, ShieldCheck, AlertTriangle, Zap as ZapIcon } from "lucide-react";
 import { useAppStore } from "@/stores/useAppStore";
-import type { GameProfile } from "@/types";
+import { useWatcherStore } from "@/stores/useWatcherStore";
+import type { GameProfile, SimulationResult, PreviewChange, RiskLevel } from "@/types";
+
+// ── Feature flag ──────────────────────────────────────────────────────────────
+// Set to `true` to show a simulation preview before applying any profile.
+// Default: false — handleApply behaves exactly as before when false.
+const ENABLE_PROFILE_PREVIEW = false;
+
+// ── Apply Preview Modal ───────────────────────────────────────────────────────
+
+const RISK_ROW: Record<RiskLevel, { icon: React.ReactNode; label: string; cls: string; rowCls: string }> = {
+  safe:     { icon: <ShieldCheck size={11} />, label: "安全",   cls: "text-emerald-400 border-emerald-500/25 bg-emerald-500/8",  rowCls: "" },
+  caution:  { icon: <AlertTriangle size={11} />, label: "注意", cls: "text-amber-400 border-amber-500/25 bg-amber-500/8",        rowCls: "bg-amber-500/[0.03]" },
+  advanced: { icon: <ZapIcon size={11} />, label: "上級",       cls: "text-red-400 border-red-500/25 bg-red-500/8",             rowCls: "bg-red-500/[0.03]" },
+};
+
+function ChangeRow({ change }: { change: PreviewChange }) {
+  const risk = RISK_ROW[change.risk_level];
+  const fmtVal = (v: unknown) => {
+    if (v === null || v === undefined) return "—";
+    if (typeof v === "boolean") return v ? "有効" : "無効";
+    return String(v);
+  };
+  return (
+    <div className={`flex items-start gap-3 px-4 py-2.5 border-b border-white/[0.04] last:border-0 ${risk.rowCls}`}>
+      <span className={`inline-flex items-center gap-1 text-[10px] font-medium border rounded-full px-1.5 py-0.5 shrink-0 mt-0.5 ${risk.cls}`}>
+        {risk.icon}
+        {risk.label}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-slate-200 truncate">{change.description || change.target}</p>
+        <p className="text-[11px] text-muted-foreground/50 mt-0.5">
+          <span className="text-muted-foreground/40">{fmtVal(change.current_value)}</span>
+          {" → "}
+          <span className="text-cyan-300/70">{fmtVal(change.new_value)}</span>
+        </p>
+      </div>
+      <span className="text-[10px] text-muted-foreground/30 shrink-0">{change.category}</span>
+    </div>
+  );
+}
+
+interface ApplyPreviewModalProps {
+  profileName: string;
+  sim: SimulationResult;
+  applying: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function ApplyPreviewModal({ profileName, sim, applying, onConfirm, onCancel }: ApplyPreviewModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#05080c] border border-white/[0.10] rounded-2xl w-full max-w-lg mx-4 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] shrink-0">
+          <div>
+            <h2 className="font-semibold text-base">適用プレビュー</h2>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">「{profileName}」を適用すると以下が変更されます</p>
+          </div>
+          <button type="button" onClick={onCancel} aria-label="閉じる"
+            className="text-muted-foreground hover:text-foreground transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Risk summary */}
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-white/[0.04] shrink-0">
+          {sim.safe_count > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+              <ShieldCheck size={12} /> 安全 {sim.safe_count}
+            </span>
+          )}
+          {sim.caution_count > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-amber-400">
+              <AlertTriangle size={12} /> 注意 {sim.caution_count}
+            </span>
+          )}
+          {sim.advanced_count > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-red-400">
+              <ZapIcon size={12} /> 上級 {sim.advanced_count}
+            </span>
+          )}
+          {sim.changes.length === 0 && (
+            <span className="text-xs text-muted-foreground/50">変更なし（現在の設定と同じ）</span>
+          )}
+        </div>
+
+        {/* Change list */}
+        <div className="flex-1 overflow-y-auto">
+          {sim.changes.filter((c) => c.will_apply).map((c, i) => (
+            <ChangeRow key={i} change={c} />
+          ))}
+          {sim.changes.filter((c) => c.will_apply).length === 0 && (
+            <p className="text-sm text-muted-foreground/40 text-center py-10">適用される変更はありません</p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-white/[0.06] shrink-0">
+          <button type="button" onClick={onCancel}
+            className="px-4 py-2 rounded-lg text-sm bg-white/5 border border-white/[0.10] hover:bg-white/10 transition-colors">
+            キャンセル
+          </button>
+          <button type="button" onClick={onConfirm} disabled={applying}
+            className="px-4 py-2 rounded-lg text-sm bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-semibold hover:brightness-110 disabled:opacity-50 flex items-center gap-2 active:scale-[0.97] transition-all">
+            {applying && <Loader2 size={14} className="animate-spin" />}
+            {applying ? "適用中…" : "確認して適用"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -471,7 +584,8 @@ function QuickDraftModal({ onSave, onClose }: QuickDraftProps) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function Profiles() {
-  const { activeProfileId, editingProfileId, setEditingProfileId } = useAppStore();
+  const { editingProfileId, setEditingProfileId } = useAppStore();
+  const { activeProfileId } = useWatcherStore();
   const [profiles, setProfiles] = useState<GameProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<Partial<GameProfile> | null>(null);
@@ -480,6 +594,10 @@ export function Profiles() {
   const [quickDraft, setQuickDraft] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiLog, setAiLog] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  // [PROFILE PREVIEW] Preview modal state (only used when ENABLE_PROFILE_PREVIEW is ON)
+  const [preview, setPreview] = useState<{ id: string; name: string; sim: SimulationResult } | null>(null);
+  const [simulatingId, setSimulatingId] = useState<string | null>(null);
 
   const reload = async () => {
     try {
@@ -515,6 +633,27 @@ export function Profiles() {
   };
 
   const handleApply = async (id: string) => {
+    // [PROFILE PREVIEW] When flag is ON, show simulation before applying
+    if (ENABLE_PROFILE_PREVIEW) {
+      setSimulatingId(id);
+      setApplyLog(null);
+      try {
+        const sim = await invoke<SimulationResult>("simulate_profile", { id });
+        const prof = profiles.find((p) => p.id === id);
+        setPreview({ id, name: prof?.name ?? id, sim });
+      } catch (e) {
+        // Simulation failed — fall through to direct apply
+        setApplyLog({ id, log: `シミュレーション失敗 (${e})、直接適用します`, ok: false });
+        await applyDirect(id);
+      } finally {
+        setSimulatingId(null);
+      }
+      return;
+    }
+    await applyDirect(id);
+  };
+
+  const applyDirect = async (id: string) => {
     setApplyingId(id);
     setApplyLog(null);
     try {
@@ -525,6 +664,13 @@ export function Profiles() {
     } finally {
       setApplyingId(null);
     }
+  };
+
+  const handleConfirmApply = async () => {
+    if (!preview) return;
+    const id = preview.id;
+    setPreview(null);
+    await applyDirect(id);
   };
 
   const handleSave = (p: GameProfile) => {
@@ -651,7 +797,7 @@ export function Profiles() {
               onEdit={() => setModal(p)}
               onDelete={() => handleDelete(p.id)}
               onApply={() => handleApply(p.id)}
-              applying={applyingId === p.id}
+              applying={applyingId === p.id || simulatingId === p.id}
               isActive={activeProfileId === p.id}
             />
           ))}
@@ -670,6 +816,17 @@ export function Profiles() {
         <QuickDraftModal
           onSave={(p) => { handleSave(p); setQuickDraft(false); }}
           onClose={() => setQuickDraft(false)}
+        />
+      )}
+
+      {/* [PROFILE PREVIEW] Apply confirmation modal (only when flag is ON) */}
+      {ENABLE_PROFILE_PREVIEW && preview && (
+        <ApplyPreviewModal
+          profileName={preview.name}
+          sim={preview.sim}
+          applying={applyingId === preview.id}
+          onConfirm={handleConfirmApply}
+          onCancel={() => setPreview(null)}
         />
       )}
     </div>

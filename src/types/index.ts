@@ -124,6 +124,7 @@ export interface NetworkRecommendation {
   dns_preset: DnsPreset | "current";
   explanation: string;
   apply_network_gaming: boolean;
+  confidence: number; // 0–100
 }
 
 export interface DiscoveredGame {
@@ -148,6 +149,7 @@ export interface GameProfile {
   // NOTE: future game_id?: string goes here when 1-game:N-profiles is needed
   recommended_mode?: "competitive" | "balanced" | "quality";
   recommended_reason?: string;
+  recommended_confidence?: number; // 0–100
   launcher?: string; // "steam" | "epic" | "battlenet" | "custom"
   steam_app_id?: string;
 }
@@ -164,6 +166,7 @@ export interface AiUpdatePriority {
   id: string;
   priority: "critical" | "recommended" | "optional" | "skip";
   reason: string;
+  confidence: number; // 0–100
 }
 
 export interface DriverInfo {
@@ -210,11 +213,13 @@ export interface AiHardwareMode {
   mode: "performance" | "balanced" | "efficiency";
   reason: string;
   suggested_power_limit_percent: number;
+  confidence: number; // 0–100
 }
 
 export interface AiWindowsRecommendation {
   preset_id: string; // "default" | "gaming" | "balanced"
   explanation: string;
+  confidence: number; // 0–100
 }
 
 export interface AiStorageItem {
@@ -223,7 +228,152 @@ export interface AiStorageItem {
   reason: string;
 }
 
-export type ActivePage = "dashboard" | "gamemode" | "windows" | "storage" | "network" | "profiles" | "games" | "settings" | "updates" | "hardware";
+export type ActivePage = "dashboard" | "dashboardv2" | "gamemode" | "presets" | "process" | "windows" | "storage" | "network" | "games" | "profiles" | "gamelog" | "advisor" | "gameintegrity" | "hardware" | "benchmark" | "startup" | "scheduler" | "uninstaller" | "updates" | "rollback" | "notifications" | "settings";
+
+export interface AppearanceSettings {
+  accent_color: string;
+  font_size: string;
+  sidebar_compact: boolean;
+  animations_enabled: boolean;
+}
+
+export interface ErrorEntry {
+  id: string;
+  timestamp: number;
+  command: string;
+  error_message: string;
+  context: string;
+}
+
+export interface BandwidthSnapshot {
+  timestamp: number;
+  download_kbps: number;
+  upload_kbps: number;
+  total_received_mb: number;
+  total_sent_mb: number;
+  active_interface: string;
+}
+
+export interface FpsEstimate {
+  estimated_fps: number;
+  game_process: string;
+  cpu_percent: number;
+  is_detecting: boolean;
+}
+
+export interface DiskInfo {
+  caption: string;
+  status: string;
+  media_type: string;
+  size_gb: number;
+  serial: string;
+  health_score: number;
+}
+
+export interface DiskHealthReport {
+  disks: DiskInfo[];
+  smart_available: boolean;
+  overall_health: string;
+  recommendations: string[];
+}
+
+export interface ScheduleConfig {
+  enabled: boolean;
+  trigger: string;
+  time: string;
+  day_of_week: number;
+  preset: string;
+  run_as_admin: boolean;
+}
+
+export interface ScheduledTask {
+  name: string;
+  next_run: string;
+  last_run: string;
+  status: string;
+  enabled: boolean;
+}
+
+export interface PowerPlanInfo {
+  guid: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface StartupEntry {
+  name: string;
+  command: string;
+  source: string;
+  enabled: boolean;
+}
+
+export interface TempSnapshot {
+  timestamp: number;
+  gpu_temp_c: number;
+  cpu_temp_c: number;
+}
+
+// ── Rollback Center (Phase 1) ────────────────────────────────────────────────
+
+export type RiskLevel = "safe" | "caution" | "advanced";
+export type SessionMode = "real" | "sim";
+export type SessionStatus = "applied" | "restored" | "partial_restore" | "failed";
+
+export interface ChangeRecord {
+  category: string;
+  target: string;
+  before: unknown;
+  after: unknown;
+  risk_level: RiskLevel;
+  applied: boolean;
+}
+
+export interface SystemSnapshot {
+  power_plan_guid: string | null;
+  windows_settings: unknown | null;
+  network_settings: unknown | null;
+  captured_at: string;
+}
+
+export interface SessionMetrics {
+  process_count: number;
+  memory_used_mb: number;
+  memory_total_mb: number;
+  memory_percent: number;
+  captured_at: string;
+}
+
+export interface OptimizationSession {
+  id: string;
+  started_at: string;
+  ended_at: string | null;
+  profile_id: string | null;
+  mode: SessionMode;
+  status: SessionStatus;
+  snapshot: SystemSnapshot;
+  changes: ChangeRecord[];
+  summary: unknown | null;
+  metrics_before: SessionMetrics | null;
+  metrics_after: SessionMetrics | null;
+}
+
+export interface PreviewChange {
+  category: string;
+  target: string;
+  current_value: unknown;
+  new_value: unknown;
+  risk_level: RiskLevel;
+  will_apply: boolean;
+  description: string;
+}
+
+export interface SimulationResult {
+  changes: PreviewChange[];
+  safe_count: number;
+  caution_count: number;
+  advanced_count: number;
+  session_id: string;
+}
 
 // export_profiles_context response shape
 export interface ProfilesContextProfile {
@@ -263,6 +413,225 @@ export interface ProfilesContext {
   profiles: ProfilesContextProfile[];
 }
 
+// ── Presets (Phase 3-2) ──────────────────────────────────────────────────────
+
+export type PresetKind = "esports" | "streaming" | "quiet";
+
+export interface PresetInfo {
+  id: PresetKind;
+  name: string;
+  description: string;
+  tags: string[];
+  risk_level: RiskLevel;
+  steps: string[];
+}
+
+export interface PresetResult {
+  preset: string;
+  process_killed: number;
+  process_freed_mb: number;
+  power_plan_set: boolean;
+  windows_applied: boolean;
+  network_applied: boolean;
+  errors: string[];
+}
+
+// ── Session statistics ────────────────────────────────────────────────────────
+
+export interface SessionStats {
+  total_sessions: number;
+  total_processes_killed: number;
+  total_memory_freed_mb: number;
+  best_memory_freed_mb: number;
+  last_session_at: string | null;
+}
+
+// ── Optimization Score ────────────────────────────────────────────────────────
+
+export interface OptimizationScore {
+  /** Weighted overall score: process×30 + power×20 + windows×25 + network×25 */
+  overall: number;
+  /** 100 minus the fraction of known bloatware currently running */
+  process: number;
+  /** 100 if a high-performance power plan is active, else 0 */
+  power: number;
+  /** Sub-score based on game_dvr, visual_fx, transparency, menu delay */
+  windows: number;
+  /** Sub-score based on throttling, Nagle, system responsiveness */
+  network: number;
+  /** Number of bloatware processes currently running */
+  bloatware_running: number;
+}
+
+// ── Score History ─────────────────────────────────────────────────────────────
+
+export interface ScoreSnapshot {
+  /** Unix epoch seconds */
+  timestamp: number;
+  overall: number;
+  process: number;
+  power: number;
+  windows: number;
+  network: number;
+}
+
+// ── Game Settings Advisor ─────────────────────────────────────────────────────
+
+export interface GameSettingItem {
+  category: string;
+  recommended: string;
+  reason: string;
+}
+
+export interface GameSettingsAdvice {
+  game_name: string;
+  /** "最高" | "高" | "中" | "低" */
+  overall_preset: string;
+  /** "144+" | "60+" | "30以上" */
+  target_fps: string;
+  settings: GameSettingItem[];
+  notes: string;
+  confidence: number;
+}
+
+// ── Event Log ──────────────────────────────────────────────────────────────────
+
+export interface EventEntry {
+  id: string;
+  timestamp: number;
+  event_type: string;
+  title: string;
+  detail: string;
+  icon_kind: string;
+}
+
+// ── Benchmark ─────────────────────────────────────────────────────────────────
+
+export interface BenchmarkResult {
+  cpu_score: number;
+  memory_score: number;
+  disk_score: number;
+  total_score: number;
+  cpu_ms: number;
+  memory_ms: number;
+  disk_ms: number;
+}
+
+// ── Clipboard Optimizer ──────────────────────────────────────────────────────
+
+export interface ClipboardStatus {
+  has_content: boolean;
+  content_type: string; // "text" | "image" | "files" | "empty" | "unknown"
+  size_estimate_kb: number;
+  temp_files_mb: number;
+  temp_file_count: number;
+}
+
+export interface ClipboardCleanResult {
+  clipboard_cleared: boolean;
+  temp_freed_mb: number;
+  files_removed: number;
+}
+
+// ── Game Performance Log ─────────────────────────────────────────────────────
+
+export interface GameSession {
+  id: string;
+  game_name: string;
+  profile_id: string;
+  started_at: number;
+  ended_at: number | null;
+  duration_minutes: number | null;
+  score_before: number | null;
+  score_after: number | null;
+  memory_freed_mb: number;
+}
+
+export interface GameStats {
+  game_name: string;
+  total_sessions: number;
+  total_hours: number;
+  avg_score: number;
+  last_played: number;
+}
+
+// ── Memory Cleaner ────────────────────────────────────────────────────────────
+
+export interface MemoryCleanResult {
+  freed_mb: number;
+  before_used_mb: number;
+  after_used_mb: number;
+  before_percent: number;
+  after_percent: number;
+  method: string;
+}
+
+// ── GPU Power Limit ───────────────────────────────────────────────────────────
+
+export interface GpuPowerLimit {
+  current_w: number;
+  default_w: number;
+  min_w: number;
+  max_w: number;
+}
+
+// ── Hotkey Config ─────────────────────────────────────────────────────────────
+
+export interface HotkeyConfig {
+  toggle_game_mode: string;
+  open_app: string;
+  quick_clean: string;
+  toggle_overlay: string;
+}
+
+// ── Registry Optimizer ───────────────────────────────────────────────────────
+
+export interface RegTweak {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  risk_level: string;
+  current_value: string;
+  recommended_value: string;
+  is_applied: boolean;
+  hive: string;
+  key_path: string;
+  value_name: string;
+  value_type: string;
+  value_data: string;
+}
+
+export interface RegTweakResult {
+  applied: string[];
+  failed: string[];
+}
+
+// ── CPU Affinity ─────────────────────────────────────────────────────────────
+
+export interface ProcessAffinityInfo {
+  pid: number;
+  name: string;
+  affinity_mask: number;
+  cpu_count: number;
+  using_all_cores: boolean;
+}
+
+// ── App Uninstaller ──────────────────────────────────────────────────────────
+
+export interface InstalledApp {
+  display_name: string;
+  publisher: string;
+  install_date: string;
+  display_version: string;
+  install_location: string;
+  size_mb: number;
+  uninstall_string: string;
+  quiet_uninstall: string;
+  registry_key: string;
+  is_system: boolean;
+}
+
 // ── All-in-one optimizer ────────────────────────────────────────────────────
 
 export interface AllOptimizationResult {
@@ -272,4 +641,24 @@ export interface AllOptimizationResult {
   windows_applied: boolean;
   network_applied: boolean;
   errors: string[];
+}
+
+// ── Update Check ─────────────────────────────────────────────────────────────
+
+export interface UpdateInfo {
+  current_version: string;
+  latest_version: string;
+  release_url: string;
+  release_notes: string;
+  has_update: boolean;
+  checked_at: number;
+}
+
+// ── Profile Share ─────────────────────────────────────────────────────────────
+
+export interface SharedProfile {
+  schema: string;
+  exported_at: string;
+  profile: GameProfile;
+  system_hint: string;
 }
