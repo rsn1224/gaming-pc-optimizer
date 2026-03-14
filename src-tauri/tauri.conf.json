@@ -35,5 +35,13 @@
       "icons/128x128@2x.png",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIyN0JCMjQ3RDc4QUYxM0MKUldRODhZclhSN0o3c29nZFB4UGtNQldPUmszaGZWY3AxS1VwNS9VNGRZRVFHZzdvNE8xbmYvZUcK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/rsn1224/gaming-pc-optimizer/main/latest.json"
+      ]
+    }
   }
 }
