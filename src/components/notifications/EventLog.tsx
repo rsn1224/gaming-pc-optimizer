@@ -66,9 +66,11 @@ export function EventLog() {
   const [events, setEvents] = useState<EventEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [confirmingClear, setConfirmingClear] = useState(false);
 
   const load = () => {
     setLoading(true);
+    setConfirmingClear(false);
     invoke<EventEntry[]>("get_event_log")
       .then(setEvents)
       .catch(console.error)
@@ -78,9 +80,9 @@ export function EventLog() {
   useEffect(() => { load(); }, []);
 
   const handleClear = async () => {
-    if (!window.confirm("イベントログをすべて削除しますか？")) return;
     await invoke("clear_event_log").catch(console.error);
     setEvents([]);
+    setConfirmingClear(false);
   };
 
   const filterTypes = ["all", "optimization_run", "profile_applied", "preset_applied", "restore", "error"];
@@ -113,15 +115,35 @@ export function EventLog() {
             >
               <RefreshCw size={13} className="text-muted-foreground/60" />
             </button>
-            <button
-              type="button"
-              onClick={handleClear}
-              disabled={events.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] hover:bg-red-500/10 hover:border-red-500/20 text-[12px] text-muted-foreground/60 hover:text-red-400 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <Trash2 size={12} />
-              クリア
-            </button>
+            {!confirmingClear ? (
+              <button
+                type="button"
+                onClick={() => setConfirmingClear(true)}
+                disabled={events.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] hover:bg-red-500/10 hover:border-red-500/20 text-[12px] text-muted-foreground/60 hover:text-red-400 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Trash2 size={12} />
+                クリア
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-amber-400/80">全件削除しますか？</span>
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="px-2.5 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[11px] font-semibold hover:bg-red-500/30 transition-colors"
+                >
+                  削除
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingClear(false)}
+                  className="px-2.5 py-1 rounded-lg border border-white/[0.10] text-muted-foreground text-[11px] hover:bg-white/[0.05] transition-colors"
+                >
+                  キャンセル
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

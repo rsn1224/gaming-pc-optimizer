@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useSafetyStore } from "@/stores/useSafetyStore";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { toast } from "@/stores/useToastStore";
+import { toUserMessage } from "@/lib/errorMessages";
 import type { OptimizationSession, SessionStatus, SessionMetrics, AuditLogEntry } from "@/types";
 import { TelemetryViewer } from "@/components/ui/TelemetryViewer";
 
@@ -311,6 +312,7 @@ export function RollbackCenter() {
   const { sessions, setSessions, loading, setLoading, rollbackEnabled, setRollbackEnabled, beginnerMode, setBeginnerMode } =
     useSafetyStore();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<{ id: string; message: string } | null>(null);
 
   async function loadSessions() {
     setLoading(true);
@@ -332,12 +334,17 @@ export function RollbackCenter() {
 
   async function handleRestore(id: string) {
     setConfirmingId(null);
+    setRestoreError(null);
     try {
       await invoke("restore_session", { id });
       toast.success("セッションを復元しました");
       loadSessions();
     } catch (e) {
-      toast.error(`復元に失敗しました — 再度お試しいただくか、トレイの「すべて元に戻す」をお使いください`);
+      const msg = toUserMessage(
+        e,
+        "復元に失敗しました。再度お試しいただくか、トレイの「すべて元に戻す」をお使いください。"
+      );
+      setRestoreError({ id, message: msg });
       console.error("[RollbackCenter] restore_session:", e);
     }
   }
@@ -467,6 +474,25 @@ export function RollbackCenter() {
               onConfirmCancel={() => setConfirmingId(null)}
             />
           ))}
+
+        {/* Inline restore error with retry */}
+        {restoreError && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300">
+            <XCircle size={15} className="shrink-0 mt-0.5 text-red-400" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-semibold leading-snug">復元エラー</p>
+              <p className="text-[11px] text-red-400/70 mt-0.5">{restoreError.message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleRestore(restoreError.id)}
+              className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[11px] font-semibold hover:bg-red-500/30 transition-colors"
+            >
+              <RotateCcw size={11} />
+              再試行
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

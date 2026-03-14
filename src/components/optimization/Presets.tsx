@@ -62,11 +62,17 @@ function PresetCard({
   preset,
   applying,
   lastApplied,
+  isConfirming,
+  onConfirmStart,
+  onConfirmCancel,
   onApply,
 }: {
   preset: PresetInfo;
   applying: string | null;
   lastApplied: string | null;
+  isConfirming: boolean;
+  onConfirmStart: () => void;
+  onConfirmCancel: () => void;
   onApply: (id: string) => void;
 }) {
   const accent = ACCENT[preset.id] ?? ACCENT.esports;
@@ -140,30 +146,56 @@ function PresetCard({
         ))}
       </ul>
 
-      {/* Apply button */}
-      <button
-        type="button"
-        onClick={() => onApply(preset.id)}
-        disabled={disabled}
-        className={cn(
-          "mt-auto w-full py-2.5 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 transition-all",
-          accent.btn,
-          !disabled && accent.btnHover,
-          disabled && "opacity-40 cursor-not-allowed"
-        )}
-      >
-        {isApplying ? (
-          <>
-            <Loader2 size={14} className="animate-spin" />
-            適用中...
-          </>
-        ) : (
-          <>
-            <PresetIcon id={preset.id} size={14} />
-            このプリセットを適用
-          </>
-        )}
-      </button>
+      {/* Apply button / inline confirmation */}
+      {isConfirming ? (
+        <div className="mt-auto flex flex-col gap-2">
+          <p className="text-[12px] text-amber-400/90 text-center">
+            {preset.risk_level === "advanced"
+              ? `「${preset.name}」を適用します。ネットワークレジストリも変更されます（管理者権限が必要）。`
+              : `「${preset.name}」を適用しますか？`}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onApply(preset.id)}
+              className="flex-1 py-2 rounded-xl text-[13px] font-bold bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 transition-colors"
+            >
+              適用する
+            </button>
+            <button
+              type="button"
+              onClick={onConfirmCancel}
+              className="flex-1 py-2 rounded-xl text-[13px] border border-white/[0.10] text-muted-foreground hover:bg-white/[0.05] transition-colors"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onConfirmStart}
+          disabled={disabled}
+          className={cn(
+            "mt-auto w-full py-2.5 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 transition-all",
+            accent.btn,
+            !disabled && accent.btnHover,
+            disabled && "opacity-40 cursor-not-allowed"
+          )}
+        >
+          {isApplying ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              適用中...
+            </>
+          ) : (
+            <>
+              <PresetIcon id={preset.id} size={14} />
+              このプリセットを適用
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -176,6 +208,7 @@ export function Presets() {
   const [applying, setApplying] = useState<string | null>(null);
   const [lastApplied, setLastApplied] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<PresetResult | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   useEffect(() => {
     invoke<PresetInfo[]>("list_presets").then(setPresets).catch(console.error);
@@ -185,13 +218,7 @@ export function Presets() {
     const preset = presets.find((p) => p.id === id);
     if (!preset) return;
 
-    const confirmMsg =
-      preset.risk_level === "advanced"
-        ? `「${preset.name}」を適用します。\nネットワークレジストリも変更されます（管理者権限が必要）。\n続行しますか？`
-        : `「${preset.name}」を適用しますか？`;
-
-    if (!window.confirm(confirmMsg)) return;
-
+    setConfirmingId(null);
     setApplying(id);
     try {
       const result = await invoke<PresetResult>("apply_preset", { preset: id });
@@ -210,7 +237,9 @@ export function Presets() {
         );
       }
     } catch (e) {
-      toast.error(`プリセット適用失敗: ${e}`);
+      const { toUserMessage } = await import("@/lib/errorMessages");
+      toast.error(toUserMessage(e, `プリセット「${preset.name}」の適用に失敗しました。`));
+      console.error("[Presets] apply_preset:", e);
     } finally {
       setApplying(null);
     }
@@ -253,6 +282,9 @@ export function Presets() {
               preset={p}
               applying={applying}
               lastApplied={lastApplied}
+              isConfirming={confirmingId === p.id}
+              onConfirmStart={() => setConfirmingId(p.id)}
+              onConfirmCancel={() => setConfirmingId(null)}
               onApply={handleApply}
             />
           ))}
