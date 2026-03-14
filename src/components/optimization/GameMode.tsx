@@ -235,6 +235,7 @@ export function GameMode() {
   const [isChecking, setIsChecking] = useState(false);
   const [preCheckResult, setPreCheckResult] = useState<PreCheckResult | null>(null);
   const [showPreCheckModal, setShowPreCheckModal] = useState(false);
+  const [failedStepCount, setFailedStepCount] = useState(0);
   // S4-04: apply plan preview
   const [applyPlan, setApplyPlan] = useState<ApplyPlan | null>(null);
   const [steps, setSteps] = useState<OptimizationStep[]>([
@@ -339,6 +340,7 @@ export function GameMode() {
   const executeOptimization = async () => {
     setShowPreCheckModal(false);
     setIsOptimizing(true);
+    setFailedStepCount(0);
     setMetricsBefore(null);
     setMetricsAfter(null);
     setScoreBefore(null);
@@ -414,6 +416,12 @@ export function GameMode() {
         setScoreAfter(s.overall);
       } catch { /* ignore */ }
     }
+    // 失敗ステップ数を記録（ロールバック誘導バナー用）
+    setSteps((prev) => {
+      const errors = prev.filter((s) => s.status === "error").length;
+      setFailedStepCount(errors);
+      return prev;
+    });
     setGameModeActive(true);
     setIsOptimizing(false);
   };
@@ -564,6 +572,21 @@ export function GameMode() {
                   ({scoreAfter >= scoreBefore ? "+" : ""}{scoreAfter - scoreBefore} pts)
                 </span>
               </span>
+            </div>
+          )}
+
+          {/* 失敗ステップがある場合の復元誘導バナー */}
+          {failedStepCount > 0 && gameModeActive && (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300">
+              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-semibold leading-snug">
+                  {failedStepCount} ステップが失敗しました
+                </p>
+                <p className="text-[11px] text-amber-400/70 mt-0.5">
+                  一部の最適化が適用できませんでした。元の状態に戻すには「設定を復元」を押してください。
+                </p>
+              </div>
             </div>
           )}
 

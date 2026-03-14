@@ -130,10 +130,16 @@ function SessionRow({
   session,
   onRestore,
   onDelete,
+  isConfirming,
+  onConfirmStart,
+  onConfirmCancel,
 }: {
   session: OptimizationSession;
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
+  isConfirming: boolean;
+  onConfirmStart: () => void;
+  onConfirmCancel: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [auditEntries, setAuditEntries] = useState<AuditLogEntry[]>([]);
@@ -181,23 +187,44 @@ function SessionRow({
         </div>
 
         <div className="flex items-center gap-2">
-          {canRestore && (
+          {canRestore && !isConfirming && (
             <button
               type="button"
-              onClick={() => onRestore(session.id)}
+              onClick={onConfirmStart}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[12px] font-medium hover:bg-cyan-500/20 transition-colors"
             >
               <RotateCcw size={12} />
               復元
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => onDelete(session.id)}
-            className="p-1.5 rounded-lg text-muted-foreground/55 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-          >
-            <Trash2 size={13} />
-          </button>
+          {canRestore && isConfirming && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-amber-400/80">本当に復元しますか？</span>
+              <button
+                type="button"
+                onClick={() => onRestore(session.id)}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 text-[11px] font-semibold hover:bg-amber-500/30 transition-colors"
+              >
+                実行
+              </button>
+              <button
+                type="button"
+                onClick={onConfirmCancel}
+                className="px-2.5 py-1 rounded-lg border border-white/[0.10] text-muted-foreground text-[11px] hover:bg-white/[0.05] transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
+          )}
+          {!isConfirming && (
+            <button
+              type="button"
+              onClick={() => onDelete(session.id)}
+              className="p-1.5 rounded-lg text-muted-foreground/55 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -283,6 +310,7 @@ function SessionRow({
 export function RollbackCenter() {
   const { sessions, setSessions, loading, setLoading, rollbackEnabled, setRollbackEnabled, beginnerMode, setBeginnerMode } =
     useSafetyStore();
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   async function loadSessions() {
     setLoading(true);
@@ -290,7 +318,8 @@ export function RollbackCenter() {
       const data = await invoke<OptimizationSession[]>("list_sessions");
       setSessions(data);
     } catch (e) {
-      toast.error(`セッション読み込み失敗: ${e}`);
+      toast.error(`セッション一覧の取得に失敗しました（詳細はログを確認）`);
+      console.error("[RollbackCenter] list_sessions:", e);
     } finally {
       setLoading(false);
     }
@@ -302,16 +331,14 @@ export function RollbackCenter() {
   }, []);
 
   async function handleRestore(id: string) {
-    const confirmed = window.confirm(
-      "このセッションの状態に復元しますか？\n現在の設定が上書きされます。"
-    );
-    if (!confirmed) return;
+    setConfirmingId(null);
     try {
       await invoke("restore_session", { id });
       toast.success("セッションを復元しました");
       loadSessions();
     } catch (e) {
-      toast.error(`復元失敗: ${e}`);
+      toast.error(`復元に失敗しました — 再度お試しいただくか、トレイの「すべて元に戻す」をお使いください`);
+      console.error("[RollbackCenter] restore_session:", e);
     }
   }
 
@@ -320,7 +347,8 @@ export function RollbackCenter() {
       await invoke("delete_session", { id });
       setSessions(sessions.filter((s) => s.id !== id));
     } catch (e) {
-      toast.error(`削除失敗: ${e}`);
+      toast.error(`セッションの削除に失敗しました`);
+      console.error("[RollbackCenter] delete_session:", e);
     }
   }
 
@@ -434,6 +462,9 @@ export function RollbackCenter() {
               session={s}
               onRestore={handleRestore}
               onDelete={handleDelete}
+              isConfirming={confirmingId === s.id}
+              onConfirmStart={() => setConfirmingId(s.id)}
+              onConfirmCancel={() => setConfirmingId(null)}
             />
           ))}
       </div>
