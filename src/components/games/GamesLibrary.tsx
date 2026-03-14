@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Library, Loader2, Sparkles, ScanLine, Thermometer, Gauge, Clock, StopCircle } from "lucide-react";
+import { Library, Loader2, Sparkles, ScanLine, Thermometer, Gauge, Clock, StopCircle, Gamepad2 as GamepadIcon } from "lucide-react";
 import { useAppStore } from "@/stores/useAppStore";
 import { useEditingStore } from "@/stores/useEditingStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
-import type { GameProfile, OptimizationScore, TempSnapshot, FpsEstimate, AiHardwareMode } from "@/types";
+import type { GameProfile, OptimizationScore, TempSnapshot, FpsEstimate, AiHardwareMode, MultiLauncherScanResult } from "@/types";
 import { GameCard } from "./GameCard";
 import { GameFilters } from "./GameFilters";
 
@@ -23,6 +23,10 @@ const ENABLE_HARDWARE_SUGGESTIONS = false;
 // Profile editing is delegated exclusively to the Profiles page.
 // Default: false — existing inline mode selector is unchanged when false.
 const ENABLE_PROFILE_SSOT = false;
+
+// Set to `true` to enable Epic / GOG / Xbox Game Pass scan button.
+// Default: false — Steam-only scan is unchanged when false.
+const ENABLE_MULTI_LAUNCHER = false;
 
 // ── Hardware suggestion helpers ────────────────────────────────────────────────
 
@@ -372,6 +376,70 @@ export function GamesLibrary() {
     }
   };
 
+  // ── Multi-launcher scan (ENABLE_MULTI_LAUNCHER) ──────────────────────────────
+
+  const handleMultiLauncherScan = async () => {
+    setScanning(true);
+    setScanPhase("scanning");
+    setScanLog(null);
+
+    let result: MultiLauncherScanResult;
+    try {
+      result = await invoke<MultiLauncherScanResult>("discover_and_create_launcher_drafts");
+      setProfiles(result.profiles);
+    } catch (e) {
+      setScanLog({ msg: String(e), ok: false });
+      setScanning(false);
+      setScanPhase("idle");
+      return;
+    }
+
+    const { epicFound, gogFound, xboxFound, totalAdded } = result;
+
+    if (totalAdded === 0) {
+      const parts = [];
+      if (epicFound > 0) parts.push(`Epic: ${epicFound}`);
+      if (gogFound > 0) parts.push(`GOG: ${gogFound}`);
+      if (xboxFound > 0) parts.push(`Xbox: ${xboxFound}`);
+      const detail = parts.length > 0 ? `（${parts.join(" / ")}）` : "";
+      setScanLog({ msg: `新しいゲームは見つかりませんでした${detail}`, ok: true });
+      setScanning(false);
+      setScanPhase("idle");
+      return;
+    }
+
+    // Auto-run AI tuning if API key is set
+    const apiKey = await invoke<string>("get_ai_api_key").catch(() => "");
+    if (!apiKey) {
+      setScanLog({
+        msg: `${totalAdded} 件追加（Epic: ${epicFound} / GOG: ${gogFound} / Xbox: ${xboxFound}）。APIキーを設定するとAI自動チューニングが使えます。`,
+        ok: true,
+      });
+      setScanning(false);
+      setScanPhase("idle");
+      return;
+    }
+
+    setScanPhase("tuning");
+    try {
+      const tuned = await invoke<GameProfile[]>("generate_ai_recommendations");
+      setProfiles(tuned);
+      const filled = tuned.filter((p) => p.recommended_mode).length;
+      setScanLog({
+        msg: `${totalAdded} 件追加（Epic: ${epicFound} / GOG: ${gogFound} / Xbox: ${xboxFound}）→ AI が ${filled} 件をチューニングしました`,
+        ok: true,
+      });
+    } catch (e) {
+      setScanLog({
+        msg: `${totalAdded} 件追加（AIチューニング失敗: ${e}）`,
+        ok: false,
+      });
+    } finally {
+      setScanning(false);
+      setScanPhase("idle");
+    }
+  };
+
   const handleAiTuning = async () => {
     setScanning(true);
     setScanPhase("tuning");
@@ -496,6 +564,24 @@ export function GamesLibrary() {
             )}
             {scanLabel === "AIチューニング中…" ? "Steamスキャン" : scanLabel}
           </button>
+
+          {/* [MULTI_LAUNCHER] Epic / GOG / Xbox scan button */}
+          {ENABLE_MULTI_LAUNCHER && (
+            <button
+              type="button"
+              onClick={handleMultiLauncherScan}
+              disabled={scanning}
+              aria-label="Epic / GOG / Xbox スキャン"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/[0.10] text-sm font-medium hover:bg-white/10 hover:text-foreground disabled:opacity-50 transition-colors text-muted-foreground"
+            >
+              {scanning && scanPhase === "scanning" ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <GamepadIcon size={14} />
+              )}
+              Epic / GOG / Xbox
+            </button>
+          )}
 
           {/* [PROFILE_SSOT] AI tuning hidden when SSOT is ON — editing goes through Profiles page */}
           {!ENABLE_PROFILE_SSOT && hasDrafts && (

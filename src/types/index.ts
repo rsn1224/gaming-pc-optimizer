@@ -1023,6 +1023,16 @@ export interface TournamentResult {
   checkedAt: string;
 }
 
+// ── Multi-launcher: Epic / GOG / Xbox (ENABLE_MULTI_LAUNCHER) ────────────────
+
+export interface MultiLauncherScanResult {
+  epicFound: number;
+  gogFound: number;
+  xboxFound: number;
+  totalAdded: number;
+  profiles: GameProfile[];
+}
+
 // ── Frametime / Perf Monitor (ENABLE_FRAMETIME_OVERLAY) ──────────────────────
 
 export interface PerfSnapshot {

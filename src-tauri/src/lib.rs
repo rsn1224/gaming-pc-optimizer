@@ -4,7 +4,7 @@ pub use error::AppError;
 
 use commands::{
     ai, app_settings, audit_log, backup, bandwidth, benchmark, benchmark_history, clipboard_opt,
-    cpu_affinity, display_optimizer, frametime_monitor,
+    cpu_affinity, display_optimizer, frametime_monitor, launcher,
     crash_report, disk_health, event_log, fps, game_integrity, game_log, hardware,
     hardware_suggestions, hotkeys, icons, memory_cleaner, metrics, network, optimizer,
     optimizer_graph, osd, policy, power, presets, process, profile_share, profiles,
@@ -370,6 +370,8 @@ pub fn run() {
             recommendation::get_recommendation_metrics,
             // Tournament Checklist (ENABLE_TOURNAMENT_MODE)
             tournament::run_tournament_checklist,
+            // Multi-launcher: Epic / GOG / Xbox (ENABLE_MULTI_LAUNCHER)
+            launcher::discover_and_create_launcher_drafts,
             // Frametime / Perf Monitor (ENABLE_FRAMETIME_OVERLAY)
             frametime_monitor::start_frametime_monitor,
             frametime_monitor::stop_frametime_monitor,
