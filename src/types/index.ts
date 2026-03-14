@@ -672,6 +672,94 @@ export interface UpdateInfo {
   checked_at: number;
 }
 
+// ── V2: Optimization Graph ────────────────────────────────────────────────────
+
+export type OptimizationCategory =
+  | "process"
+  | "power"
+  | "windows"
+  | "network"
+  | "storage"
+  | "registry";
+
+export interface OptimizationNode {
+  id: string;
+  name: string;
+  description: string;
+  category: OptimizationCategory;
+  /** 推定スコア改善量 (0–100 相対値) */
+  estimated_impact: number;
+  requires_admin: boolean;
+  reversible: boolean;
+}
+
+export type EdgeType = "requires" | "conflicts" | "suggests";
+
+export interface OptimizationEdge {
+  from: string;
+  to: string;
+  edge_type: EdgeType;
+}
+
+export interface OptimizationGraph {
+  nodes: OptimizationNode[];
+  edges: OptimizationEdge[];
+}
+
+export interface ConflictInfo {
+  node_a: string;
+  node_b: string;
+  reason: string;
+}
+
+export interface ApplyPlan {
+  /** 依存解決済みの適用順 */
+  order: string[];
+  /** 競合のため除外されたペア */
+  conflicts: ConflictInfo[];
+  /** SUGGESTS で追加推奨されたノード */
+  suggestions: string[];
+}
+
+// ── V2: Policy Engine ─────────────────────────────────────────────────────────
+
+export type TriggerKind =
+  | "on_game_start"
+  | "on_schedule"
+  | "on_score_below"
+  | "on_manual";
+
+export interface PolicyTrigger {
+  kind: TriggerKind;
+  /** on_score_below: 閾値 (0–100) */
+  threshold?: number;
+  /** on_schedule: cron 式 */
+  cron?: string;
+}
+
+export type PolicyActionKind =
+  | "apply_preset"
+  | "kill_bloatware"
+  | "set_power_plan"
+  | "apply_graph_nodes";
+
+export interface PolicyAction {
+  kind: PolicyActionKind;
+  /** apply_preset の preset_id, set_power_plan の plan name など */
+  params: Record<string, string>;
+}
+
+export interface Policy {
+  id: string;
+  name: string;
+  enabled: boolean;
+  priority: number;
+  trigger: PolicyTrigger;
+  action: PolicyAction;
+  last_fired_at: string | null;
+  fire_count: number;
+}
+
 // ── V2: Safety Kernel ─────────────────────────────────────────────────────────
 
 /** Safety Kernel が遷移するフェーズ */

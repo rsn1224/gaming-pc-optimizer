@@ -287,6 +287,18 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                     continue;
                 }
                 if exe_matches(&profile.exe_path, &running) {
+                    // ── Policy Engine: OnGameStart (flag-guarded) ───────────
+                    if super::policy::ENABLE_POLICY_ENGINE {
+                        let ctx = super::policy::EvalContext {
+                            current_score: 0,
+                            game_just_started: true,
+                        };
+                        let mut triggered = super::policy::evaluate_policies(&ctx);
+                        for p in triggered.iter_mut() {
+                            super::policy::execute_policy_action(p).ok();
+                        }
+                    }
+
                     // Guard: set is_applying = true before the async call
                     state
                         .0
@@ -345,6 +357,24 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                         Err(e) => eprintln!("[watcher] apply error: {e}"),
                     }
                     break; // only apply one profile per cycle
+                }
+            }
+
+            // ── Policy Engine: OnScoreBelow (flag-guarded, no active game) ──
+            if super::policy::ENABLE_POLICY_ENGINE {
+                let score = tokio::task::spawn_blocking(|| {
+                    super::optimizer::compute_optimization_score().overall
+                })
+                .await
+                .unwrap_or(100);
+
+                let ctx = super::policy::EvalContext {
+                    current_score: score,
+                    game_just_started: false,
+                };
+                let mut triggered = super::policy::evaluate_policies(&ctx);
+                for p in triggered.iter_mut() {
+                    super::policy::execute_policy_action(p).ok();
                 }
             }
         }

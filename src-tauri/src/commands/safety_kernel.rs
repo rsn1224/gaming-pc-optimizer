@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use super::{audit_log, optimizer};
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
-pub const ENABLE_SAFETY_KERNEL: bool = false;
+pub const ENABLE_SAFETY_KERNEL: bool = true;
 
 // ── Phase enum ────────────────────────────────────────────────────────────────
 

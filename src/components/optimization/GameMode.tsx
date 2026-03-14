@@ -10,11 +10,13 @@ import { formatMemory } from "@/lib/utils";
 import { findAnnotation } from "@/data/process_knowledge";
 import { BeforeAfterCard } from "@/components/ui/BeforeAfterCard";
 import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
+import type { OptimizationScore } from "@/types";
 
-// ── [Phase D] Feature flag ─────────────────────────────────────────────────────
-// Set to `true` to show BeforeAfterCard + RollbackEntryPoint after optimization.
-// Default: false — no visible change.
+// ── Feature flags ──────────────────────────────────────────────────────────────
+// [Phase D] Show BeforeAfterCard + RollbackEntryPoint after optimization.
 const ENABLE_OPTIMIZE_RESULT_CARD = true;
+// [Sprint 2 / S2-07] Show verify score delta banner after optimization.
+const ENABLE_VERIFY_BANNER = true;
 
 type StepStatus = "idle" | "running" | "success" | "error";
 
@@ -218,6 +220,8 @@ export function GameMode() {
   const [isRestoring, setIsRestoring] = useState(false);
   const [metricsBefore, setMetricsBefore] = useState<SessionMetrics | null>(null);
   const [metricsAfter, setMetricsAfter] = useState<SessionMetrics | null>(null);
+  const [scoreBefore, setScoreBefore] = useState<number | null>(null);
+  const [scoreAfter, setScoreAfter] = useState<number | null>(null);
   const [steps, setSteps] = useState<OptimizationStep[]>([
     {
       id: "processes",
@@ -295,10 +299,19 @@ export function GameMode() {
     setIsOptimizing(true);
     setMetricsBefore(null);
     setMetricsAfter(null);
+    setScoreBefore(null);
+    setScoreAfter(null);
     setSteps((prev) => prev.map((s) => ({ ...s, status: "idle", result: undefined })));
 
     const before = ENABLE_OPTIMIZE_RESULT_CARD ? await captureMetrics() : null;
     if (before) setMetricsBefore(before);
+
+    if (ENABLE_VERIFY_BANNER) {
+      try {
+        const s = await invoke<OptimizationScore>("get_optimization_score");
+        setScoreBefore(s.overall);
+      } catch { /* ignore */ }
+    }
 
     // Step 1: Kill bloatware processes
     updateStep("processes", { status: "running" });
@@ -352,6 +365,12 @@ export function GameMode() {
     if (ENABLE_OPTIMIZE_RESULT_CARD) {
       const after = await captureMetrics();
       if (after) setMetricsAfter(after);
+    }
+    if (ENABLE_VERIFY_BANNER) {
+      try {
+        const s = await invoke<OptimizationScore>("get_optimization_score");
+        setScoreAfter(s.overall);
+      } catch { /* ignore */ }
     }
     setGameModeActive(true);
     setIsOptimizing(false);
@@ -481,6 +500,26 @@ export function GameMode() {
           {ENABLE_OPTIMIZE_RESULT_CARD && metricsBefore && metricsAfter && (
             <BeforeAfterCard before={metricsBefore} after={metricsAfter} />
           )}
+
+          {/* [Sprint 2 / S2-07] Score verify banner */}
+          {ENABLE_VERIFY_BANNER && scoreBefore !== null && scoreAfter !== null && (
+            <div className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm
+              ${scoreAfter >= scoreBefore
+                ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-300"
+                : "bg-amber-500/10 border border-amber-500/20 text-amber-300"
+              }`}
+            >
+              <ShieldCheck size={15} className="flex-shrink-0" />
+              <span>
+                最適化スコア: <strong>{scoreBefore}</strong> → <strong>{scoreAfter}</strong>
+                {" "}
+                <span className="opacity-70">
+                  ({scoreAfter >= scoreBefore ? "+" : ""}{scoreAfter - scoreBefore} pts)
+                </span>
+              </span>
+            </div>
+          )}
+
           {ENABLE_OPTIMIZE_RESULT_CARD && gameModeActive && (
             <div className="flex justify-end">
               <RollbackEntryPoint />

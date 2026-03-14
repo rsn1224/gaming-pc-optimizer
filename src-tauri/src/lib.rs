@@ -5,10 +5,10 @@ pub use error::AppError;
 use commands::{
     ai, app_settings, audit_log, backup, bandwidth, benchmark, clipboard_opt, cpu_affinity,
     crash_report, disk_health, event_log, fps, game_integrity, game_log, hardware, hotkeys, icons,
-    memory_cleaner, metrics, network, optimizer, osd, power, presets, process, profile_share,
-    profiles, registry_opt, report, rollback, safety_kernel, scheduler, self_improve, startup,
-    steam, storage, system_info, telemetry, uninstaller, update_check, updates, watcher,
-    windows_settings,
+    memory_cleaner, metrics, network, optimizer, optimizer_graph, osd, policy, power, presets,
+    process, profile_share, profiles, registry_opt, report, rollback, safety_kernel, scheduler,
+    self_improve, startup, steam, storage, system_info, telemetry, uninstaller, update_check,
+    updates, watcher, windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -212,14 +212,23 @@ pub fn run() {
             optimizer::simulate_all_optimizations,
             optimizer::get_optimization_score,
             optimizer::get_score_history,
-            // Safety Kernel (Sprint 1 / ENABLE_SAFETY_KERNEL=false)
+            // Safety Kernel (Sprint 1/2 / ENABLE_SAFETY_KERNEL=true)
             safety_kernel::safe_apply_optimizations,
             safety_kernel::run_safety_prechecks,
-            // Audit Log (Sprint 1 / ENABLE_AUDIT_LOG=false)
+            // Audit Log (Sprint 1 / ENABLE_AUDIT_LOG=false → Sprint 2 flip pending)
             audit_log::get_audit_log,
             audit_log::clear_audit_log,
-            // Telemetry (Sprint 1 / ENABLE_TELEMETRY=false)
+            // Telemetry (Sprint 1/2 / ENABLE_TELEMETRY=false)
             telemetry::get_telemetry_for_session,
+            // Optimization Graph (Sprint 2)
+            optimizer_graph::get_optimization_graph,
+            optimizer_graph::get_apply_plan,
+            // Policy Engine (Sprint 2 / ENABLE_POLICY_ENGINE=false)
+            policy::list_policies,
+            policy::save_policy,
+            policy::delete_policy,
+            policy::toggle_policy,
+            policy::fire_policy_manual,
             // Benchmark
             benchmark::run_benchmark,
             // Event Log

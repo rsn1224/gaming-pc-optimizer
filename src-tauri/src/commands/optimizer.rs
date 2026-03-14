@@ -303,14 +303,24 @@ pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> 
     .await
     .ok();
 
-    // ── T1: Telemetry — capture 30 s after apply (flag-guarded) ─────────────
+    // ── T1 + T2: Telemetry — capture 30 s and 5 min after apply (flag-guarded)
     if telemetry::ENABLE_TELEMETRY {
         if let Some(sid) = telemetry_session_id {
-            // Fire-and-forget: sleep 30 s then capture T1
+            // Fire-and-forget: T1 at 30 s, T2 at 5 min
             tokio::spawn(async move {
+                // T1: 30 seconds after apply
                 tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+                let sid_t1 = sid.clone();
                 tokio::task::spawn_blocking(move || {
-                    telemetry::capture_and_insert(&sid, telemetry::TelemetryPhase::T1_30s).ok();
+                    telemetry::capture_and_insert(&sid_t1, telemetry::TelemetryPhase::T1_30s).ok();
+                })
+                .await
+                .ok();
+
+                // T2: 5 minutes after apply (4.5 min more to wait)
+                tokio::time::sleep(std::time::Duration::from_secs(270)).await;
+                tokio::task::spawn_blocking(move || {
+                    telemetry::capture_and_insert(&sid, telemetry::TelemetryPhase::T2_5min).ok();
                 })
                 .await
                 .ok();
