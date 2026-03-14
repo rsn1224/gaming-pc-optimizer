@@ -10,13 +10,28 @@ import { formatMemory } from "@/lib/utils";
 import { findAnnotation } from "@/data/process_knowledge";
 import { BeforeAfterCard } from "@/components/ui/BeforeAfterCard";
 import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
-import type { OptimizationScore } from "@/types";
+import { PreCheckPanel } from "@/components/ui/PreCheckPanel";
+import type { OptimizationScore, PreCheckResult, ApplyPlan } from "@/types";
+import { ENABLE_SAFETY_KERNEL_UI } from "@/components/ui/SafeApplyButton";
 
 // ── Feature flags ──────────────────────────────────────────────────────────────
 // [Phase D] Show BeforeAfterCard + RollbackEntryPoint after optimization.
 const ENABLE_OPTIMIZE_RESULT_CARD = true;
 // [Sprint 2 / S2-07] Show verify score delta banner after optimization.
 const ENABLE_VERIFY_BANNER = true;
+
+// ── Optimization Graph nodes used by GameMode ─────────────────────────────────
+const GAME_MODE_NODES = ["kill_bloatware", "ultimate_power", "gaming_windows", "network_gaming"];
+
+const NODE_DISPLAY: Record<string, string> = {
+  kill_bloatware: "不要プロセス停止",
+  ultimate_power: "電源プラン",
+  gaming_windows: "Windows最適化",
+  network_gaming: "ネットワーク",
+  dns_gaming: "DNS最適化",
+  registry_gaming: "レジストリ",
+  storage_light: "ストレージ",
+};
 
 type StepStatus = "idle" | "running" | "success" | "error";
 
@@ -222,6 +237,12 @@ export function GameMode() {
   const [metricsAfter, setMetricsAfter] = useState<SessionMetrics | null>(null);
   const [scoreBefore, setScoreBefore] = useState<number | null>(null);
   const [scoreAfter, setScoreAfter] = useState<number | null>(null);
+  // S4-03: precheck gate
+  const [isChecking, setIsChecking] = useState(false);
+  const [preCheckResult, setPreCheckResult] = useState<PreCheckResult | null>(null);
+  const [showPreCheckModal, setShowPreCheckModal] = useState(false);
+  // S4-04: apply plan preview
+  const [applyPlan, setApplyPlan] = useState<ApplyPlan | null>(null);
   const [steps, setSteps] = useState<OptimizationStep[]>([
     {
       id: "processes",
@@ -274,6 +295,13 @@ export function GameMode() {
     scanProcesses();
   }, [scanProcesses]);
 
+  // S4-04: fetch apply plan on mount
+  useEffect(() => {
+    invoke<ApplyPlan>("get_apply_plan", { requested: GAME_MODE_NODES })
+      .then(setApplyPlan)
+      .catch(() => { /* ignore — optional preview */ });
+  }, []);
+
   const updateStep = (id: string, updates: Partial<OptimizationStep>) => {
     setSteps((prev) =>
       prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
@@ -295,7 +323,27 @@ export function GameMode() {
     }
   };
 
-  const runOptimization = async () => {
+  // S4-03: entry point — runs precheck if flag enabled, then shows modal
+  const handleOptimizeClick = async () => {
+    if (!ENABLE_SAFETY_KERNEL_UI) {
+      await executeOptimization();
+      return;
+    }
+    setIsChecking(true);
+    try {
+      const result = await invoke<PreCheckResult>("run_safety_prechecks");
+      setPreCheckResult(result);
+      setShowPreCheckModal(true);
+    } catch {
+      // precheck failed — fall through to direct execution
+      await executeOptimization();
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const executeOptimization = async () => {
+    setShowPreCheckModal(false);
     setIsOptimizing(true);
     setMetricsBefore(null);
     setMetricsAfter(null);
@@ -454,8 +502,8 @@ export function GameMode() {
           <div className="flex flex-col gap-2.5">
             <button
               type="button"
-              onClick={runOptimization}
-              disabled={isOptimizing || isRestoring}
+              onClick={handleOptimizeClick}
+              disabled={isOptimizing || isRestoring || isChecking}
               className={`
                 w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-3
                 ${isOptimizing || isRestoring
@@ -468,6 +516,11 @@ export function GameMode() {
                 <>
                   <Loader2 size={20} className="animate-spin" />
                   最適化中...
+                </>
+              ) : isChecking ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  チェック中...
                 </>
               ) : (
                 <>
@@ -583,6 +636,73 @@ export function GameMode() {
           )}
         </div>
       </div>
+
+      {/* S4-03/04: Precheck + ApplyPlan modal */}
+      {ENABLE_SAFETY_KERNEL_UI && showPreCheckModal && preCheckResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#05080c] border border-white/[0.12] rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-5">
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-500/10 border border-cyan-500/20 rounded-xl">
+                <ShieldCheck size={18} className="text-cyan-400" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-base">最適化プレチェック</h2>
+                <p className="text-xs text-muted-foreground/60">適用前の安全確認</p>
+              </div>
+            </div>
+
+            {/* S4-04: Apply plan order */}
+            {applyPlan && applyPlan.order.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground/50 uppercase tracking-wider">適用順序</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {applyPlan.order.map((nodeId, i) => (
+                    <span
+                      key={nodeId}
+                      className="flex items-center gap-1 px-2 py-1 bg-white/[0.05] border border-white/[0.08] rounded-full text-[11px] text-muted-foreground"
+                    >
+                      <span className="text-cyan-500/50 font-mono tabular-nums">{i + 1}.</span>
+                      {NODE_DISPLAY[nodeId] ?? nodeId}
+                    </span>
+                  ))}
+                </div>
+                {applyPlan.conflicts.length > 0 && (
+                  <p className="text-[11px] text-amber-400/70">
+                    ⚠ 競合のため {applyPlan.conflicts.length} 件のノードをスキップ
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* S4-03: Precheck result */}
+            <PreCheckPanel result={preCheckResult} />
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowPreCheckModal(false)}
+                className="flex-1 py-2 rounded-lg border border-white/[0.10] text-sm text-muted-foreground hover:bg-white/[0.06] transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={executeOptimization}
+                disabled={preCheckResult.blockers.length > 0}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  preCheckResult.blockers.length > 0
+                    ? "bg-white/[0.04] text-muted-foreground/40 cursor-not-allowed border border-white/[0.06]"
+                    : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110"
+                }`}
+              >
+                {preCheckResult.blockers.length > 0 ? "適用不可" : "確認して最適化"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

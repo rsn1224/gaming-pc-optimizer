@@ -176,6 +176,84 @@ mod tests {
     }
 }
 
+/// ポリシーアクションを実際に実行する非同期ディスパッチャ。
+/// watcher_loop から呼ばれ、各アクション種別を対応するコマンドに転送する。
+async fn dispatch_policy_action(policy: &super::policy::Policy, handle: &tauri::AppHandle) {
+    use super::policy::PolicyAction;
+
+    let result: Result<String, String> = match &policy.action {
+        PolicyAction::KillBloatware => {
+            super::process::kill_bloatware(None)
+                .await
+                .map(|r| format!("killed:{},freed:{:.0}MB", r.killed.len(), r.freed_memory_mb))
+        }
+        PolicyAction::ApplyAll => {
+            super::optimizer::apply_all_optimizations()
+                .await
+                .map(|r| format!("apply_all: processes={}, errors={}", r.process_killed, r.errors.len()))
+        }
+        PolicyAction::ApplyPreset { preset_id } => {
+            super::presets::apply_preset(preset_id.clone())
+                .await
+                .map(|r| format!("preset:{} processes={}", preset_id, r.process_killed))
+        }
+        PolicyAction::SetPowerPlan { plan } => {
+            if plan == "ultimate" || plan == "ultimate_performance" {
+                super::power::set_ultimate_performance()
+                    .await
+                    .map(|_| "power:ultimate".to_string())
+            } else {
+                Err(format!("不明な電源プラン: {}", plan))
+            }
+        }
+        PolicyAction::ApplyGraphNodes { node_ids } => {
+            // Graph ノードを順番に適用 (Sprint 4: kill_bloatware / ultimate_power のみ実装)
+            let mut applied = Vec::new();
+            for id in node_ids {
+                let ok = match id.as_str() {
+                    "kill_bloatware" => super::process::kill_bloatware(None).await.is_ok(),
+                    "ultimate_power" => super::power::set_ultimate_performance().await.is_ok(),
+                    "gaming_windows" => {
+                        tokio::task::spawn_blocking(super::windows_settings::apply_gaming_windows_settings)
+                            .await
+                            .map(|r| r.is_ok())
+                            .unwrap_or(false)
+                    }
+                    "network_gaming" => {
+                        tokio::task::spawn_blocking(super::network::apply_network_gaming)
+                            .await
+                            .map(|r| r.is_ok())
+                            .unwrap_or(false)
+                    }
+                    _ => false,
+                };
+                if ok { applied.push(id.as_str()); }
+            }
+            Ok(format!("graph_nodes: {:?}", applied))
+        }
+    };
+
+    match &result {
+        Ok(detail) => {
+            super::event_log::add_event_internal(
+                "policy_fired",
+                &format!("ポリシー「{}」を自動実行しました", policy.name),
+                detail,
+                "success",
+            );
+            send_notification(handle, &format!("ポリシー「{}」を実行しました", policy.name));
+        }
+        Err(e) => {
+            super::event_log::add_event_internal(
+                "policy_error",
+                &format!("ポリシー「{}」の実行に失敗しました", policy.name),
+                e,
+                "warning",
+            );
+        }
+    }
+}
+
 fn send_notification(handle: &tauri::AppHandle, body: &str) {
     use tauri_plugin_notification::NotificationExt;
     handle
@@ -293,9 +371,10 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                             current_score: 0,
                             game_just_started: true,
                         };
-                        let mut triggered = super::policy::evaluate_policies(&ctx);
-                        for p in triggered.iter_mut() {
-                            super::policy::execute_policy_action(p).ok();
+                        let triggered = super::policy::evaluate_policies(&ctx);
+                        for p in triggered {
+                            dispatch_policy_action(&p, &handle).await;
+                            super::policy::mark_fired(p.id);
                         }
                     }
 
@@ -372,9 +451,10 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                     current_score: score,
                     game_just_started: false,
                 };
-                let mut triggered = super::policy::evaluate_policies(&ctx);
-                for p in triggered.iter_mut() {
-                    super::policy::execute_policy_action(p).ok();
+                let triggered = super::policy::evaluate_policies(&ctx);
+                for p in triggered {
+                    dispatch_policy_action(&p, &handle).await;
+                    super::policy::mark_fired(p.id);
                 }
             }
         }

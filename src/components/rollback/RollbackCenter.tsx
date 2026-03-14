@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { useSafetyStore } from "@/stores/useSafetyStore";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { toast } from "@/stores/useToastStore";
-import type { OptimizationSession, SessionStatus, SessionMetrics } from "@/types";
+import type { OptimizationSession, SessionStatus, SessionMetrics, AuditLogEntry } from "@/types";
 import { TelemetryViewer } from "@/components/ui/TelemetryViewer";
 
 // ── Before/After metric delta ─────────────────────────────────────────────────
@@ -118,6 +118,14 @@ function StatusLabel({ status }: { status: SessionStatus }) {
 
 // ── Session Row ────────────────────────────────────────────────────────────────
 
+// S4-06: Audit log cross-link
+const AUDIT_ACTOR_LABELS: Record<string, string> = {
+  user: "ユーザー",
+  policy_engine: "ポリシー",
+  safety_kernel: "セーフティ",
+  watcher: "監視",
+};
+
 function SessionRow({
   session,
   onRestore,
@@ -128,7 +136,16 @@ function SessionRow({
   onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [auditEntries, setAuditEntries] = useState<AuditLogEntry[]>([]);
   const canRestore = session.status === "applied" || session.status === "partial_restore";
+
+  // Load session-scoped audit entries when expanded
+  useEffect(() => {
+    if (!expanded) return;
+    invoke<AuditLogEntry[]>("get_audit_log")
+      .then((all) => setAuditEntries(all.filter((e) => e.session_id === session.id)))
+      .catch(() => { /* ignore */ });
+  }, [expanded, session.id]);
 
   return (
     <div className="border border-white/[0.06] rounded-xl overflow-hidden bg-white/[0.02]">
@@ -220,6 +237,31 @@ function SessionRow({
 
           {/* [Sprint 3] Telemetry timeline */}
           <TelemetryViewer sessionId={session.id} />
+
+          {/* [S4-06] Audit log cross-link */}
+          {auditEntries.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              <p className="text-[10px] text-muted-foreground/40 uppercase tracking-wide">
+                監査ログ ({auditEntries.length} 件)
+              </p>
+              {auditEntries.map((e) => (
+                <div key={e.id} className="flex items-center gap-2 text-[11px] py-1 border-b border-white/[0.03] last:border-0">
+                  <span className={cn(
+                    "shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold",
+                    e.result === "success"
+                      ? "bg-emerald-500/15 text-emerald-400"
+                      : "bg-red-500/15 text-red-400"
+                  )}>
+                    {AUDIT_ACTOR_LABELS[e.actor] ?? e.actor}
+                  </span>
+                  <span className="text-slate-300 truncate flex-1">{e.action}</span>
+                  <span className="text-muted-foreground/30 shrink-0 tabular-nums">
+                    {new Date(e.timestamp).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Snapshot power plan */}
           {session.snapshot.power_plan_guid && (

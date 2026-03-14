@@ -10,7 +10,7 @@ use super::now_iso8601;
 use super::audit_log::{self, AuditActor};
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
-pub const ENABLE_POLICY_ENGINE: bool = false;
+pub const ENABLE_POLICY_ENGINE: bool = true;
 
 // ── Trigger ───────────────────────────────────────────────────────────────────
 
@@ -207,6 +207,24 @@ pub fn execute_policy_action(policy: &mut Policy) -> Result<(), String> {
             result.map(|_| ())
         }
     }
+}
+
+/// ポリシーが発火した後に呼ばれる。fire_count++、last_fired_at を更新して保存する。
+/// watcher から execute_policy_action の代わりに呼ぶ (Sprint 4)。
+pub fn mark_fired(id: String) {
+    let mut policies = load_policies();
+    if let Some(p) = policies.iter_mut().find(|p| p.id == id) {
+        p.last_fired_at = Some(now_iso8601());
+        p.fire_count += 1;
+        audit_log::add_audit_entry(
+            AuditActor::PolicyEngine,
+            &format!("policy_fired:{}", id),
+            "success",
+            serde_json::json!({ "fire_count": p.fire_count }),
+            None,
+        );
+    }
+    save_policies(&policies).ok();
 }
 
 // ── Tauri commands ────────────────────────────────────────────────────────────

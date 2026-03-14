@@ -18,6 +18,7 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   Zap, Cpu, Wifi, HardDrive,
   Activity, Gauge, MemoryStick, MonitorCheck, AlertTriangle, Home,
+  Bot, CheckCircle2, Circle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMemory } from "@/lib/utils";
@@ -25,8 +26,11 @@ import { useAppStore } from "@/stores/useAppStore";
 import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
 import type {
   OptimizationScore, SystemInfo, GpuStatus,
-  FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry,
+  FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry, Policy,
 } from "@/types";
+
+// S4-05: Policy engine feature flag (mirrors Rust ENABLE_POLICY_ENGINE)
+const ENABLE_POLICY_ENGINE = true;
 
 // ── Helper: compact widget card ───────────────────────────────────────────────
 
@@ -86,6 +90,7 @@ export function HomeHub() {
   const [diskHealth, setDiskHealth] = useState<DiskHealthReport | null>(null);
   const [events, setEvents] = useState<EventEntry[]>([]);
   const [activeProfile, setActiveProfile] = useState<string | null>(null);
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [firstLoad, setFirstLoad] = useState(true);
 
   const fetchAll = useCallback(async () => {
@@ -98,6 +103,7 @@ export function HomeHub() {
       invoke<DiskHealthReport>("get_disk_health"),
       invoke<EventEntry[]>("get_event_log"),
       invoke<string | null>("get_active_profile"),
+      invoke<Policy[]>("list_policies"),
     ]);
     if (results[0].status === "fulfilled") setScore(results[0].value);
     if (results[1].status === "fulfilled") setSysInfo(results[1].value);
@@ -107,6 +113,7 @@ export function HomeHub() {
     if (results[5].status === "fulfilled") setDiskHealth(results[5].value);
     if (results[6].status === "fulfilled") setEvents(results[6].value);
     if (results[7].status === "fulfilled") setActiveProfile(results[7].value);
+    if (results[8].status === "fulfilled") setPolicies(results[8].value);
     setFirstLoad(false);
   }, []);
 
@@ -121,6 +128,13 @@ export function HomeHub() {
   const needsAttention = !firstLoad && healthScore >= 50 && healthScore < 75;
   const gpu = gpuList[0] ?? null;
   const recentEvents = events.slice(0, 3);
+
+  // S4-05: policy stats
+  const enabledPolicies = policies.filter((p) => p.enabled);
+  const lastFiredPolicy = policies
+    .filter((p) => p.last_fired_at)
+    .sort((a, b) => (b.last_fired_at! > a.last_fired_at! ? 1 : -1))[0] ?? null;
+  const totalFireCount = policies.reduce((sum, p) => sum + p.fire_count, 0);
 
   return (
     <div className="p-4 flex flex-col gap-3 h-full overflow-y-auto">
@@ -368,7 +382,67 @@ export function HomeHub() {
         </Widget>
       </div>
 
-      {/* ── Row 3: Recent events ─────────────────────────────────────── */}
+      {/* ── Row 3: Policy engine status widget (S4-05) ──────────────── */}
+      {ENABLE_POLICY_ENGINE && (
+        <Widget label="ポリシーエンジン">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+                <Bot size={14} className="text-violet-400" />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
+                    <CheckCircle2 size={10} />
+                    ENABLE_POLICY_ENGINE: on
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground/60">
+                  有効: <span className="text-foreground font-medium">{enabledPolicies.length}</span>
+                  <span className="text-muted-foreground/40 mx-1">/</span>
+                  <span className="text-muted-foreground/50">{policies.length} 件</span>
+                  <span className="ml-2 text-muted-foreground/40">実行累計: {totalFireCount}回</span>
+                </p>
+                {lastFiredPolicy ? (
+                  <p className="text-[10px] text-muted-foreground/40">
+                    最終実行: <span className="text-muted-foreground/60">{lastFiredPolicy.name}</span>
+                    {" · "}
+                    {new Date(lastFiredPolicy.last_fired_at!).toLocaleString("ja-JP", {
+                      month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit",
+                    })}
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground/30">まだ実行されていません</p>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5 shrink-0">
+              {enabledPolicies.length === 0 ? (
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground/40">
+                  <Circle size={8} />
+                  有効なポリシーなし
+                </div>
+              ) : (
+                enabledPolicies.slice(0, 2).map((p) => (
+                  <div key={p.id} className="flex items-center gap-1.5 px-2 py-1 bg-violet-500/8 border border-violet-500/15 rounded-md">
+                    <span className="w-1 h-1 rounded-full bg-violet-400/60" />
+                    <span className="text-[10px] text-violet-300/80 truncate max-w-[120px]">{p.name}</span>
+                  </div>
+                ))
+              )}
+              <button
+                type="button"
+                onClick={() => setActivePage("policies")}
+                className="text-[10px] text-violet-400/70 hover:text-violet-400 transition-colors text-right"
+              >
+                管理 →
+              </button>
+            </div>
+          </div>
+        </Widget>
+      )}
+
+      {/* ── Row 4: Recent events ─────────────────────────────────────── */}
       <Widget label="最近のイベント">
         {firstLoad ? (
           <Skeleton className="h-10 w-full" />
