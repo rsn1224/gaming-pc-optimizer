@@ -96,10 +96,34 @@ pub async fn uninstall_app(uninstall_string: String) -> Result<(), String> {
         return Err("アンインストール文字列が空です".to_string());
     }
 
-    crate::win_cmd!("cmd")
-        .args(["/c", &uninstall_string])
+    // cmd /c ではなく powershell Start-Process を経由することで
+    // CREATE_NO_WINDOW 環境下でも UAC ダイアログと GUI が正常に表示される
+    let script = format!(
+        "Start-Process -FilePath 'cmd' -ArgumentList @('/c', [string]::Concat(@({}))) -WindowStyle Hidden",
+        serde_json::to_string(&uninstall_string)
+            .map_err(|e| format!("コマンド変換エラー: {}", e))?
+    );
+    crate::win_cmd!("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
         .spawn()
         .map_err(|e| format!("アンインストーラーの起動に失敗しました: {}", e))?;
 
+    Ok(())
+}
+
+/// Windows Update 設定画面を開く。
+/// shell:allow-open のデフォルトスコープは ms-settings: を許可しないため、
+/// powershell Start-Process 経由で開く。
+#[tauri::command]
+pub fn open_windows_settings_update() -> Result<(), String> {
+    crate::win_cmd!("powershell")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "Start-Process 'ms-settings:windowsupdate'",
+        ])
+        .spawn()
+        .map_err(|e| format!("Windows Update設定を開けませんでした: {}", e))?;
     Ok(())
 }

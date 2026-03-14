@@ -498,9 +498,9 @@ export function Updates() {
           type="button"
           onClick={async () => {
             try {
-              await invoke("plugin:shell|open", { path: "ms-settings:windowsupdate" });
-            } catch {
-              // fallback: silently ignore
+              await invoke("open_windows_settings_update");
+            } catch (e) {
+              console.error("[Updates] open_windows_settings_update failed:", e);
             }
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/[0.10] text-xs font-medium hover:bg-white/10 hover:text-foreground transition-colors text-muted-foreground shrink-0"

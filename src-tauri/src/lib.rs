@@ -377,6 +377,7 @@ pub fn run() {
             // Uninstaller
             uninstaller::get_installed_apps,
             uninstaller::uninstall_app,
+            uninstaller::open_windows_settings_update,
             // OSD Window
             osd::show_osd_window,
             osd::hide_osd_window,
