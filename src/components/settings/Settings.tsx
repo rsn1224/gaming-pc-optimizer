@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check, Copy, FlaskConical, BarChart3 } from "lucide-react";
+import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check, Copy, FlaskConical, BarChart3, Zap } from "lucide-react";
 import { RecommendationMetricsPanel } from "@/components/recommendation/RecommendationMetricsPanel";
+import { HagsDisplayOptimizer } from "@/components/optimization/HagsDisplayOptimizer";
+
+// HAGS / Display Hz / Defender 除外 (mirrors Rust ENABLE_HAGS_DISPLAY_OPTIMIZER)
+const ENABLE_HAGS_DISPLAY_OPTIMIZER = false;
 import { useAppStore, type Theme } from "@/stores/useAppStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
 import { Toggle } from "@/components/ui/toggle";
@@ -212,6 +216,19 @@ export function Settings() {
           </div>
         </div>
       </div>
+
+      {/* HAGS / Display Hz / Defender exclusions (ENABLE_HAGS_DISPLAY_OPTIMIZER) */}
+      {ENABLE_HAGS_DISPLAY_OPTIMIZER && (
+        <div className={sectionCls}>
+          <div className={headerCls}>
+            <Zap size={15} className="text-violet-400" />
+            <span className="text-sm font-semibold">GPU スケジューリング・ディスプレイ・Defender</span>
+          </div>
+          <div className="p-4">
+            <HagsDisplayOptimizer />
+          </div>
+        </div>
+      )}
 
       {/* Recommendation Engine V2 Metrics */}
       <div className={sectionCls}>

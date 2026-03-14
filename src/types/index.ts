@@ -968,6 +968,26 @@ export interface MetricsSummary {
   models: ModelMetrics[];
 }
 
+// ── Display Optimizer: HAGS / DisplayHz / Defender (ENABLE_HAGS_DISPLAY_OPTIMIZER) ──
+
+export interface HagsInfo {
+  enabled: boolean;
+  supported: boolean;  // Windows 10 build 19041+
+  winBuild: number;
+}
+
+export interface DisplayInfo {
+  name: string;
+  currentHz: number;
+  maxHz: number;
+}
+
+export interface DisplayOptimizerStatus {
+  hags: HagsInfo;
+  displays: DisplayInfo[];
+  defenderExclusions: string[];
+}
+
 // ── Benchmark History (ENABLE_BENCHMARK_HISTORY) ─────────────────────────────
 
 export interface BenchmarkRecord {
