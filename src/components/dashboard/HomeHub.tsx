@@ -29,6 +29,7 @@ import { toast } from "@/stores/useToastStore";
 import { PerformanceCoach } from "@/components/gamelog/PerformanceCoach";
 import { RecommendationCard } from "@/components/recommendation/RecommendationCard";
 import { TournamentModal } from "@/components/tournament/TournamentModal";
+import { FrametimePanel } from "@/components/hardware/FrametimePanel";
 import type {
   OptimizationScore, SystemInfo, GpuStatus,
   FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry, Policy, ScoreSnapshot,
@@ -49,6 +50,8 @@ const ENABLE_PERFORMANCE_COACH      = true;
 const ENABLE_RECOMMENDATION_V2_UI   = false;
 // Tournament checklist (default OFF — set to true in tournament.rs first)
 const ENABLE_TOURNAMENT_MODE_UI     = false;
+// Frametime / Perf overlay (default OFF — set to true in frametime_monitor.rs first)
+const ENABLE_FRAMETIME_OVERLAY_UI   = false;
 
 // ── S6-01: Score sparkline ────────────────────────────────────────────────────
 
@@ -778,6 +781,13 @@ export function HomeHub() {
       {ENABLE_RECOMMENDATION_V2_UI && (
         <Widget label="推奨エンジン V2">
           <RecommendationCard sysInfo={sysInfo} />
+        </Widget>
+      )}
+
+      {/* ── Frametime / Perf overlay (ENABLE_FRAMETIME_OVERLAY_UI) ─────── */}
+      {ENABLE_FRAMETIME_OVERLAY_UI && (
+        <Widget label="リアルタイム パフォーマンス">
+          <FrametimePanel />
         </Widget>
       )}
 

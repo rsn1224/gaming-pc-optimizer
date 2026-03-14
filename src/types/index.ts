@@ -1022,3 +1022,24 @@ export interface TournamentResult {
   failCount: number;
   checkedAt: string;
 }
+
+// ── Frametime / Perf Monitor (ENABLE_FRAMETIME_OVERLAY) ──────────────────────
+
+export interface PerfSnapshot {
+  timestamp: number;       // Unix epoch millis
+  cpuPercent: number;      // 0–100
+  gpuUtilPercent: number;  // 0–100 (0 if no GPU)
+  gpuVramUsedMb: number;
+  gpuVramTotalMb: number;
+  gpuTempC: number;        // -1 if unavailable
+}
+
+export interface PerformanceStats {
+  sampleCount: number;
+  avgCpu: number;
+  p1LowCpu: number;        // 1% Low CPU utilisation
+  avgGpu: number;
+  p1LowGpu: number;        // 1% Low GPU utilisation
+  gpuAvailable: boolean;
+  peakVramMb: number;
+}
