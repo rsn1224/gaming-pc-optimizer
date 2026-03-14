@@ -16,14 +16,12 @@ import {
   Zap,
   RotateCcw,
   Loader2,
-  CheckCircle2,
-  XCircle,
   AlertCircle,
   Activity,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import type { NetworkSettings, AdapterInfo, DnsPreset } from "@/types";
+import type { ActionStatus, NetworkSettings, AdapterInfo, DnsPreset } from "@/types";
 import { Toggle } from "@/components/ui/toggle";
+import { StatusBanner } from "@/components/ui/StatusBanner";
 
 // ── DNS preset definitions ─────────────────────────────────────────────────
 
@@ -39,36 +37,6 @@ const DNS_PRESETS: {
   { id: "opendns",    label: "OpenDNS",    primary: "208.67.222.222",      secondary: "208.67.220.220",     color: "text-purple-400" },
   { id: "dhcp",       label: "自動 (DHCP)", primary: "—",                  secondary: "—",                  color: "text-muted-foreground" },
 ];
-
-// ── Shared helpers ─────────────────────────────────────────────────────────
-
-type ActionStatus = "idle" | "running" | "success" | "error";
-
-function StatusMessage({ status, message }: { status: ActionStatus; message: string }) {
-  return (
-    <AnimatePresence>
-      {status !== "idle" && message && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className={`flex items-start gap-2 px-3 py-2 rounded-md text-xs border ${
-            status === "success"
-              ? "bg-green-500/10 border-green-500/30 text-green-400"
-              : status === "error"
-              ? "bg-destructive/10 border-destructive/30 text-destructive"
-              : "bg-secondary border-border text-muted-foreground"
-          }`}
-        >
-          {status === "success" && <CheckCircle2 size={13} className="shrink-0 mt-0.5" />}
-          {status === "error" && <XCircle size={13} className="shrink-0 mt-0.5" />}
-          {status === "running" && <Loader2 size={13} className="animate-spin shrink-0 mt-0.5" />}
-          {message}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
 
 // ── TcpSection ─────────────────────────────────────────────────────────────
 
@@ -143,7 +111,7 @@ function TcpSection({
       )}
 
       <div className="px-4 pb-4 flex flex-col gap-2">
-        <StatusMessage status={status} message={message} />
+        <StatusBanner status={status} message={message} />
         <div className="flex gap-2">
           <button
             type="button"
@@ -254,7 +222,7 @@ function DnsSection({
           ))}
         </div>
 
-        <StatusMessage status={status} message={message} />
+        <StatusBanner status={status} message={message} />
       </div>
     </div>
   );

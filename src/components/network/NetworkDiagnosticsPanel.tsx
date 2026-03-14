@@ -12,46 +12,17 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   Activity,
   Brain,
+  CheckCircle2,
   Copy,
   Loader2,
-  CheckCircle2,
   XCircle,
   Zap,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import type { NetworkSettings, AdapterInfo, PingResult, DnsPingSummary, NetworkRecommendation } from "@/types";
+import { motion } from "framer-motion";
+import type { ActionStatus, NetworkSettings, AdapterInfo, PingResult, DnsPingSummary, NetworkRecommendation } from "@/types";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
+import { StatusBanner } from "@/components/ui/StatusBanner";
 import { applyNetworkRecommendation } from "@/lib/network_apply";
-
-// ── Shared helpers ─────────────────────────────────────────────────────────
-
-type ActionStatus = "idle" | "running" | "success" | "error";
-
-function StatusMessage({ status, message }: { status: ActionStatus; message: string }) {
-  return (
-    <AnimatePresence>
-      {status !== "idle" && message && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className={`flex items-start gap-2 px-3 py-2 rounded-md text-xs border ${
-            status === "success"
-              ? "bg-green-500/10 border-green-500/30 text-green-400"
-              : status === "error"
-              ? "bg-destructive/10 border-destructive/30 text-destructive"
-              : "bg-secondary border-border text-muted-foreground"
-          }`}
-        >
-          {status === "success" && <CheckCircle2 size={13} className="shrink-0 mt-0.5" />}
-          {status === "error" && <XCircle size={13} className="shrink-0 mt-0.5" />}
-          {status === "running" && <Loader2 size={13} className="animate-spin shrink-0 mt-0.5" />}
-          {message}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
 
 function PingBar({ ms, max }: { ms: number; max: number }) {
   const pct = max > 0 ? Math.min((ms / max) * 100, 100) : 0;
@@ -386,7 +357,7 @@ function DnsAutoTestSection({
                     <span>DNS: <span className="text-foreground font-semibold">{parsedRec.dns_preset}</span></span>
                     <span>TCP/IP最適化: <span className="text-foreground font-semibold">{parsedRec.apply_network_gaming ? "あり" : "なし"}</span></span>
                   </div>
-                  <StatusMessage status={applyStatus} message={applyMsg} />
+                  <StatusBanner status={applyStatus} message={applyMsg} />
                   <button
                     type="button"
                     onClick={applyRec}

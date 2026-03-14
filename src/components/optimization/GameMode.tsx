@@ -4,9 +4,16 @@ import { Gamepad2, Zap, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Rotat
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/stores/useAppStore";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import type { ProcessInfo, KillResult, AnnotatedProcess, ProcessRiskLevel } from "@/types";
+import type { ProcessInfo, KillResult, AnnotatedProcess, ProcessRiskLevel, SystemInfo, SessionMetrics } from "@/types";
 import { formatMemory } from "@/lib/utils";
 import { findAnnotation } from "@/data/process_knowledge";
+import { BeforeAfterCard } from "@/components/ui/BeforeAfterCard";
+import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
+
+// ── [Phase D] Feature flag ─────────────────────────────────────────────────────
+// Set to `true` to show BeforeAfterCard + RollbackEntryPoint after optimization.
+// Default: false — no visible change.
+const ENABLE_OPTIMIZE_RESULT_CARD = true;
 
 type StepStatus = "idle" | "running" | "success" | "error";
 
@@ -208,6 +215,8 @@ export function GameMode() {
   const [isScanning, setIsScanning] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [metricsBefore, setMetricsBefore] = useState<SessionMetrics | null>(null);
+  const [metricsAfter, setMetricsAfter] = useState<SessionMetrics | null>(null);
   const [steps, setSteps] = useState<OptimizationStep[]>([
     {
       id: "processes",
@@ -266,9 +275,29 @@ export function GameMode() {
     );
   };
 
+  const captureMetrics = async (): Promise<SessionMetrics | null> => {
+    try {
+      const info = await invoke<SystemInfo>("get_system_info");
+      return {
+        process_count: bloatwareProcesses.length,
+        memory_used_mb: info.memory_used_mb,
+        memory_total_mb: info.memory_total_mb,
+        memory_percent: info.memory_percent,
+        captured_at: new Date().toISOString(),
+      };
+    } catch {
+      return null;
+    }
+  };
+
   const runOptimization = async () => {
     setIsOptimizing(true);
+    setMetricsBefore(null);
+    setMetricsAfter(null);
     setSteps((prev) => prev.map((s) => ({ ...s, status: "idle", result: undefined })));
+
+    const before = ENABLE_OPTIMIZE_RESULT_CARD ? await captureMetrics() : null;
+    if (before) setMetricsBefore(before);
 
     // Step 1: Kill bloatware processes
     updateStep("processes", { status: "running" });
@@ -319,6 +348,10 @@ export function GameMode() {
     }
 
     await scanProcesses();
+    if (ENABLE_OPTIMIZE_RESULT_CARD) {
+      const after = await captureMetrics();
+      if (after) setMetricsAfter(after);
+    }
     setGameModeActive(true);
     setIsOptimizing(false);
   };
@@ -442,6 +475,16 @@ export function GameMode() {
               </button>
             )}
           </div>
+
+          {/* [Phase D] Before/After result card + rollback entry point */}
+          {ENABLE_OPTIMIZE_RESULT_CARD && metricsBefore && metricsAfter && (
+            <BeforeAfterCard before={metricsBefore} after={metricsAfter} />
+          )}
+          {ENABLE_OPTIMIZE_RESULT_CARD && gameModeActive && (
+            <div className="flex justify-end">
+              <RollbackEntryPoint />
+            </div>
+          )}
         </div>
 
         {/* Right — Detected Processes */}

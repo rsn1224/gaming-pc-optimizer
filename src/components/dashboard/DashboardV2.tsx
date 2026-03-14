@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   Loader2, Zap, Cpu, Wifi, HardDrive,
-  Activity, Gauge, MemoryStick, MonitorCheck,
+  Activity, Gauge, MemoryStick, MonitorCheck, ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMemory } from "@/lib/utils";
@@ -122,7 +122,6 @@ export function DashboardV2() {
   const [activeProfile, setActiveProfile] = useState<string | null>(null);
   const [firstLoad, setFirstLoad] = useState(true);
 
-  const [optimizing, setOptimizing] = useState(false);
   const [cleaning, setCleaning] = useState(false);
 
   const fetchAll = useCallback(async () => {
@@ -156,20 +155,6 @@ export function DashboardV2() {
     const id = setInterval(fetchAll, 3000);
     return () => clearInterval(id);
   }, [fetchAll]);
-
-  const handleOptimize = async () => {
-    if (optimizing) return;
-    setOptimizing(true);
-    try {
-      await invoke("apply_all_optimizations");
-      toast.success("全最適化を実行しました");
-      fetchAll();
-    } catch (e) {
-      toast.error("最適化に失敗しました: " + String(e));
-    } finally {
-      setOptimizing(false);
-    }
-  };
 
   const handleCleanMemory = async () => {
     if (cleaning) return;
@@ -478,17 +463,12 @@ export function DashboardV2() {
           <div className="flex flex-col gap-1.5">
             <button
               type="button"
-              onClick={handleOptimize}
-              disabled={optimizing}
-              className={cn(
-                "w-full py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all",
-                optimizing
-                  ? "bg-cyan-500/10 text-cyan-400/50 cursor-not-allowed"
-                  : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110 active:scale-[0.97]"
-              )}
+              onClick={() => setActivePage("optimize")}
+              className="w-full py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 hover:brightness-110 active:scale-[0.97] transition-all"
             >
-              {optimizing ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
-              今すぐ最適化
+              <Zap size={11} />
+              最適化へ
+              <ArrowRight size={11} />
             </button>
             <button
               type="button"

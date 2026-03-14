@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, LayoutGrid, TrendingDown, Loader2, X, Thermometer, Zap } from "lucide-react";
+import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, TrendingDown, Loader2, X, Thermometer, Zap } from "lucide-react";
 import type { AppearanceSettings, OptimizationScore, TempSnapshot, GpuPowerLimit, OptimizationSession } from "@/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
@@ -10,6 +10,7 @@ import { useWatcherStore } from "@/stores/useWatcherStore";
 import { useSafetyStore } from "@/stores/useSafetyStore";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { DashboardV2 } from "@/components/dashboard/DashboardV2";
+import { HomeHub } from "@/components/dashboard/HomeHub";
 import { GameMode } from "@/components/optimization/GameMode";
 import { Presets } from "@/components/optimization/Presets";
 import { ProcessManager } from "@/components/optimization/ProcessManager";
@@ -35,6 +36,11 @@ import { OsdOverlay } from "@/components/osd/OsdOverlay";
 import { ToastContainer } from "@/components/ui/Toast";
 import { RiskSummary } from "@/components/ui/RiskSummary";
 import type { ActivePage } from "@/types";
+
+// ── [Phase D] HomeHub feature flag ────────────────────────────────────────────
+// Set to `true` to activate the HomeHub 司令塔 as the "home" page.
+// Default: false — DashboardV2 is used as fallback.
+const ENABLE_HOME_HUB = true;
 
 // ── Synergy #3: Score Regression Watcher ──────────────────────────────────────
 // Feature flag — set to `true` to enable background score monitoring.
@@ -377,11 +383,11 @@ type NavEntry =
 
 const NAV_ITEMS: NavEntry[] = [
   { type: "section", label: "メイン" },
-  { id: "dashboard",    icon: <LayoutDashboard size={17} />, label: "ダッシュボード" },
-  { id: "dashboardv2",  icon: <LayoutGrid size={17} />,      label: "詳細ビュー" },
+  { id: "home",        icon: <LayoutDashboard size={17} />, label: "ホーム" },       // [Phase D] 司令塔（dashboard/dashboardv2 吸収）
 
   { type: "section", label: "最適化" },
-  { id: "gamemode",   icon: <Gamepad2 size={17} />,        label: "ゲームモード" },
+  { id: "optimize",   icon: <Gamepad2 size={17} />,         label: "最適化" },      // [Phase D] GameMode改称
+  { id: "gamemode",   icon: <Gamepad2 size={17} />,         label: "ゲームモード" },
   { id: "presets",    icon: <SlidersHorizontal size={17} />, label: "プリセット" },
   { id: "process",    icon: <Activity size={17} />,         label: "プロセス管理" },
   { id: "windows",    icon: <Monitor size={17} />,          label: "Windows最適化" },
@@ -399,12 +405,12 @@ const NAV_ITEMS: NavEntry[] = [
   { id: "hardware",   icon: <Cpu size={17} />,              label: "ハードウェア" },
   { id: "benchmark",  icon: <Gauge size={17} />,            label: "ベンチマーク" },
 
-  { type: "section", label: "システム" },
+  { type: "section", label: "管理" },                        // [Phase D] システム→管理
+  { id: "rollback",   icon: <ShieldCheck size={17} />,      label: "ロールバック" }, // [Phase D] 先頭に昇格
   { id: "startup",    icon: <Rocket size={17} />,           label: "スタートアップ" },
   { id: "scheduler",  icon: <Calendar size={17} />,         label: "スケジューラー" },
   { id: "uninstaller", icon: <Trash2 size={17} />,          label: "アプリ管理" },
   { id: "updates",    icon: <Shield size={17} />,           label: "アップデート" },
-  { id: "rollback",   icon: <ShieldCheck size={17} />,      label: "ロールバック" },
 
   { type: "section", label: "その他" },
   { id: "notifications", icon: <Bell size={17} />,          label: "通知センター" },
@@ -413,6 +419,13 @@ const NAV_ITEMS: NavEntry[] = [
 
 function PageContent({ page }: { page: ActivePage }) {
   switch (page) {
+    // ── [Phase C/D] 新規ページ（ENABLE_HOME_HUB で有効化）──────────────────
+    // flag OFF の間は既存コンポーネントにフォールバック
+    case "home":
+      return ENABLE_HOME_HUB ? <HomeHub /> : <DashboardV2 />;
+    case "optimize":
+      return <GameMode />;
+    // ── 既存ページ ────────────────────────────────────────────────────────
     case "dashboard":
       return <Dashboard />;
     case "dashboardv2":

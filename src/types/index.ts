@@ -228,7 +228,25 @@ export interface AiStorageItem {
   reason: string;
 }
 
-export type ActivePage = "dashboard" | "dashboardv2" | "gamemode" | "presets" | "process" | "windows" | "storage" | "network" | "games" | "profiles" | "gamelog" | "advisor" | "gameintegrity" | "hardware" | "benchmark" | "startup" | "scheduler" | "uninstaller" | "updates" | "rollback" | "notifications" | "settings";
+export type ActivePage =
+  // ── [Phase C/D] 新規ページ（ENABLE_HOME_HUB flag で有効化） ──────────────
+  | "home"          // HomeHub（Dashboard + DashboardV2 統合、司令塔）
+  | "optimize"      // OptimizeHub（GameMode 改称）
+  // ── 既存ページ（後方互換維持） ─────────────────────────────────────────────
+  | "dashboard" | "dashboardv2" | "gamemode"
+  | "presets" | "process" | "windows" | "storage" | "network"
+  | "games" | "profiles" | "gamelog" | "advisor" | "gameintegrity"
+  | "hardware" | "benchmark"
+  | "startup" | "scheduler" | "uninstaller" | "updates" | "rollback"
+  | "notifications" | "settings";
+
+/**
+ * ActionStatus — UI アクション状態の統一型
+ *
+ * NetworkDiagnosticsPanel, NetworkSettingsPanel, NetworkOptimizer,
+ * WindowsSettings などで個別定義されていたものを共通化。
+ */
+export type ActionStatus = "idle" | "running" | "success" | "error";
 
 export interface AppearanceSettings {
   accent_color: string;

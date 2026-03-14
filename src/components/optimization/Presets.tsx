@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { useSafetyStore } from "@/stores/useSafetyStore";
 import { toast } from "@/stores/useToastStore";
+import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
 import type { PresetInfo, PresetResult } from "@/types";
 
 // ── Preset icon map ────────────────────────────────────────────────────────────
@@ -219,18 +220,21 @@ export function Presets() {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-white/[0.05]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-            <Zap size={16} className="text-cyan-400" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+              <Zap size={16} className="text-cyan-400" />
+            </div>
+            <div>
+              <h1 className="text-[15px] font-bold text-slate-100">
+                最適化プリセット
+              </h1>
+              <p className="text-[11px] text-muted-foreground/50">
+                用途に合わせてワンクリックで最適化
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-[15px] font-bold text-slate-100">
-              最適化プリセット
-            </h1>
-            <p className="text-[11px] text-muted-foreground/50">
-              用途に合わせてワンクリックで最適化
-            </p>
-          </div>
+          <RollbackEntryPoint compact />
         </div>
 
         {rollbackEnabled && (
