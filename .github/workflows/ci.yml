@@ -38,7 +38,9 @@ jobs:
         run: cargo check
 
       - name: test
-        run: cargo test
+        # --lib runs the 162 unit tests in lib.rs; bare `cargo test` skips them
+        # due to Tauri's staticlib+cdylib+rlib crate-type configuration
+        run: cargo test --lib
 
   # ── Frontend quality gates ──────────────────────────────────────────────────
   frontend:

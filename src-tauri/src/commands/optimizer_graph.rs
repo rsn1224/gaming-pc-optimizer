@@ -188,7 +188,10 @@ pub fn default_graph() -> OptimizationGraph {
 
 impl OptimizationGraph {
     /// ノード ID → ノード の Map を返す
-    #[expect(dead_code, reason = "used in tests and reserved for graph inspection API")]
+    #[expect(
+        dead_code,
+        reason = "used in tests and reserved for graph inspection API"
+    )]
     pub fn node_map(&self) -> HashMap<&str, &OptimizationNode> {
         self.nodes.iter().map(|n| (n.id.as_str(), n)).collect()
     }
@@ -248,7 +251,10 @@ impl OptimizationGraph {
     }
 
     /// 循環依存チェック
-    #[expect(dead_code, reason = "used in tests and reserved for graph validation API")]
+    #[expect(
+        dead_code,
+        reason = "used in tests and reserved for graph validation API"
+    )]
     pub fn is_cyclic(&self) -> bool {
         self.topological_sort().is_err()
     }
