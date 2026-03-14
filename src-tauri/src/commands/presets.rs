@@ -1,7 +1,6 @@
 use super::rollback::{self, ChangeRecord, RiskLevel, SessionMode};
 use serde::{Deserialize, Serialize};
 
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
 // ── Data types ────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -33,11 +32,20 @@ pub(crate) fn fetch_gpu_status_sync() -> Result<Vec<GpuStatus>, String> {
 
 fn detect_vendor(name: &str) -> &'static str {
     let lower = name.to_lowercase();
-    if lower.contains("nvidia") || lower.contains("geforce") || lower.contains("quadro") || lower.contains("rtx") || lower.contains("gtx") {
+    if lower.contains("nvidia")
+        || lower.contains("geforce")
+        || lower.contains("quadro")
+        || lower.contains("rtx")
+        || lower.contains("gtx")
+    {
         "nvidia"
     } else if lower.contains("amd") || lower.contains("radeon") || lower.contains("rx ") {
         "amd"
-    } else if lower.contains("intel") || lower.contains("arc") || lower.contains("uhd") || lower.contains("iris") {
+    } else if lower.contains("intel")
+        || lower.contains("arc")
+        || lower.contains("uhd")
+        || lower.contains("iris")
+    {
         "intel"
     } else {
         "unknown"
@@ -68,7 +76,11 @@ fn fetch_nvidia_gpu() -> Result<Vec<GpuStatus>, String> {
         if parts.len() < 10 {
             continue;
         }
-        let fan = if parts[7].eq_ignore_ascii_case("n/a") { 0 } else { parts[7].parse().unwrap_or(0) };
+        let fan = if parts[7].eq_ignore_ascii_case("n/a") {
+            0
+        } else {
+            parts[7].parse().unwrap_or(0)
+        };
         gpus.push(GpuStatus {
             name: parts[0].to_string(),
             vendor: "nvidia".to_string(),
@@ -84,7 +96,11 @@ fn fetch_nvidia_gpu() -> Result<Vec<GpuStatus>, String> {
         });
     }
 
-    if gpus.is_empty() { Err("no nvidia gpus".to_string()) } else { Ok(gpus) }
+    if gpus.is_empty() {
+        Err("no nvidia gpus".to_string())
+    } else {
+        Ok(gpus)
+    }
 }
 
 /// WMI (Win32_VideoController) 経由で AMD / Intel GPU の基本情報を取得する。
@@ -112,11 +128,21 @@ Get-WmiObject Win32_VideoController |
 
     for line in stdout.lines() {
         let line = line.trim();
-        if line.is_empty() { continue; }
+        if line.is_empty() {
+            continue;
+        }
         let parts: Vec<&str> = line.splitn(3, '|').collect();
         let name = parts.first().copied().unwrap_or("").trim().to_string();
-        if name.is_empty() { continue; }
-        let vram_mb: u64 = parts.get(1).copied().unwrap_or("0").trim().parse().unwrap_or(0);
+        if name.is_empty() {
+            continue;
+        }
+        let vram_mb: u64 = parts
+            .get(1)
+            .copied()
+            .unwrap_or("0")
+            .trim()
+            .parse()
+            .unwrap_or(0);
         let driver = parts.get(2).copied().unwrap_or("").trim().to_string();
         let vendor = detect_vendor(&name).to_string();
         gpus.push(GpuStatus {

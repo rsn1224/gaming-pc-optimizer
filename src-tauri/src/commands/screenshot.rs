@@ -12,7 +12,13 @@ fn downloads_dir() -> PathBuf {
 
 fn sanitize(s: &str) -> String {
     s.chars()
-        .map(|c| if c.is_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
@@ -76,7 +82,10 @@ Write-Output "saved"
 
     // Verify the file was actually created
     if !path.exists() {
-        return Err(format!("ファイルが作成されませんでした (PS出力: {})", result));
+        return Err(format!(
+            "ファイルが作成されませんでした (PS出力: {})",
+            result
+        ));
     }
 
     Ok(())

@@ -56,9 +56,15 @@ fn check_cpu() -> TournamentStep {
     let (status, message) = if usage < 60.0 {
         (StepStatus::Pass, "CPU に十分な余裕があります".to_string())
     } else if usage < 80.0 {
-        (StepStatus::Warn, "CPU 負荷がやや高めです。バックグラウンドアプリを閉じることを推奨します".to_string())
+        (
+            StepStatus::Warn,
+            "CPU 負荷がやや高めです。バックグラウンドアプリを閉じることを推奨します".to_string(),
+        )
     } else {
-        (StepStatus::Fail, "CPU が高負荷状態です。ゲーム前にバックグラウンドアプリを終了してください".to_string())
+        (
+            StepStatus::Fail,
+            "CPU が高負荷状態です。ゲーム前にバックグラウンドアプリを終了してください".to_string(),
+        )
     };
 
     TournamentStep {
@@ -76,7 +82,7 @@ fn check_memory() -> TournamentStep {
     sys.refresh_memory();
 
     let total = sys.total_memory() as f64;
-    let used  = sys.used_memory() as f64;
+    let used = sys.used_memory() as f64;
     let free_pct = if total > 0.0 {
         ((total - used) / total * 100.0) as f32
     } else {
@@ -87,9 +93,15 @@ fn check_memory() -> TournamentStep {
     let (status, message) = if free_pct >= 35.0 {
         (StepStatus::Pass, "空きメモリが十分あります".to_string())
     } else if free_pct >= 20.0 {
-        (StepStatus::Warn, "空きメモリがやや少なめです。メモリクリーナーの実行を推奨します".to_string())
+        (
+            StepStatus::Warn,
+            "空きメモリがやや少なめです。メモリクリーナーの実行を推奨します".to_string(),
+        )
     } else {
-        (StepStatus::Fail, "空きメモリが不足しています。ゲーム中にクラッシュするリスクがあります".to_string())
+        (
+            StepStatus::Fail,
+            "空きメモリが不足しています。ゲーム中にクラッシュするリスクがあります".to_string(),
+        )
     };
 
     TournamentStep {
@@ -108,11 +120,23 @@ fn check_processes() -> TournamentStep {
     let count = sys.processes().len();
 
     let (status, message) = if count < 120 {
-        (StepStatus::Pass, "バックグラウンドプロセスが適切な数です".to_string())
+        (
+            StepStatus::Pass,
+            "バックグラウンドプロセスが適切な数です".to_string(),
+        )
     } else if count < 160 {
-        (StepStatus::Warn, "プロセス数がやや多めです。ブロートウェアの停止を推奨します".to_string())
+        (
+            StepStatus::Warn,
+            "プロセス数がやや多めです。ブロートウェアの停止を推奨します".to_string(),
+        )
     } else {
-        (StepStatus::Fail, format!("プロセス数が{}と非常に多いです。不要なアプリを停止してください", count))
+        (
+            StepStatus::Fail,
+            format!(
+                "プロセス数が{}と非常に多いです。不要なアプリを停止してください",
+                count
+            ),
+        )
     };
 
     TournamentStep {
@@ -130,7 +154,8 @@ fn check_disk() -> TournamentStep {
     let disks = Disks::new_with_refreshed_list();
 
     // find system drive (C: on Windows)
-    let (free_gb, drive_name) = disks.iter()
+    let (free_gb, drive_name) = disks
+        .iter()
         .find(|d| {
             let name = d.mount_point().to_string_lossy();
             name.starts_with("C") || name == "/"
@@ -145,9 +170,16 @@ fn check_disk() -> TournamentStep {
     let (status, message) = if free_gb >= 10.0 {
         (StepStatus::Pass, "ディスク空き容量は十分です".to_string())
     } else if free_gb >= 5.0 {
-        (StepStatus::Warn, "ディスク空き容量がやや少なめです。不要ファイルの削除を推奨します".to_string())
+        (
+            StepStatus::Warn,
+            "ディスク空き容量がやや少なめです。不要ファイルの削除を推奨します".to_string(),
+        )
     } else {
-        (StepStatus::Fail, "ディスク空き容量が非常に少ないです。ゲームのパフォーマンスが低下する可能性があります".to_string())
+        (
+            StepStatus::Fail,
+            "ディスク空き容量が非常に少ないです。ゲームのパフォーマンスが低下する可能性があります"
+                .to_string(),
+        )
     };
 
     TournamentStep {
@@ -176,9 +208,15 @@ fn check_network() -> TournamentStep {
             let (status, message) = if latency_ms < 50 {
                 (StepStatus::Pass, "ネットワーク接続は良好です".to_string())
             } else if latency_ms < 150 {
-                (StepStatus::Warn, "ネットワークレイテンシがやや高めです".to_string())
+                (
+                    StepStatus::Warn,
+                    "ネットワークレイテンシがやや高めです".to_string(),
+                )
             } else {
-                (StepStatus::Warn, "ネットワークレイテンシが高めです。有線接続を推奨します".to_string())
+                (
+                    StepStatus::Warn,
+                    "ネットワークレイテンシが高めです。有線接続を推奨します".to_string(),
+                )
             };
             TournamentStep {
                 id: "network_latency".to_string(),
@@ -205,7 +243,10 @@ fn check_network() -> TournamentStep {
 #[tauri::command]
 pub async fn run_tournament_checklist() -> Result<TournamentResult, String> {
     if !ENABLE_TOURNAMENT_MODE {
-        return Err("ENABLE_TOURNAMENT_MODE is disabled. Set it to true in tournament.rs to enable.".to_string());
+        return Err(
+            "ENABLE_TOURNAMENT_MODE is disabled. Set it to true in tournament.rs to enable."
+                .to_string(),
+        );
     }
 
     let steps: Vec<TournamentStep> = tokio::task::spawn_blocking(|| {
@@ -220,9 +261,18 @@ pub async fn run_tournament_checklist() -> Result<TournamentResult, String> {
     .await
     .map_err(|e| format!("チェック実行エラー: {}", e))?;
 
-    let pass_count  = steps.iter().filter(|s| s.status == StepStatus::Pass).count() as u32;
-    let warn_count  = steps.iter().filter(|s| s.status == StepStatus::Warn).count() as u32;
-    let fail_count  = steps.iter().filter(|s| s.status == StepStatus::Fail).count() as u32;
+    let pass_count = steps
+        .iter()
+        .filter(|s| s.status == StepStatus::Pass)
+        .count() as u32;
+    let warn_count = steps
+        .iter()
+        .filter(|s| s.status == StepStatus::Warn)
+        .count() as u32;
+    let fail_count = steps
+        .iter()
+        .filter(|s| s.status == StepStatus::Fail)
+        .count() as u32;
     let overall_ready = fail_count == 0;
 
     Ok(TournamentResult {
@@ -252,7 +302,10 @@ mod tests {
         assert_eq!(step.id, "memory_free");
         assert!(step.value.is_some());
         // status must be one of the valid values
-        matches!(step.status, StepStatus::Pass | StepStatus::Warn | StepStatus::Fail);
+        matches!(
+            step.status,
+            StepStatus::Pass | StepStatus::Warn | StepStatus::Fail
+        );
     }
 
     #[test]

@@ -25,8 +25,7 @@ fn open_db_at(path: PathBuf) -> Result<Connection, String> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("Dir create error: {}", e))?;
     }
-    let conn =
-        Connection::open(&path).map_err(|e| format!("DB open error: {}", e))?;
+    let conn = Connection::open(&path).map_err(|e| format!("DB open error: {}", e))?;
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS recommendation_metrics (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,7 +168,10 @@ pub fn get_summary(range_hours: u32) -> Result<MetricsSummary, String> {
         })
         .collect();
 
-    Ok(MetricsSummary { range_hours, models })
+    Ok(MetricsSummary {
+        range_hours,
+        models,
+    })
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -246,20 +248,45 @@ mod tests {
             let (model, success, latency_ms, fallback_used) = row.unwrap();
             let e = map.entry(model).or_insert((0, 0, 0, 0, 0));
             e.0 += 1;
-            if success == 1 { e.1 += 1; } else { e.2 += 1; }
-            if fallback_used == 1 { e.3 += 1; }
+            if success == 1 {
+                e.1 += 1;
+            } else {
+                e.2 += 1;
+            }
+            if fallback_used == 1 {
+                e.3 += 1;
+            }
             e.4 += latency_ms;
         }
         let models: Vec<ModelMetrics> = map
             .into_iter()
             .map(|(model, (total, succ, fail, fb, lat))| ModelMetrics {
-                model, total_calls: total, successes: succ, failures: fail, fallbacks: fb,
-                avg_latency_ms: if total > 0 { lat as f64 / total as f64 } else { 0.0 },
-                success_rate: if total > 0 { succ as f64 / total as f64 } else { 0.0 },
-                fallback_rate: if total > 0 { fb as f64 / total as f64 } else { 0.0 },
+                model,
+                total_calls: total,
+                successes: succ,
+                failures: fail,
+                fallbacks: fb,
+                avg_latency_ms: if total > 0 {
+                    lat as f64 / total as f64
+                } else {
+                    0.0
+                },
+                success_rate: if total > 0 {
+                    succ as f64 / total as f64
+                } else {
+                    0.0
+                },
+                fallback_rate: if total > 0 {
+                    fb as f64 / total as f64
+                } else {
+                    0.0
+                },
             })
             .collect();
-        MetricsSummary { range_hours, models }
+        MetricsSummary {
+            range_hours,
+            models,
+        }
     }
 
     #[test]
@@ -277,7 +304,11 @@ mod tests {
         record_to(&conn, "claude-haiku", false, 1000, true);
 
         let summary = get_summary_from(&conn, 24);
-        let m = summary.models.iter().find(|m| m.model == "claude-haiku").unwrap();
+        let m = summary
+            .models
+            .iter()
+            .find(|m| m.model == "claude-haiku")
+            .unwrap();
 
         assert_eq!(m.total_calls, 3);
         assert_eq!(m.successes, 2);
@@ -295,8 +326,16 @@ mod tests {
 
         let summary = get_summary_from(&conn, 24);
         assert_eq!(summary.models.len(), 2);
-        let haiku = summary.models.iter().find(|m| m.model == "claude-haiku").unwrap();
-        let rule = summary.models.iter().find(|m| m.model == "rule_based_v1").unwrap();
+        let haiku = summary
+            .models
+            .iter()
+            .find(|m| m.model == "claude-haiku")
+            .unwrap();
+        let rule = summary
+            .models
+            .iter()
+            .find(|m| m.model == "rule_based_v1")
+            .unwrap();
         assert_eq!(haiku.fallback_rate, 0.0);
         assert_eq!(rule.fallback_rate, 1.0);
     }

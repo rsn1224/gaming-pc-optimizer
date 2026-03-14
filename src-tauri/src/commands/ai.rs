@@ -127,7 +127,11 @@ pub async fn validate_ai_api_key(provider: String, key: String) -> Result<String
                 let hint = if status == 401 {
                     "APIキーが無効です".to_string()
                 } else {
-                    format!("HTTP {} — {}", status, text.chars().take(120).collect::<String>())
+                    format!(
+                        "HTTP {} — {}",
+                        status,
+                        text.chars().take(120).collect::<String>()
+                    )
                 };
                 return Err(hint);
             }
@@ -156,7 +160,11 @@ pub async fn validate_ai_api_key(provider: String, key: String) -> Result<String
                 let hint = if status == 401 {
                     "APIキーが無効です（401 Unauthorized）".to_string()
                 } else {
-                    format!("HTTP {} — {}", status, text.chars().take(120).collect::<String>())
+                    format!(
+                        "HTTP {} — {}",
+                        status,
+                        text.chars().take(120).collect::<String>()
+                    )
                 };
                 return Err(hint);
             }
@@ -227,11 +235,7 @@ async fn call_anthropic_api(
         .map(|s| s.to_string())
 }
 
-async fn call_openai_api(
-    api_key: &str,
-    prompt: &str,
-    max_tokens: u32,
-) -> Result<String, String> {
+async fn call_openai_api(api_key: &str, prompt: &str, max_tokens: u32) -> Result<String, String> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
         "model": "gpt-4o-mini",
@@ -535,8 +539,7 @@ pub async fn get_ai_storage_recommendation() -> Result<Vec<AiStorageItem>, Strin
             })
         })
         .collect();
-    let context = serde_json::to_string(&slim)
-        .map_err(|e| format!("シリアライズ失敗: {}", e))?;
+    let context = serde_json::to_string(&slim).map_err(|e| format!("シリアライズ失敗: {}", e))?;
 
     let prompt = format!(
         r#"You are a PC storage optimization expert. Below is a JSON array of temporary-file categories on a Windows gaming PC.
@@ -560,9 +563,13 @@ Example output format:
 
     let content_text = call_claude_api(&api_key, &prompt, 2048).await?;
     let json_str = extract_json_array(&content_text);
-    serde_json::from_str::<Vec<AiStorageItem>>(json_str)
-        .map_err(|e| format!("AIレスポンス解析失敗 ({}): {}", e, &content_text[..content_text.len().min(300)])
+    serde_json::from_str::<Vec<AiStorageItem>>(json_str).map_err(|e| {
+        format!(
+            "AIレスポンス解析失敗 ({}): {}",
+            e,
+            &content_text[..content_text.len().min(300)]
         )
+    })
 }
 
 // ── Network recommendation AI ─────────────────────────────────────────────────
@@ -783,6 +790,7 @@ pub async fn get_game_settings_advice(game_name: String) -> Result<GameSettingsA
 
 // ── S10-01: Performance Coach ─────────────────────────────────────────────────
 
+#[allow(dead_code)]
 pub const ENABLE_PERFORMANCE_COACH: bool = true;
 
 /// セッション後のパフォーマンスコーチングレポート
@@ -807,7 +815,9 @@ pub struct PerformanceCoachReport {
 
 /// ゲームセッション後に AI がパフォーマンスを評価してコーチングレポートを生成する。
 #[tauri::command]
-pub async fn generate_performance_coaching(session_id: String) -> Result<PerformanceCoachReport, String> {
+pub async fn generate_performance_coaching(
+    session_id: String,
+) -> Result<PerformanceCoachReport, String> {
     let api_key = load_api_key()?;
 
     // Load session data
@@ -815,28 +825,43 @@ pub async fn generate_performance_coaching(session_id: String) -> Result<Perform
         .ok_or_else(|| format!("セッション {} が見つかりません", session_id))?;
 
     // Load telemetry records (T0 before + T1/T2 after)
-    let records = super::telemetry::get_records_for_session(&session_id)
-        .unwrap_or_default();
+    let records = super::telemetry::get_records_for_session(&session_id).unwrap_or_default();
 
-    let t0 = records.iter().find(|r| r.phase == super::telemetry::TelemetryPhase::Before);
-    let t_latest = records.iter().filter(|r| r.phase != super::telemetry::TelemetryPhase::Before).last();
+    let t0 = records
+        .iter()
+        .find(|r| r.phase == super::telemetry::TelemetryPhase::Before);
+    let t_latest = records
+        .iter()
+        .rfind(|r| r.phase != super::telemetry::TelemetryPhase::Before);
 
     let score_before = session.score_before.unwrap_or(0) as u8;
-    let score_after  = session.score_after.unwrap_or(score_before as u32) as u8;
-    let score_delta  = score_after as i16 - score_before as i16;
-    let duration_str = session.duration_minutes
+    let score_after = session.score_after.unwrap_or(score_before as u32) as u8;
+    let score_delta = score_after as i16 - score_before as i16;
+    let duration_str = session
+        .duration_minutes
         .map(|m| format!("{}分", m))
         .unwrap_or_else(|| "不明".to_string());
 
     let tele_before = if let Some(r) = t0 {
-        format!("CPU {:.0}% / メモリ {:.0}% / スコア {}", r.cpu_usage, r.memory_percent, r.score_overall)
-    } else { "データなし".to_string() };
+        format!(
+            "CPU {:.0}% / メモリ {:.0}% / スコア {}",
+            r.cpu_usage, r.memory_percent, r.score_overall
+        )
+    } else {
+        "データなし".to_string()
+    };
 
     let tele_after = if let Some(r) = t_latest {
-        format!("CPU {:.0}% / メモリ {:.0}% / スコア {}", r.cpu_usage, r.memory_percent, r.score_overall)
-    } else { "データなし".to_string() };
+        format!(
+            "CPU {:.0}% / メモリ {:.0}% / スコア {}",
+            r.cpu_usage, r.memory_percent, r.score_overall
+        )
+    } else {
+        "データなし".to_string()
+    };
 
-    let prompt = format!(r#"あなたは Windows ゲーミング PC の最適化コーチです。
+    let prompt = format!(
+        r#"あなたは Windows ゲーミング PC の最適化コーチです。
 以下のゲームセッションデータを分析して、日本語でコーチングレポートを返してください。
 
 ゲーム: {game}
@@ -874,14 +899,22 @@ pub async fn generate_performance_coaching(session_id: String) -> Result<Perform
     #[derive(Deserialize)]
     struct AiCoachResponse {
         summary: String,
-        #[serde(default)] achievements: Vec<String>,
-        #[serde(default)] improvements: Vec<String>,
-        #[serde(default)] next_tips: Vec<String>,
+        #[serde(default)]
+        achievements: Vec<String>,
+        #[serde(default)]
+        improvements: Vec<String>,
+        #[serde(default)]
+        next_tips: Vec<String>,
         rating: u8,
     }
 
-    let ai: AiCoachResponse = serde_json::from_str(json_str)
-        .map_err(|e| format!("AI レスポンスの解析に失敗しました: {} (raw: {})", e, &raw[..raw.len().min(300)]))?;
+    let ai: AiCoachResponse = serde_json::from_str(json_str).map_err(|e| {
+        format!(
+            "AI レスポンスの解析に失敗しました: {} (raw: {})",
+            e,
+            &raw[..raw.len().min(300)]
+        )
+    })?;
 
     Ok(PerformanceCoachReport {
         game_name: session.game_name,
@@ -899,6 +932,7 @@ pub async fn generate_performance_coaching(session_id: String) -> Result<Perform
 
 // ── S9-01: AI Profile Generator ───────────────────────────────────────────────
 
+#[allow(dead_code)]
 pub const ENABLE_AI_PROFILE_GENERATOR: bool = true;
 
 /// ゲーム名から最適な GameProfile 設定を AI で生成して返す（保存はしない）。
@@ -948,22 +982,41 @@ pub async fn generate_ai_profile(
 
     #[derive(Deserialize)]
     struct AiProfileDraft {
-        #[serde(default)] kill_bloatware: Option<bool>,
-        #[serde(default)] power_plan: Option<String>,
-        #[serde(default)] windows_preset: Option<String>,
-        #[serde(default)] storage_mode: Option<String>,
-        #[serde(default)] network_mode: Option<String>,
-        #[serde(default)] dns_preset: Option<String>,
-        #[serde(default)] recommended_mode: Option<String>,
-        #[serde(default)] recommended_reason: Option<String>,
-        #[serde(default)] recommended_confidence: Option<u8>,
-        #[serde(default)] tags: Vec<String>,
+        #[serde(default)]
+        kill_bloatware: Option<bool>,
+        #[serde(default)]
+        power_plan: Option<String>,
+        #[serde(default)]
+        windows_preset: Option<String>,
+        #[serde(default)]
+        storage_mode: Option<String>,
+        #[serde(default)]
+        network_mode: Option<String>,
+        #[serde(default)]
+        dns_preset: Option<String>,
+        #[serde(default)]
+        recommended_mode: Option<String>,
+        #[serde(default)]
+        recommended_reason: Option<String>,
+        #[serde(default)]
+        recommended_confidence: Option<u8>,
+        #[serde(default)]
+        tags: Vec<String>,
     }
 
-    let ai: AiProfileDraft = serde_json::from_str(json_str)
-        .map_err(|e| format!("AI レスポンスの解析に失敗しました: {} (raw: {})", e, &raw[..raw.len().min(300)]))?;
+    let ai: AiProfileDraft = serde_json::from_str(json_str).map_err(|e| {
+        format!(
+            "AI レスポンスの解析に失敗しました: {} (raw: {})",
+            e,
+            &raw[..raw.len().min(300)]
+        )
+    })?;
 
-    let mut tags = if ai.tags.is_empty() { vec!["AI生成".to_string()] } else { ai.tags };
+    let mut tags = if ai.tags.is_empty() {
+        vec!["AI生成".to_string()]
+    } else {
+        ai.tags
+    };
     if !tags.contains(&"AI生成".to_string()) {
         tags.push("AI生成".to_string());
     }
@@ -974,7 +1027,9 @@ pub async fn generate_ai_profile(
         exe_path: exe_path.unwrap_or_default(),
         tags,
         kill_bloatware: ai.kill_bloatware.unwrap_or(false),
-        power_plan: ai.power_plan.unwrap_or_else(|| "high_performance".to_string()),
+        power_plan: ai
+            .power_plan
+            .unwrap_or_else(|| "high_performance".to_string()),
         windows_preset: ai.windows_preset.unwrap_or_else(|| "gaming".to_string()),
         storage_mode: ai.storage_mode.unwrap_or_else(|| "none".to_string()),
         network_mode: ai.network_mode.unwrap_or_else(|| "none".to_string()),

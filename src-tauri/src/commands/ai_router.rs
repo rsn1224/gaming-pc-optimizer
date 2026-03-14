@@ -5,8 +5,8 @@
 ///   - プロンプトを構築して Claude API を呼び出す
 ///   - AI 失敗時にルールベース推奨へ自動フォールバックする
 use crate::commands::ai_schema::{
-    ExpectedImpact, Intent, RecommendationInput, RecommendationItem,
-    RecommendationResult, RiskLevel,
+    ExpectedImpact, Intent, RecommendationInput, RecommendationItem, RecommendationResult,
+    RiskLevel,
 };
 
 // ── Model constants ───────────────────────────────────────────────────────────
@@ -501,7 +501,12 @@ mod tests {
 
     #[test]
     fn fallback_all_confidences_in_range() {
-        for intent in [Intent::Fps, Intent::Stability, Intent::Silence, Intent::Balanced] {
+        for intent in [
+            Intent::Fps,
+            Intent::Stability,
+            Intent::Silence,
+            Intent::Balanced,
+        ] {
             let result = fallback_rule_based(&make_input(intent));
             for item in &result.items {
                 assert!(

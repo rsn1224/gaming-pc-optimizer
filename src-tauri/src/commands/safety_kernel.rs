@@ -1,3 +1,4 @@
+use super::{audit_log, optimizer};
 /// safety_kernel.rs — Safety Kernel 基盤 (Sprint 1 / S1-04 + S1-05)
 ///
 /// precheck → apply → verify → auto-rollback の 4 フェーズフローを実装する。
@@ -8,7 +9,6 @@
 ///   false の場合 safe_apply_optimizations は既存の apply_all_optimizations に
 ///   フォールスルーし、監査ログのみ追加する。
 use serde::{Deserialize, Serialize};
-use super::{audit_log, optimizer};
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
 pub const ENABLE_SAFETY_KERNEL: bool = true;
@@ -55,9 +55,8 @@ pub fn run_prechecks() -> PreCheckResult {
     // ── 管理者権限チェック ──────────────────────────────────────────────────
     let is_admin = is_elevated();
     if !is_admin {
-        warnings.push(
-            "管理者権限がありません。ネットワーク最適化は一部スキップされます。".to_string(),
-        );
+        warnings
+            .push("管理者権限がありません。ネットワーク最適化は一部スキップされます。".to_string());
     }
 
     // ── バッテリー駆動チェック ──────────────────────────────────────────────
@@ -133,14 +132,17 @@ pub fn run_verify(score_before: u8) -> VerifyResult {
 /// ENABLE_SAFETY_KERNEL = false の間は既存の apply_all_optimizations に
 /// フォールスルーし、監査ログのみ追記する。
 #[tauri::command]
-pub async fn safe_apply_optimizations(
-) -> Result<optimizer::AllOptimizationResult, String> {
+pub async fn safe_apply_optimizations() -> Result<optimizer::AllOptimizationResult, String> {
     if !ENABLE_SAFETY_KERNEL {
         // ── Fallthrough: 既存コマンドを呼び出し、監査ログを追記 ──────────────
         let result = optimizer::apply_all_optimizations().await?;
 
         // 監査ログに記録
-        let result_str = if result.errors.is_empty() { "success" } else { "failure" };
+        let result_str = if result.errors.is_empty() {
+            "success"
+        } else {
+            "failure"
+        };
         audit_log::add_audit_entry(
             audit_log::AuditActor::User,
             "safe_apply_optimizations",
@@ -179,11 +181,10 @@ pub async fn safe_apply_optimizations(
     }
 
     // Phase 2: Capture score before
-    let score_before = tokio::task::spawn_blocking(|| {
-        optimizer::compute_optimization_score().overall
-    })
-    .await
-    .map_err(|e| e.to_string())?;
+    let score_before =
+        tokio::task::spawn_blocking(|| optimizer::compute_optimization_score().overall)
+            .await
+            .map_err(|e| e.to_string())?;
 
     // Phase 3: Apply
     let result = optimizer::apply_all_optimizations().await?;

@@ -1,16 +1,20 @@
 use super::runner::{CommandRunner, SystemRunner};
 use std::path::PathBuf;
 
-
 /// Extract the active power scheme GUID from `powercfg /getactivescheme` output.
 /// Returns the raw GUID string (e.g. "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c").
 pub(crate) fn parse_active_guid(output: &str) -> Option<String> {
     output
         .lines()
-        .find(|l| l.to_lowercase().contains("power scheme guid"))
+        // "guid:" はロケール非依存 (英語: "Power Scheme GUID:", 日本語: "電源設定スキーム GUID:")
+        .find(|l| l.to_lowercase().contains("guid:"))
         .and_then(|l| {
             l.split_whitespace()
-                .find(|part| part.len() == 36 && part.contains('-'))
+                .find(|part| {
+                    part.len() == 36
+                        && part.contains('-')
+                        && part.chars().all(|c| c.is_ascii_hexdigit() || c == '-')
+                })
                 .map(|s| s.to_string())
         })
 }
@@ -62,11 +66,7 @@ pub async fn set_ultimate_performance() -> Result<String, String> {
         let guid =
             ultimate_guid.unwrap_or_else(|| "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c".to_string());
 
-        let set_output = crate::win_cmd!("powercfg")
-            .args(["/setactive", &guid])
-            .output()
-            .map_err(|e| e.to_string())?;
-
+        // /setactive の前に現在のプランを保存する（変更後GUIDを拾わないよう先行取得）
         let previous_guid = {
             let prev_out = crate::win_cmd!("powercfg")
                 .args(["/getactivescheme"])
@@ -76,6 +76,11 @@ pub async fn set_ultimate_performance() -> Result<String, String> {
                 .unwrap_or_default();
             parse_active_guid(&prev_out)
         };
+
+        let set_output = crate::win_cmd!("powercfg")
+            .args(["/setactive", &guid])
+            .output()
+            .map_err(|e| e.to_string())?;
 
         if set_output.status.success() {
             crate::win_cmd!("powercfg")

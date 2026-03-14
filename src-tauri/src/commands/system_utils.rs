@@ -2,13 +2,12 @@
 ///
 /// 管理者権限での再起動 (relaunch_as_admin) を提供する。
 /// PowerShell の Start-Process -Verb RunAs を使用するため追加依存なし。
-
 /// 現在のプロセスを管理者権限で再起動する。
 /// UAC プロンプトが表示され、ユーザーが承認すると現在のプロセスは終了する。
 #[tauri::command]
 pub async fn relaunch_as_admin() -> Result<(), String> {
-    let exe = std::env::current_exe()
-        .map_err(|e| format!("実行ファイルパスの取得に失敗: {}", e))?;
+    let exe =
+        std::env::current_exe().map_err(|e| format!("実行ファイルパスの取得に失敗: {}", e))?;
 
     let exe_path = exe.to_string_lossy().to_string();
 
@@ -24,7 +23,10 @@ pub async fn relaunch_as_admin() -> Result<(), String> {
         .map_err(|e| format!("PowerShell の実行に失敗: {}", e))?;
 
     if !status.success() {
-        return Err("管理者として再起動できませんでした（UAC がキャンセルされた可能性があります）".to_string());
+        return Err(
+            "管理者として再起動できませんでした（UAC がキャンセルされた可能性があります）"
+                .to_string(),
+        );
     }
 
     // 昇格プロセスが起動したので現在のプロセスを終了

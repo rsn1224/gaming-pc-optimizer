@@ -153,7 +153,7 @@ fn now_iso8601() -> String {
 }
 
 pub fn new_session_id() -> String {
-    format!("session_{}", now_unix_secs())
+    format!("session_{}", uuid::Uuid::new_v4())
 }
 
 // ── Snapshot capture ──────────────────────────────────────────────────────────

@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::os::windows::process::CommandExt;
 
-
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 const TASK_NAME: &str = "GamingPCOptimizer_AutoOptimize";

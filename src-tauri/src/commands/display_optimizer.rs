@@ -128,13 +128,23 @@ try {
         .unwrap_or_default()
         .into_iter()
         .filter_map(|v| {
-            let name = v.get("name").and_then(|n| n.as_str()).unwrap_or("Unknown GPU").to_string();
+            let name = v
+                .get("name")
+                .and_then(|n| n.as_str())
+                .unwrap_or("Unknown GPU")
+                .to_string();
             let current_hz = val_to_u32(v.get("currentHz"));
             let max_hz = val_to_u32(v.get("maxHz"));
-            if name.is_empty() { return None; }
+            if name.is_empty() {
+                return None;
+            }
             Some(DisplayInfo {
                 name,
-                current_hz: if current_hz > 0 { current_hz } else { max_hz.max(60) },
+                current_hz: if current_hz > 0 {
+                    current_hz
+                } else {
+                    max_hz.max(60)
+                },
                 max_hz: max_hz.max(60),
             })
         })
@@ -164,7 +174,8 @@ try {
     };
 
     // Could be a bare string "C:\\path" or array ["C:\\path", ...]
-    let normalized = if stdout.starts_with('"') || (!stdout.starts_with('[') && !stdout.is_empty()) {
+    let normalized = if stdout.starts_with('"') || (!stdout.starts_with('[') && !stdout.is_empty())
+    {
         format!("[{}]", stdout)
     } else {
         stdout
@@ -188,7 +199,11 @@ fn validate_path(path: &str) -> Result<(), String> {
     }
     // Windows パスらしい形式（ドライブレター or UNC）か確認
     let looks_like_path = trimmed.len() >= 3
-        && (trimmed.chars().next().map(|c| c.is_ascii_alphabetic()).unwrap_or(false)
+        && (trimmed
+            .chars()
+            .next()
+            .map(|c| c.is_ascii_alphabetic())
+            .unwrap_or(false)
             && trimmed.chars().nth(1) == Some(':'))
         || trimmed.starts_with("\\\\");
     if !looks_like_path {
@@ -209,7 +224,11 @@ pub async fn get_display_optimizer_status() -> Result<DisplayOptimizerStatus, St
         let hags = get_hags_info();
         let displays = get_displays();
         let defender_exclusions = get_defender_exclusions_inner();
-        DisplayOptimizerStatus { hags, displays, defender_exclusions }
+        DisplayOptimizerStatus {
+            hags,
+            displays,
+            defender_exclusions,
+        }
     })
     .await
     .map_err(|e| e.to_string())
@@ -299,8 +318,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flag_is_off_by_default() {
-        assert!(!ENABLE_HAGS_DISPLAY_OPTIMIZER);
+    fn flag_is_enabled_for_v2() {
+        assert!(ENABLE_HAGS_DISPLAY_OPTIMIZER);
     }
 
     #[test]

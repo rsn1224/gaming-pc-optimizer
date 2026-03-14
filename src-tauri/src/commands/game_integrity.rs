@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Serialize, Deserialize, Clone)]
 pub struct GameIntegrityResult {
     pub game_name: String,

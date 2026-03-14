@@ -209,21 +209,19 @@ async fn dispatch_policy_action(policy: &super::policy::Policy, handle: &tauri::
     use super::policy::PolicyAction;
 
     let result: Result<String, String> = match &policy.action {
-        PolicyAction::KillBloatware => {
-            super::process::kill_bloatware(None)
-                .await
-                .map(|r| format!("killed:{},freed:{:.0}MB", r.killed.len(), r.freed_memory_mb))
-        }
-        PolicyAction::ApplyAll => {
-            super::optimizer::apply_all_optimizations()
-                .await
-                .map(|r| format!("apply_all: processes={}, errors={}", r.process_killed, r.errors.len()))
-        }
-        PolicyAction::ApplyPreset { preset_id } => {
-            super::presets::apply_preset(preset_id.clone())
-                .await
-                .map(|r| format!("preset:{} processes={}", preset_id, r.process_killed))
-        }
+        PolicyAction::KillBloatware => super::process::kill_bloatware(None)
+            .await
+            .map(|r| format!("killed:{},freed:{:.0}MB", r.killed.len(), r.freed_memory_mb)),
+        PolicyAction::ApplyAll => super::optimizer::apply_all_optimizations().await.map(|r| {
+            format!(
+                "apply_all: processes={}, errors={}",
+                r.process_killed,
+                r.errors.len()
+            )
+        }),
+        PolicyAction::ApplyPreset { preset_id } => super::presets::apply_preset(preset_id.clone())
+            .await
+            .map(|r| format!("preset:{} processes={}", preset_id, r.process_killed)),
         PolicyAction::SetPowerPlan { plan } => {
             if plan == "ultimate" || plan == "ultimate_performance" {
                 super::power::set_ultimate_performance()
@@ -240,12 +238,12 @@ async fn dispatch_policy_action(policy: &super::policy::Policy, handle: &tauri::
                 let ok = match id.as_str() {
                     "kill_bloatware" => super::process::kill_bloatware(None).await.is_ok(),
                     "ultimate_power" => super::power::set_ultimate_performance().await.is_ok(),
-                    "gaming_windows" => {
-                        tokio::task::spawn_blocking(super::windows_settings::apply_gaming_windows_settings)
-                            .await
-                            .map(|r| r.is_ok())
-                            .unwrap_or(false)
-                    }
+                    "gaming_windows" => tokio::task::spawn_blocking(
+                        super::windows_settings::apply_gaming_windows_settings,
+                    )
+                    .await
+                    .map(|r| r.is_ok())
+                    .unwrap_or(false),
                     "network_gaming" => {
                         tokio::task::spawn_blocking(super::network::apply_network_gaming)
                             .await
@@ -254,7 +252,9 @@ async fn dispatch_policy_action(policy: &super::policy::Policy, handle: &tauri::
                     }
                     _ => false,
                 };
-                if ok { applied.push(id.as_str()); }
+                if ok {
+                    applied.push(id.as_str());
+                }
             }
             Ok(format!("graph_nodes: {:?}", applied))
         }
@@ -268,7 +268,10 @@ async fn dispatch_policy_action(policy: &super::policy::Policy, handle: &tauri::
                 detail,
                 "success",
             );
-            send_notification(handle, &format!("ポリシー「{}」を実行しました", policy.name));
+            send_notification(
+                handle,
+                &format!("ポリシー「{}」を実行しました", policy.name),
+            );
         }
         Err(e) => {
             super::event_log::add_event_internal(
@@ -296,11 +299,7 @@ fn send_notification(handle: &tauri::AppHandle, body: &str) {
 
 /// スコアを履歴に追記し、急落していれば通知する。
 /// watcher_loop の末尾（毎サイクル）から呼ばれる。
-fn check_score_regression(
-    current_score: u8,
-    state: &crate::AppState,
-    handle: &tauri::AppHandle,
-) {
+fn check_score_regression(current_score: u8, state: &crate::AppState, handle: &tauri::AppHandle) {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     let now_secs = SystemTime::now()
@@ -324,10 +323,12 @@ fn check_score_regression(
 
         // Baseline = average of all readings except the latest
         let older = &w.score_history[..w.score_history.len() - 1];
-        let baseline: i16 = (older.iter().map(|&v| v as u32).sum::<u32>() / older.len() as u32) as i16;
+        let baseline: i16 =
+            (older.iter().map(|&v| v as u32).sum::<u32>() / older.len() as u32) as i16;
         let delta = current_score as i16 - baseline;
 
-        let cooldown_ok = now_secs.saturating_sub(w.regression_notified_secs) > REGRESSION_COOLDOWN_SECS;
+        let cooldown_ok =
+            now_secs.saturating_sub(w.regression_notified_secs) > REGRESSION_COOLDOWN_SECS;
 
         if delta <= -REGRESSION_THRESHOLD && cooldown_ok {
             w.regression_notified_secs = now_secs;
@@ -350,7 +351,10 @@ fn check_score_regression(
             &detail,
             "warning",
         );
-        send_notification(handle, &format!("⚠ スコア急落: {} pts → 最適化を推奨します", current_score));
+        send_notification(
+            handle,
+            &format!("⚠ スコア急落: {} pts → 最適化を推奨します", current_score),
+        );
         handle.emit("score_regression", current_score).ok();
     }
 }
@@ -378,10 +382,11 @@ async fn check_thermal_auto_reduction(state: &crate::AppState, handle: &tauri::A
 
     if !currently_reduced && temp >= THERMAL_HIGH_C {
         // 現在の電力情報を取得
-        let power_info = match tokio::task::spawn_blocking(super::hardware::get_gpu_power_info).await {
-            Ok(Ok(info)) => info,
-            _ => return,
-        };
+        let power_info =
+            match tokio::task::spawn_blocking(super::hardware::get_gpu_power_info).await {
+                Ok(Ok(info)) => info,
+                _ => return,
+            };
         let reduced_w = (power_info.current_w * (100 - THERMAL_REDUCTION_PCT)) / 100;
         let reduced_w = reduced_w.max(power_info.min_w);
 
@@ -396,10 +401,19 @@ async fn check_thermal_auto_reduction(state: &crate::AppState, handle: &tauri::A
             super::event_log::add_event_internal(
                 "thermal_throttle",
                 "GPU 温度超過 — 電力制限を自動削減しました",
-                &format!("{}°C 検知 → {} W → {} W (-{}%)", temp, power_info.current_w, reduced_w, THERMAL_REDUCTION_PCT),
+                &format!(
+                    "{}°C 検知 → {} W → {} W (-{}%)",
+                    temp, power_info.current_w, reduced_w, THERMAL_REDUCTION_PCT
+                ),
                 "warning",
             );
-            send_notification(handle, &format!("🌡 GPU {}°C — 電力制限を {}W に削減しました", temp, reduced_w));
+            send_notification(
+                handle,
+                &format!(
+                    "🌡 GPU {}°C — 電力制限を {}W に削減しました",
+                    temp, reduced_w
+                ),
+            );
             handle.emit("thermal_throttle_changed", true).ok();
         }
     } else if currently_reduced && temp <= THERMAL_RECOVERY_C {
@@ -495,8 +509,13 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                         if let Some(ref sid) = session_id_opt {
                             let sid_clone = sid.clone();
                             let handle_clone = handle.clone();
-                            let game_name = state.0.lock().unwrap_or_else(|p| p.into_inner())
-                                .last_game_name.clone().unwrap_or_default();
+                            let game_name = state
+                                .0
+                                .lock()
+                                .unwrap_or_else(|p| p.into_inner())
+                                .last_game_name
+                                .clone()
+                                .unwrap_or_default();
                             tokio::task::spawn_blocking(move || {
                                 let score = super::optimizer::compute_optimization_score();
                                 super::game_log::record_game_end(
@@ -573,7 +592,10 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                     match result {
                         Ok(_) => {
                             // Store game name for session_ended coaching event
-                            state.0.lock().unwrap_or_else(|p| p.into_inner())
+                            state
+                                .0
+                                .lock()
+                                .unwrap_or_else(|p| p.into_inner())
                                 .last_game_name = Some(profile.name.clone());
 
                             handle
@@ -616,7 +638,8 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
                                         score_network: score.network,
                                         memory_used_mb: (sys2.used_memory() / 1024 / 1024) as f64,
                                         memory_percent: if sys2.total_memory() > 0 {
-                                            (sys2.used_memory() as f64 / sys2.total_memory() as f64) * 100.0
+                                            (sys2.used_memory() as f64 / sys2.total_memory() as f64)
+                                                * 100.0
                                         } else {
                                             0.0
                                         },
@@ -643,11 +666,16 @@ pub async fn watcher_loop(handle: tauri::AppHandle) {
 
                             // S8-01: Emit detailed game_launched event for frontend banner
                             if ENABLE_LAUNCH_MONITORING {
-                                handle.emit("game_launched", serde_json::json!({
-                                    "game_name": profile.name,
-                                    "profile_id": profile.id,
-                                    "score_before": score_before,
-                                })).ok();
+                                handle
+                                    .emit(
+                                        "game_launched",
+                                        serde_json::json!({
+                                            "game_name": profile.name,
+                                            "profile_id": profile.id,
+                                            "score_before": score_before,
+                                        }),
+                                    )
+                                    .ok();
                             }
                         }
                         Err(e) => eprintln!("[watcher] apply error: {e}"),

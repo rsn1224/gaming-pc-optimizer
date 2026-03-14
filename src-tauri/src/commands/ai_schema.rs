@@ -6,19 +6,14 @@ use serde::{Deserialize, Serialize};
 
 // ── Intent ────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum Intent {
     Fps,
     Stability,
     Silence,
+    #[default]
     Balanced,
-}
-
-impl Default for Intent {
-    fn default() -> Self {
-        Intent::Balanced
-    }
 }
 
 // ── System snapshot ───────────────────────────────────────────────────────────
@@ -68,18 +63,13 @@ pub struct RecommendationInput {
 
 // ── Risk level ────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum RiskLevel {
+    #[default]
     Safe,
     Caution,
     Advanced,
-}
-
-impl Default for RiskLevel {
-    fn default() -> Self {
-        RiskLevel::Safe
-    }
 }
 
 // ── Expected impact ───────────────────────────────────────────────────────────

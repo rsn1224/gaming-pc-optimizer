@@ -3,12 +3,12 @@
 /// Feature flag: ENABLE_HARDWARE_SUGGESTIONS
 /// CPU / GPU / RAM の現在状態を解析し、改善提案を返す。
 /// AI キー不要のローカル診断エンジン。
-
 use serde::{Deserialize, Serialize};
 use sysinfo::System;
 
 // ── Feature flag ─────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 pub const ENABLE_HARDWARE_SUGGESTIONS: bool = true;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -64,7 +64,11 @@ pub fn get_hardware_diagnostics() -> HardwareDiagnostics {
     let (gpu_temp, gpu_util, gpu_name) = match super::hardware::fetch_gpu_status_sync() {
         Ok(list) => {
             if let Some(gpu) = list.into_iter().next() {
-                (Some(gpu.temperature_c), Some(gpu.utilization_percent), Some(gpu.name))
+                (
+                    Some(gpu.temperature_c),
+                    Some(gpu.utilization_percent),
+                    Some(gpu.name),
+                )
             } else {
                 (None, None, None)
             }
@@ -90,7 +94,10 @@ pub fn get_hardware_diagnostics() -> HardwareDiagnostics {
             id: "cpu_high".to_string(),
             category: "cpu".to_string(),
             title: "CPU 使用率が高い".to_string(),
-            detail: format!("現在 {:.0}% 使用中。不要なバックグラウンドプロセスを終了することで改善できます。", cpu_usage),
+            detail: format!(
+                "現在 {:.0}% 使用中。不要なバックグラウンドプロセスを終了することで改善できます。",
+                cpu_usage
+            ),
             severity: "warning".to_string(),
             action: Some("プロセス管理".to_string()),
         });
@@ -126,7 +133,10 @@ pub fn get_hardware_diagnostics() -> HardwareDiagnostics {
             id: "memory_moderate".to_string(),
             category: "memory".to_string(),
             title: "メモリ使用率がやや高め".to_string(),
-            detail: format!("{:.0}% 使用中。ゲーム前にメモリクリーンを実行すると快適です。", memory_percent),
+            detail: format!(
+                "{:.0}% 使用中。ゲーム前にメモリクリーンを実行すると快適です。",
+                memory_percent
+            ),
             severity: "info".to_string(),
             action: Some("メモリクリーン".to_string()),
         });
@@ -139,7 +149,10 @@ pub fn get_hardware_diagnostics() -> HardwareDiagnostics {
                 id: "gpu_critical_temp".to_string(),
                 category: "thermal".to_string(),
                 title: "GPU 温度が非常に高い".to_string(),
-                detail: format!("{}°C — サーマルスロットリングが発生しています。GPU電力制限を下げてください。", temp),
+                detail: format!(
+                    "{}°C — サーマルスロットリングが発生しています。GPU電力制限を下げてください。",
+                    temp
+                ),
                 severity: "critical".to_string(),
                 action: Some("GPU 電力制限".to_string()),
             });
@@ -148,7 +161,10 @@ pub fn get_hardware_diagnostics() -> HardwareDiagnostics {
                 id: "gpu_high_temp".to_string(),
                 category: "thermal".to_string(),
                 title: "GPU 温度が上昇中".to_string(),
-                detail: format!("{}°C — 注意域です。ケースのエアフローや GPU ファン速度を確認してください。", temp),
+                detail: format!(
+                    "{}°C — 注意域です。ケースのエアフローや GPU ファン速度を確認してください。",
+                    temp
+                ),
                 severity: "warning".to_string(),
                 action: None,
             });

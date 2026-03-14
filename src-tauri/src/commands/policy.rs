@@ -1,3 +1,5 @@
+use super::audit_log::{self, AuditActor};
+use super::now_iso8601;
 /// policy.rs — Policy Engine 基盤 (Sprint 2 / S2-03)
 ///
 /// 宣言的なポリシー（トリガー + アクション）を定義・保存・評価する。
@@ -6,8 +8,6 @@
 ///   true になると watcher ループから evaluate_pending() が呼ばれ、
 ///   条件を満たしたポリシーのアクションが自動実行される。
 use serde::{Deserialize, Serialize};
-use super::now_iso8601;
-use super::audit_log::{self, AuditActor};
 
 // ── Cron helpers (S5-01) ──────────────────────────────────────────────────────
 
@@ -15,9 +15,9 @@ use super::audit_log::{self, AuditActor};
 /// - 5フィールド ("0 */6 * * *") は先頭に "0 " を補完して6フィールド化する。
 /// - last_fired_at が None の場合は365日前を起点とする（初回は即発火）。
 fn is_cron_due(cron_expr: &str, last_fired_iso: Option<&str>) -> bool {
+    use chrono::{DateTime, Duration, Utc};
     use cron::Schedule;
     use std::str::FromStr;
-    use chrono::{DateTime, Duration, Utc};
 
     // Normalize 5-field → 6-field (prepend seconds field "0")
     let parts: Vec<&str> = cron_expr.split_whitespace().collect();
@@ -53,6 +53,7 @@ pub const ENABLE_POLICY_ENGINE: bool = true;
 
 // ── Trigger ───────────────────────────────────────────────────────────────────
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum PolicyTrigger {
@@ -163,6 +164,7 @@ pub struct EvalContext {
 }
 
 /// 評価結果: 発火したポリシーとスキップしたポリシー
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct EvalResult {
     pub fired: Vec<String>,
@@ -214,12 +216,8 @@ pub fn execute_policy_action(policy: &mut Policy) -> Result<(), String> {
             Ok("kill_bloatware queued".to_string())
         }
         PolicyAction::ApplyAll => Ok("apply_all queued".to_string()),
-        PolicyAction::ApplyPreset { preset_id } => {
-            Ok(format!("apply_preset:{} queued", preset_id))
-        }
-        PolicyAction::SetPowerPlan { plan } => {
-            Ok(format!("set_power_plan:{} queued", plan))
-        }
+        PolicyAction::ApplyPreset { preset_id } => Ok(format!("apply_preset:{} queued", preset_id)),
+        PolicyAction::SetPowerPlan { plan } => Ok(format!("set_power_plan:{} queued", plan)),
         PolicyAction::ApplyGraphNodes { node_ids } => {
             Ok(format!("apply_graph_nodes:{} queued", node_ids.join(",")))
         }

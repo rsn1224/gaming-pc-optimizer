@@ -29,12 +29,12 @@ const WINDOW_SIZE: usize = 60; // 60 秒分のローリングウィンドウ
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PerfSnapshot {
-    pub timestamp: i64,          // Unix epoch seconds
-    pub cpu_percent: f32,        // 0–100
-    pub gpu_util_percent: f32,   // 0–100 (nvidia-smi) または -1 (非対応)
-    pub gpu_vram_used_mb: u64,   // MiB
-    pub gpu_vram_total_mb: u64,  // MiB
-    pub gpu_temp_c: i32,         // °C または -1
+    pub timestamp: i64,         // Unix epoch seconds
+    pub cpu_percent: f32,       // 0–100
+    pub gpu_util_percent: f32,  // 0–100 (nvidia-smi) または -1 (非対応)
+    pub gpu_vram_used_mb: u64,  // MiB
+    pub gpu_vram_total_mb: u64, // MiB
+    pub gpu_temp_c: i32,        // °C または -1
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,9 +42,9 @@ pub struct PerfSnapshot {
 pub struct PerformanceStats {
     pub sample_count: usize,
     pub avg_cpu: f32,
-    pub p1_low_cpu: f32,    // 1% Low CPU（上位99%より悪い値）
+    pub p1_low_cpu: f32, // 1% Low CPU（上位99%より悪い値）
     pub avg_gpu: f32,
-    pub p1_low_gpu: f32,    // GPU あり環境のみ有効
+    pub p1_low_gpu: f32, // GPU あり環境のみ有効
     pub gpu_available: bool,
     pub peak_vram_mb: u64,
 }
@@ -85,9 +85,7 @@ fn query_nvidia_smi() -> (f32, u64, u64, i32) {
         .output();
 
     let stdout = match out {
-        Ok(o) if o.status.success() => {
-            String::from_utf8_lossy(&o.stdout).trim().to_string()
-        }
+        Ok(o) if o.status.success() => String::from_utf8_lossy(&o.stdout).trim().to_string(),
         _ => return (-1.0, 0, 0, -1),
     };
 
@@ -95,10 +93,10 @@ fn query_nvidia_smi() -> (f32, u64, u64, i32) {
     if parts.len() < 4 {
         return (-1.0, 0, 0, -1);
     }
-    let util  = parts[0].trim().parse::<f32>().unwrap_or(-1.0);
-    let used  = parts[1].trim().parse::<u64>().unwrap_or(0);
+    let util = parts[0].trim().parse::<f32>().unwrap_or(-1.0);
+    let used = parts[1].trim().parse::<u64>().unwrap_or(0);
     let total = parts[2].trim().parse::<u64>().unwrap_or(0);
-    let temp  = parts[3].trim().parse::<i32>().unwrap_or(-1);
+    let temp = parts[3].trim().parse::<i32>().unwrap_or(-1);
     (util, used, total, temp)
 }
 
@@ -116,7 +114,11 @@ fn take_snapshot() -> PerfSnapshot {
     PerfSnapshot {
         timestamp: now_epoch(),
         cpu_percent: (cpu_pct * 10.0).round() / 10.0,
-        gpu_util_percent: if gpu_util >= 0.0 { (gpu_util * 10.0).round() / 10.0 } else { -1.0 },
+        gpu_util_percent: if gpu_util >= 0.0 {
+            (gpu_util * 10.0).round() / 10.0
+        } else {
+            -1.0
+        },
         gpu_vram_used_mb: vram_used,
         gpu_vram_total_mb: vram_total,
         gpu_temp_c: gpu_temp,
@@ -207,7 +209,7 @@ async fn monitor_loop(app: tauri::AppHandle, running: Arc<AtomicBool>) {
 
         tick += 1;
         // Emit computed stats every 5 seconds
-        if tick % 5 == 0 {
+        if tick.is_multiple_of(5) {
             let stats = {
                 let buf = sample_buf().lock().unwrap_or_else(|p| p.into_inner());
                 compute_stats(&buf)
@@ -264,8 +266,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flag_is_off_by_default() {
-        assert!(!ENABLE_FRAMETIME_OVERLAY);
+    fn flag_is_enabled_for_v2() {
+        assert!(ENABLE_FRAMETIME_OVERLAY);
     }
 
     #[test]
@@ -317,8 +319,16 @@ mod tests {
     #[test]
     fn compute_stats_cpu_average() {
         let mut buf = VecDeque::new();
-        buf.push_back(PerfSnapshot { cpu_percent: 40.0, gpu_util_percent: -1.0, ..Default::default() });
-        buf.push_back(PerfSnapshot { cpu_percent: 60.0, gpu_util_percent: -1.0, ..Default::default() });
+        buf.push_back(PerfSnapshot {
+            cpu_percent: 40.0,
+            gpu_util_percent: -1.0,
+            ..Default::default()
+        });
+        buf.push_back(PerfSnapshot {
+            cpu_percent: 60.0,
+            gpu_util_percent: -1.0,
+            ..Default::default()
+        });
         let stats = compute_stats(&buf);
         assert!((stats.avg_cpu - 50.0).abs() < 0.5);
         assert!(!stats.gpu_available);
@@ -351,8 +361,16 @@ mod tests {
     fn compute_stats_excludes_negative_gpu() {
         let mut buf = VecDeque::new();
         // mixed: some with GPU, some without
-        buf.push_back(PerfSnapshot { cpu_percent: 50.0, gpu_util_percent: 90.0, ..Default::default() });
-        buf.push_back(PerfSnapshot { cpu_percent: 60.0, gpu_util_percent: -1.0, ..Default::default() });
+        buf.push_back(PerfSnapshot {
+            cpu_percent: 50.0,
+            gpu_util_percent: 90.0,
+            ..Default::default()
+        });
+        buf.push_back(PerfSnapshot {
+            cpu_percent: 60.0,
+            gpu_util_percent: -1.0,
+            ..Default::default()
+        });
         let stats = compute_stats(&buf);
         assert!(stats.gpu_available);
         assert!((stats.avg_gpu - 90.0).abs() < 0.5); // only one valid GPU sample

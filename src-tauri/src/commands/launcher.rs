@@ -19,9 +19,24 @@ use super::steam::DiscoveredGame;
 
 /// ヘルパー/再頒布物 exe を除外するパターン（steam.rs と共通ロジック）
 const SKIP_PATTERNS: &[&str] = &[
-    "unins", "uninst", "uninstall", "vcredist", "dxsetup", "dxwebsetup",
-    "directx", "dotnet", "physx", "openal", "crashhandler", "crashreport",
-    "bugreport", "setup", "install", "redist", "upc", "uplay_r1_loader",
+    "unins",
+    "uninst",
+    "uninstall",
+    "vcredist",
+    "dxsetup",
+    "dxwebsetup",
+    "directx",
+    "dotnet",
+    "physx",
+    "openal",
+    "crashhandler",
+    "crashreport",
+    "bugreport",
+    "setup",
+    "install",
+    "redist",
+    "upc",
+    "uplay_r1_loader",
 ];
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
@@ -233,10 +248,7 @@ fn discover_gog_inner() -> Vec<DiscoveredGame> {
         // Filter non-game entries
         {
             let ln = name.to_lowercase();
-            if ln.contains("redistributable")
-                || ln.contains("runtime")
-                || ln.contains("directx")
-            {
+            if ln.contains("redistributable") || ln.contains("runtime") || ln.contains("directx") {
                 continue;
             }
         }
@@ -300,7 +312,12 @@ fn xbox_candidate_roots() -> Vec<PathBuf> {
     }
 
     // 2. デフォルトパス: C:\XboxGames および全ドライブルートの XboxGames
-    let defaults = ["C:\\XboxGames", "D:\\XboxGames", "E:\\XboxGames", "F:\\XboxGames"];
+    let defaults = [
+        "C:\\XboxGames",
+        "D:\\XboxGames",
+        "E:\\XboxGames",
+        "F:\\XboxGames",
+    ];
     for d in &defaults {
         let p = PathBuf::from(d);
         if p.exists() && !roots.contains(&p) {
@@ -476,8 +493,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flag_is_off_by_default() {
-        assert!(!ENABLE_MULTI_LAUNCHER);
+    fn flag_is_enabled_for_v2() {
+        assert!(ENABLE_MULTI_LAUNCHER);
     }
 
     #[test]
@@ -601,7 +618,7 @@ mod tests {
         // bIsIncompleteInstall: true entries are excluded
         // (tested indirectly — discover_epic_inner returns [] when no manifests dir exists)
         let games = discover_epic_inner(); // will be empty in CI / no Epic install
-        // Just assert it doesn't panic and returns a Vec
+                                           // Just assert it doesn't panic and returns a Vec
         let _ = games;
     }
 

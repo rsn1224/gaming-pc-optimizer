@@ -142,19 +142,20 @@ fn analyze_what_would_change(snapshot: &rollback::SystemSnapshot) -> Vec<Preview
 /// so a failure in one does not abort the rest.
 #[tauri::command]
 pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> {
-    // ── T0: Telemetry — capture before-state (flag-guarded) ──────────────────
-    let telemetry_session_id: Option<String> = if telemetry::ENABLE_TELEMETRY {
-        let maybe = tokio::task::spawn_blocking(|| rollback::begin_session(SessionMode::Real, None))
+    // ── Rollback + Telemetry — capture before-state (single session) ─────────
+    // ロールバックとテレメトリーは同一セッション ID を共用する。
+    // 以前は begin_session を2回呼んでいたが、二重カウントを防ぐため統合。
+    let session_id: Option<String> = if rollback::ROLLBACK_CONFIG.enabled {
+        tokio::task::spawn_blocking(|| rollback::begin_session(SessionMode::Real, None))
             .await
-            .ok();
-        // We capture T0 alongside the rollback session; share session_id where possible.
-        maybe.map(|s| s.id)
+            .ok()
+            .map(|s| s.id)
     } else {
         None
     };
 
     if telemetry::ENABLE_TELEMETRY {
-        if let Some(ref sid) = telemetry_session_id {
+        if let Some(ref sid) = session_id {
             let sid_clone = sid.clone();
             tokio::task::spawn_blocking(move || {
                 telemetry::capture_and_insert(&sid_clone, telemetry::TelemetryPhase::Before).ok();
@@ -163,17 +164,6 @@ pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> 
             .ok();
         }
     }
-
-    // ── Phase 1: Rollback — capture before-state ──────────────────────────────
-    let session_id: Option<String> = if rollback::ROLLBACK_CONFIG.enabled {
-        let maybe =
-            tokio::task::spawn_blocking(|| rollback::begin_session(SessionMode::Real, None))
-                .await
-                .ok();
-        maybe.map(|s| s.id)
-    } else {
-        None
-    };
 
     // ── Optimization steps (unchanged behaviour) ──────────────────────────────
     let mut result = AllOptimizationResult {
@@ -305,7 +295,7 @@ pub async fn apply_all_optimizations() -> Result<AllOptimizationResult, String> 
 
     // ── T1 + T2: Telemetry — capture 30 s and 5 min after apply (flag-guarded)
     if telemetry::ENABLE_TELEMETRY {
-        if let Some(sid) = telemetry_session_id {
+        if let Some(sid) = session_id {
             // Fire-and-forget: T1 at 30 s, T2 at 5 min
             tokio::spawn(async move {
                 // T1: 30 seconds after apply

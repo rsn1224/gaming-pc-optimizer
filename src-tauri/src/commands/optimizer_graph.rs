@@ -188,6 +188,7 @@ pub fn default_graph() -> OptimizationGraph {
 
 impl OptimizationGraph {
     /// ノード ID → ノード の Map を返す
+    #[allow(dead_code)]
     pub fn node_map(&self) -> HashMap<&str, &OptimizationNode> {
         self.nodes.iter().map(|n| (n.id.as_str(), n)).collect()
     }
@@ -200,9 +201,7 @@ impl OptimizationGraph {
         }
         for e in &self.edges {
             if e.edge_type == EdgeType::Requires {
-                adj.entry(e.from.as_str())
-                    .or_default()
-                    .push(e.to.as_str());
+                adj.entry(e.from.as_str()).or_default().push(e.to.as_str());
             }
         }
         adj
@@ -213,7 +212,8 @@ impl OptimizationGraph {
     pub fn topological_sort(&self) -> Result<Vec<String>, String> {
         let adj = self.requires_adj();
         // in-degree を計算
-        let mut in_degree: HashMap<&str, usize> = self.nodes.iter().map(|n| (n.id.as_str(), 0)).collect();
+        let mut in_degree: HashMap<&str, usize> =
+            self.nodes.iter().map(|n| (n.id.as_str(), 0)).collect();
         for targets in adj.values() {
             for &t in targets {
                 *in_degree.entry(t).or_insert(0) += 1;
@@ -248,6 +248,7 @@ impl OptimizationGraph {
     }
 
     /// 循環依存チェック
+    #[allow(dead_code)]
     pub fn is_cyclic(&self) -> bool {
         self.topological_sort().is_err()
     }
@@ -268,10 +269,11 @@ impl OptimizationGraph {
             changed = false;
             let snapshot: Vec<String> = to_apply.iter().cloned().collect();
             for e in &self.edges {
-                if e.edge_type == EdgeType::Requires && to_apply.contains(&e.from) {
-                    if to_apply.insert(e.to.clone()) {
-                        changed = true;
-                    }
+                if e.edge_type == EdgeType::Requires
+                    && to_apply.contains(&e.from)
+                    && to_apply.insert(e.to.clone())
+                {
+                    changed = true;
                 }
             }
             let _ = snapshot; // suppress unused warning
@@ -304,17 +306,14 @@ impl OptimizationGraph {
             if e.edge_type == EdgeType::Suggests
                 && to_apply.contains(&e.from)
                 && !to_apply.contains(&e.to)
+                && !suggestions.contains(&e.to)
             {
-                if !suggestions.contains(&e.to) {
-                    suggestions.push(e.to.clone());
-                }
+                suggestions.push(e.to.clone());
             }
         }
 
         // 4. トポロジカル順でソート
-        let topo = self.topological_sort().unwrap_or_else(|_| {
-            ordered
-        });
+        let topo = self.topological_sort().unwrap_or(ordered);
         let order: Vec<String> = topo
             .into_iter()
             .filter(|id| to_apply.contains(id))

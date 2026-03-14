@@ -31,7 +31,10 @@ impl SafetyPolicy {
 
     /// constraints に違反するアイテムを除外する。
     pub fn filter(&self, items: Vec<RecommendationItem>) -> Vec<RecommendationItem> {
-        items.into_iter().filter(|item| self.is_allowed(item)).collect()
+        items
+            .into_iter()
+            .filter(|item| self.is_allowed(item))
+            .collect()
     }
 
     fn is_allowed(&self, item: &RecommendationItem) -> bool {
@@ -249,8 +252,9 @@ mod tests {
 
     #[test]
     fn guard_rejects_too_many_items() {
-        let items: Vec<RecommendationItem> =
-            (0..21).map(|i| make_item(&format!("item_{}", i), "T")).collect();
+        let items: Vec<RecommendationItem> = (0..21)
+            .map(|i| make_item(&format!("item_{}", i), "T"))
+            .collect();
         let result = make_result(items);
         assert!(guard_result(&result).is_err());
     }

@@ -1,3 +1,4 @@
+use super::now_iso8601;
 /// telemetry.rs — テレメトリ・ループ基盤 (Sprint 1 / S1-02)
 ///
 /// 最適化の前後 (T0/T1/T2) に SystemMetrics + OptimizationScore を SQLite に記録する。
@@ -9,7 +10,6 @@
 ///   30 秒後に T1 キャプチャをバックグラウンドで実行する。
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use super::now_iso8601;
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
 pub const ENABLE_TELEMETRY: bool = true;
@@ -162,14 +162,18 @@ pub fn get_records_for_session(session_id: &str) -> Result<Vec<TelemetryRecord>,
         })
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 // ── Capture helper (called by optimizer when flag is on) ──────────────────────
 
 /// システム状態とスコアを取得して DB に記録する。
 /// ENABLE_TELEMETRY が false の場合は何もしない (no-op)。
-pub fn capture_and_insert(session_id: &str, phase: TelemetryPhase) -> Result<TelemetryRecord, String> {
+pub fn capture_and_insert(
+    session_id: &str,
+    phase: TelemetryPhase,
+) -> Result<TelemetryRecord, String> {
     let sys_metrics = super::metrics::capture_metrics();
     let score = super::optimizer::compute_optimization_score();
 
@@ -195,9 +199,7 @@ pub fn capture_and_insert(session_id: &str, phase: TelemetryPhase) -> Result<Tel
 // ── Tauri commands ────────────────────────────────────────────────────────────
 
 #[tauri::command]
-pub async fn get_telemetry_for_session(
-    session_id: String,
-) -> Result<Vec<TelemetryRecord>, String> {
+pub async fn get_telemetry_for_session(session_id: String) -> Result<Vec<TelemetryRecord>, String> {
     tokio::task::spawn_blocking(move || get_records_for_session(&session_id))
         .await
         .map_err(|e| e.to_string())?

@@ -20,13 +20,13 @@ macro_rules! win_cmd {
 
 use commands::{
     ai, app_settings, audit_log, backup, bandwidth, benchmark, benchmark_history, clipboard_opt,
-    cpu_affinity, display_optimizer, frametime_monitor, launcher,
-    crash_report, disk_health, event_log, fps, game_integrity, game_log, hardware,
-    hardware_suggestions, hotkeys, icons, memory_cleaner, metrics, network, optimizer,
-    optimizer_graph, osd, policy, power, presets, process, profile_share, profiles,
-    recommendation, registry_opt, report, rollback, safety_kernel, scheduler, screenshot,
-    self_improve, startup, steam, storage, system_info, system_utils, telemetry, tournament, uninstaller,
-    update_check, updates, watcher, windows_settings,
+    cpu_affinity, crash_report, disk_health, display_optimizer, event_log, fps, frametime_monitor,
+    game_integrity, game_log, hardware, hardware_suggestions, hotkeys, icons, launcher,
+    memory_cleaner, metrics, network, optimizer, optimizer_graph, osd, policy, power, presets,
+    process, profile_share, profiles, recommendation, registry_opt, report, rollback,
+    safety_kernel, scheduler, screenshot, self_improve, startup, steam, storage, system_info,
+    system_utils, telemetry, tournament, uninstaller, update_check, updates, watcher,
+    windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -42,8 +42,8 @@ pub struct WatcherState {
     pub is_applying: bool,
     pub current_game_session_id: Option<String>,
     // S6-01: score regression watch
-    pub score_history: Vec<u8>,          // rolling window (max 6)
-    pub regression_notified_secs: u64,   // epoch secs of last regression notification
+    pub score_history: Vec<u8>,        // rolling window (max 6)
+    pub regression_notified_secs: u64, // epoch secs of last regression notification
     // S6-02: thermal auto-reduction
     pub thermal_reduced: bool,
     pub thermal_original_limit_w: Option<u32>,

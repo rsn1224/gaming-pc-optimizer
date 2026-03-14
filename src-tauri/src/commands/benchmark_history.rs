@@ -19,7 +19,7 @@ pub const ENABLE_BENCHMARK_HISTORY: bool = true;
 #[serde(rename_all = "camelCase")]
 pub struct BenchmarkRecord {
     pub id: i64,
-    pub run_at: i64,      // Unix epoch seconds
+    pub run_at: i64, // Unix epoch seconds
     pub cpu_score: i64,
     pub memory_score: i64,
     pub disk_score: i64,
@@ -143,15 +143,15 @@ pub async fn get_benchmark_history() -> Result<Vec<BenchmarkRecord>, String> {
     let records = stmt
         .query_map([], |row| {
             Ok(BenchmarkRecord {
-                id:           row.get(0)?,
-                run_at:       row.get(1)?,
-                cpu_score:    row.get(2)?,
+                id: row.get(0)?,
+                run_at: row.get(1)?,
+                cpu_score: row.get(2)?,
                 memory_score: row.get(3)?,
-                disk_score:   row.get(4)?,
-                total_score:  row.get(5)?,
-                cpu_ms:       row.get(6)?,
-                memory_ms:    row.get(7)?,
-                disk_ms:      row.get(8)?,
+                disk_score: row.get(4)?,
+                total_score: row.get(5)?,
+                cpu_ms: row.get(6)?,
+                memory_ms: row.get(7)?,
+                disk_ms: row.get(8)?,
             })
         })
         .map_err(|e| e.to_string())?
@@ -220,10 +220,15 @@ mod tests {
             .unwrap();
         stmt.query_map([], |row| {
             Ok(BenchmarkRecord {
-                id: row.get(0)?, run_at: row.get(1)?,
-                cpu_score: row.get(2)?, memory_score: row.get(3)?,
-                disk_score: row.get(4)?, total_score: row.get(5)?,
-                cpu_ms: row.get(6)?, memory_ms: row.get(7)?, disk_ms: row.get(8)?,
+                id: row.get(0)?,
+                run_at: row.get(1)?,
+                cpu_score: row.get(2)?,
+                memory_score: row.get(3)?,
+                disk_score: row.get(4)?,
+                total_score: row.get(5)?,
+                cpu_ms: row.get(6)?,
+                memory_ms: row.get(7)?,
+                disk_ms: row.get(8)?,
             })
         })
         .unwrap()
@@ -232,8 +237,8 @@ mod tests {
     }
 
     #[test]
-    fn flag_is_off_by_default() {
-        assert!(!ENABLE_BENCHMARK_HISTORY);
+    fn flag_is_enabled_for_v2() {
+        assert!(ENABLE_BENCHMARK_HISTORY);
     }
 
     #[test]
@@ -251,7 +256,7 @@ mod tests {
         let conn = in_memory();
         insert(&conn, 1000, 1000);
         insert(&conn, 1500, 2000);
-        insert(&conn, 800,  1500);
+        insert(&conn, 800, 1500);
         let records = fetch_all(&conn);
         // ordered by run_at DESC: 2000, 1500, 1000
         assert_eq!(records[0].total_score, 1500);
