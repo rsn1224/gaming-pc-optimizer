@@ -3,9 +3,21 @@ use std::path::PathBuf;
 
 use super::profiles::{load_profiles, save_profiles, GameProfile};
 
-// ── Config storage ────────────────────────────────────────────────────────────
+// ── Keyring constants ─────────────────────────────────────────────────────────
 
-fn config_path() -> PathBuf {
+const KEYRING_SERVICE: &str = "gaming-pc-optimizer";
+const KEYRING_USER: &str = "anthropic_api_key";
+
+fn keyring_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
+        .map_err(|e| format!("認証情報マネージャーへのアクセスに失敗しました: {}", e))
+}
+
+// ── Legacy plaintext config (migration only) ──────────────────────────────────
+// Used solely to read the old plaintext key and migrate it to the keyring.
+// No new data is ever written to this struct.
+
+fn legacy_config_path() -> PathBuf {
     let appdata = std::env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(appdata)
         .join("gaming-pc-optimizer")
@@ -13,39 +25,101 @@ fn config_path() -> PathBuf {
 }
 
 #[derive(Serialize, Deserialize, Default)]
-struct AppConfig {
+struct LegacyConfig {
     #[serde(default)]
     ai_api_key: String,
 }
 
-fn load_config() -> AppConfig {
-    let path = config_path();
+/// Read-only: retrieve the old plaintext key from config.json if it exists.
+fn read_legacy_key() -> Option<String> {
+    let path = legacy_config_path();
     if !path.exists() {
-        return AppConfig::default();
+        return None;
     }
-    let raw = std::fs::read_to_string(&path).unwrap_or_default();
-    serde_json::from_str(&raw).unwrap_or_default()
+    let raw = std::fs::read_to_string(&path).ok()?;
+    let cfg: LegacyConfig = serde_json::from_str(&raw).ok()?;
+    if cfg.ai_api_key.is_empty() {
+        None
+    } else {
+        Some(cfg.ai_api_key)
+    }
 }
 
-fn save_config(cfg: &AppConfig) -> Result<(), String> {
-    let path = config_path();
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+/// Erase the plaintext key from config.json after successful migration.
+fn erase_legacy_key() {
+    let path = legacy_config_path();
+    if !path.exists() {
+        return;
     }
-    let json = serde_json::to_string_pretty(cfg).map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())
+    if let Ok(raw) = std::fs::read_to_string(&path) {
+        if let Ok(mut val) = serde_json::from_str::<serde_json::Value>(&raw) {
+            if let Some(obj) = val.as_object_mut() {
+                obj.remove("ai_api_key");
+                if let Ok(clean) = serde_json::to_string_pretty(&val) {
+                    std::fs::write(&path, clean).ok();
+                }
+            }
+        }
+    }
 }
 
+// ── Public Tauri commands ─────────────────────────────────────────────────────
+
+/// Retrieve the API key from Windows Credential Manager.
+/// Falls back to legacy config.json once for automatic migration.
 #[tauri::command]
 pub fn get_ai_api_key() -> String {
-    load_config().ai_api_key
+    // 1. Primary: Windows Credential Manager
+    if let Ok(entry) = keyring_entry() {
+        match entry.get_password() {
+            Ok(key) if !key.is_empty() => return key,
+            _ => {}
+        }
+    }
+
+    // 2. Migration: read old plaintext key, move it to keyring, clean up file
+    if let Some(legacy_key) = read_legacy_key() {
+        if let Ok(entry) = keyring_entry() {
+            if entry.set_password(&legacy_key).is_ok() {
+                erase_legacy_key();
+            }
+        }
+        return legacy_key;
+    }
+
+    String::new()
 }
 
+/// Persist the API key in Windows Credential Manager.
+/// Passing an empty string deletes the stored credential.
 #[tauri::command]
 pub fn set_ai_api_key(key: String) -> Result<(), String> {
-    let mut cfg = load_config();
-    cfg.ai_api_key = key;
-    save_config(&cfg)
+    let entry = keyring_entry()?;
+
+    if key.is_empty() {
+        // Delete — ignore NoEntry error (idempotent)
+        entry.delete_credential().ok();
+    } else {
+        entry
+            .set_password(&key)
+            .map_err(|e| format!("APIキーの保存に失敗しました: {}", e))?;
+    }
+
+    // Clean up any legacy plaintext key that might still be on disk
+    erase_legacy_key();
+
+    Ok(())
+}
+
+/// Internal helper used by AI commands — returns Err with a user-friendly
+/// Japanese message when the key is missing.
+fn load_api_key() -> Result<String, String> {
+    let key = get_ai_api_key();
+    if key.is_empty() {
+        Err("Anthropic API キーが設定されていません。設定ページで入力してください。".to_string())
+    } else {
+        Ok(key)
+    }
 }
 
 // ── Shared Claude API helper ──────────────────────────────────────────────────
@@ -135,12 +209,7 @@ struct AiUpdate {
 
 #[tauri::command]
 pub async fn generate_ai_recommendations() -> Result<Vec<GameProfile>, String> {
-    let api_key = load_config().ai_api_key;
-    if api_key.is_empty() {
-        return Err(
-            "Anthropic API キーが設定されていません。設定ページで入力してください。".to_string(),
-        );
-    }
+    let api_key = load_api_key()?;
 
     let context = super::profiles::export_profiles_context()?;
 
@@ -240,10 +309,7 @@ pub struct AiUpdatePriority {
 
 #[tauri::command]
 pub async fn get_ai_update_priorities() -> Result<Vec<AiUpdatePriority>, String> {
-    let api_key = load_config().ai_api_key;
-    if api_key.is_empty() {
-        return Err("Anthropic API キーが設定されていません。".to_string());
-    }
+    let api_key = load_api_key()?;
 
     let context = super::updates::export_updates_context().await?;
 
@@ -286,10 +352,7 @@ pub struct AiWindowsRecommendation {
 
 #[tauri::command]
 pub async fn get_ai_windows_recommendation() -> Result<AiWindowsRecommendation, String> {
-    let api_key = load_config().ai_api_key;
-    if api_key.is_empty() {
-        return Err("Anthropic API キーが設定されていません。設定ページで入力してください。".to_string());
-    }
+    let api_key = load_api_key()?;
 
     let context = tokio::task::spawn_blocking(
         super::windows_settings::export_windows_settings_context,
@@ -329,10 +392,7 @@ pub struct AiStorageItem {
 
 #[tauri::command]
 pub async fn get_ai_storage_recommendation() -> Result<Vec<AiStorageItem>, String> {
-    let api_key = load_config().ai_api_key;
-    if api_key.is_empty() {
-        return Err("Anthropic API キーが設定されていません。設定ページで入力してください。".to_string());
-    }
+    let api_key = load_api_key()?;
 
     let categories = tokio::task::spawn_blocking(super::storage::scan_storage)
         .await
@@ -388,10 +448,7 @@ pub struct AiNetworkRecommendation {
 pub async fn get_ai_network_recommendation(
     adapter_name: String,
 ) -> Result<AiNetworkRecommendation, String> {
-    let api_key = load_config().ai_api_key;
-    if api_key.is_empty() {
-        return Err("Anthropic API キーが設定されていません。設定ページで入力してください。".to_string());
-    }
+    let api_key = load_api_key()?;
 
     // export_network_advisor_context runs ping (blocking I/O) — use spawn_blocking
     let context = tokio::task::spawn_blocking({
@@ -442,10 +499,7 @@ pub struct AiHardwareMode {
 
 #[tauri::command]
 pub async fn get_ai_hardware_mode() -> Result<AiHardwareMode, String> {
-    let api_key = load_config().ai_api_key;
-    if api_key.is_empty() {
-        return Err("Anthropic API キーが設定されていません。".to_string());
-    }
+    let api_key = load_api_key()?;
 
     // Gather GPU status (graceful if non-NVIDIA)
     let gpu_status = tokio::task::spawn_blocking(super::hardware::fetch_gpu_status_sync)
