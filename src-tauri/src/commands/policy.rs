@@ -9,6 +9,45 @@ use serde::{Deserialize, Serialize};
 use super::now_iso8601;
 use super::audit_log::{self, AuditActor};
 
+// ── Cron helpers (S5-01) ──────────────────────────────────────────────────────
+
+/// cron 式が「last_fired_at 以降に発火時刻を迎えているか」を返す。
+/// - 5フィールド ("0 */6 * * *") は先頭に "0 " を補完して6フィールド化する。
+/// - last_fired_at が None の場合は365日前を起点とする（初回は即発火）。
+fn is_cron_due(cron_expr: &str, last_fired_iso: Option<&str>) -> bool {
+    use cron::Schedule;
+    use std::str::FromStr;
+    use chrono::{DateTime, Duration, Utc};
+
+    // Normalize 5-field → 6-field (prepend seconds field "0")
+    let parts: Vec<&str> = cron_expr.split_whitespace().collect();
+    let expr = if parts.len() == 5 {
+        format!("0 {}", cron_expr)
+    } else {
+        cron_expr.to_string()
+    };
+
+    let schedule = match Schedule::from_str(&expr) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+
+    let now = Utc::now();
+
+    // Parse last_fired_at or fall back to 1 year ago
+    let last_fired: DateTime<Utc> = last_fired_iso
+        .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+        .map(|dt| dt.with_timezone(&Utc))
+        .unwrap_or_else(|| now - Duration::days(365));
+
+    // Fire if a scheduled time has passed since last_fired
+    schedule
+        .after(&last_fired)
+        .next()
+        .map(|next| next <= now)
+        .unwrap_or(false)
+}
+
 // ── Feature flag ──────────────────────────────────────────────────────────────
 pub const ENABLE_POLICY_ENGINE: bool = true;
 
@@ -148,7 +187,10 @@ pub fn evaluate_policies(ctx: &EvalContext) -> Vec<Policy> {
             PolicyTrigger::OnScoreBelow { threshold } => ctx.current_score < *threshold,
             PolicyTrigger::OnGameStart => ctx.game_just_started,
             PolicyTrigger::OnManual => false, // 手動は evaluate 対象外
-            PolicyTrigger::OnSchedule { .. } => false, // Sprint 3 で実装
+            // S5-01: cron スケジュール評価
+            PolicyTrigger::OnSchedule { cron } => {
+                is_cron_due(cron, policy.last_fired_at.as_deref())
+            }
         };
         if fires {
             triggered.push(policy);

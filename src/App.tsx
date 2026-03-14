@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, TrendingDown, Loader2, X, Thermometer, Zap, Bot } from "lucide-react";
+import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, TrendingDown, Loader2, X, Thermometer, Zap, Bot, GitGraph } from "lucide-react";
 import type { AppearanceSettings, OptimizationScore, TempSnapshot, GpuPowerLimit, OptimizationSession } from "@/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
@@ -33,6 +33,7 @@ import { SimulationPanel } from "@/components/rollback/SimulationPanel";
 import { EventLog } from "@/components/notifications/EventLog";
 import { SettingsHub } from "@/components/settings/SettingsHub";
 import { PolicyManager } from "@/components/policies/PolicyManager";
+import { OptimizationGraphView } from "@/components/graph/OptimizationGraphView";
 import { OsdOverlay } from "@/components/osd/OsdOverlay";
 import { ToastContainer } from "@/components/ui/Toast";
 import { RiskSummary } from "@/components/ui/RiskSummary";
@@ -408,6 +409,7 @@ const NAV_ITEMS: NavEntry[] = [
   { type: "section", label: "管理" },                        // [Phase D] システム→管理
   { id: "rollback",   icon: <ShieldCheck size={17} />,      label: "ロールバック" }, // [Phase D] 先頭に昇格
   { id: "policies",   icon: <Bot size={17} />,              label: "ポリシーエンジン" }, // [Sprint 3]
+  { id: "graph",      icon: <GitGraph size={17} />,         label: "最適化グラフ" },       // [Sprint 5]
   { id: "startup",    icon: <Rocket size={17} />,           label: "スタートアップ" },
   { id: "scheduler",  icon: <Calendar size={17} />,         label: "スケジューラー" },
   { id: "uninstaller", icon: <Trash2 size={17} />,          label: "アプリ管理" },
@@ -469,6 +471,8 @@ function PageContent({ page }: { page: ActivePage }) {
       return <RollbackCenter />;
     case "policies":
       return <PolicyManager />;
+    case "graph":
+      return <OptimizationGraphView />;
     case "notifications":
       return <EventLog />;
     case "settings":

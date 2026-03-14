@@ -241,6 +241,7 @@ export type ActivePage =
   | "optimize"      // OptimizeHub（GameMode 改称）
   // ── [Sprint 3] V2 ページ ──────────────────────────────────────────────────
   | "policies"      // PolicyManager（ポリシーエンジン管理）
+  | "graph"         // OptimizationGraphView（DAG ビジュアライザー）
   // ── 既存ページ（後方互換維持） ─────────────────────────────────────────────
   | "dashboard" | "dashboardv2" | "gamemode"
   | "presets" | "process" | "windows" | "storage" | "network"
