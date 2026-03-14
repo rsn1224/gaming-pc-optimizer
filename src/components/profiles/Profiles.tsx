@@ -5,6 +5,7 @@ import { BookMarked, Plus, Pencil, Trash2, Play, X, Tag, Loader2, Zap, FilePlus,
 import { useEditingStore } from "@/stores/useEditingStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
 import { RiskSummary } from "@/components/ui/RiskSummary";
+import { toast } from "@/stores/useToastStore";
 import type { GameProfile, SimulationResult, PreviewChange, RiskLevel } from "@/types";
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
@@ -619,7 +620,7 @@ export function Profiles() {
       await invoke("delete_profile", { id });
       setProfiles((p) => p.filter((x) => x.id !== id));
     } catch (e) {
-      alert("削除失敗: " + e);
+      toast.error("プロファイルの削除に失敗しました");
     }
   };
 

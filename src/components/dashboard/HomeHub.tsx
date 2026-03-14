@@ -36,23 +36,17 @@ import type {
   FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry, Policy, ScoreSnapshot,
   HardwareDiagnostics, HardwareSuggestion, GameLaunchedPayload, SessionEndedPayload,
 } from "@/types";
-
-// S4-05: Policy engine feature flag (mirrors Rust ENABLE_POLICY_ENGINE)
-const ENABLE_POLICY_ENGINE = true;
-// S6: monitoring feature flags (mirror Rust)
-const ENABLE_SCORE_REGRESSION_WATCH = true;
-const ENABLE_THERMAL_AUTO_REDUCTION  = true;
-// S8: Sprint 8 feature flags
-const ENABLE_LAUNCH_MONITORING      = true;
-const ENABLE_HARDWARE_SUGGESTIONS   = true;
-// S10: Sprint 10 feature flags
-const ENABLE_PERFORMANCE_COACH      = true;
-// V2: Recommendation Engine (default OFF — set to true in recommendation.rs first)
-const ENABLE_RECOMMENDATION_V2_UI   = false;
-// Tournament checklist (default OFF — set to true in tournament.rs first)
-const ENABLE_TOURNAMENT_MODE_UI     = true;
-// Frametime / Perf overlay (default OFF — set to true in frametime_monitor.rs first)
-const ENABLE_FRAMETIME_OVERLAY_UI   = false;
+import {
+  ENABLE_POLICY_ENGINE,
+  ENABLE_SCORE_REGRESSION_WATCH,
+  ENABLE_THERMAL_AUTO_REDUCTION,
+  ENABLE_LAUNCH_MONITORING,
+  ENABLE_HARDWARE_SUGGESTIONS,
+  ENABLE_PERFORMANCE_COACH,
+  ENABLE_RECOMMENDATION_V2_UI,
+  ENABLE_TOURNAMENT_MODE_UI,
+  ENABLE_FRAMETIME_OVERLAY_UI,
+} from "@/config/features";
 
 // ── S6-01: Score sparkline ────────────────────────────────────────────────────
 

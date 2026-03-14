@@ -8,26 +8,12 @@ import type { GameProfile, OptimizationScore, TempSnapshot, FpsEstimate, AiHardw
 import { GameCard } from "./GameCard";
 import { GameFilters } from "./GameFilters";
 import { AlertBanner } from "@/components/ui/AlertBanner";
-
-// ── Feature flags ─────────────────────────────────────────────────────────────
-// Set to `true` to enable launch monitoring chain (captures score/temp/FPS during session).
-// Default: false — existing launch behavior is unchanged when false.
-const ENABLE_LAUNCH_MONITORING = false;
-
-// Set to `true` to enable hardware-aware profile suggestions.
-// Shows hardware tier banner and per-game compatibility hints.
-// Default: false — no UI changes when false.
-const ENABLE_HARDWARE_SUGGESTIONS = false;
-
-// Set to `true` to enforce Profile SSOT (Single Source of Truth).
-// When ON: AI tuning button and per-card mode editor are hidden.
-// Profile editing is delegated exclusively to the Profiles page.
-// Default: false — existing inline mode selector is unchanged when false.
-const ENABLE_PROFILE_SSOT = false;
-
-// Set to `true` to enable Epic / GOG / Xbox Game Pass scan button.
-// Default: false — Steam-only scan is unchanged when false.
-const ENABLE_MULTI_LAUNCHER = false;
+import {
+  ENABLE_LAUNCH_MONITORING,
+  ENABLE_HARDWARE_SUGGESTIONS,
+  ENABLE_PROFILE_SSOT,
+  ENABLE_MULTI_LAUNCHER,
+} from "@/config/features";
 
 // ── Hardware suggestion helpers ────────────────────────────────────────────────
 

@@ -5,9 +5,7 @@ import { Profiles } from "./Profiles";
 import { ProfileShare } from "./ProfileShare";
 import { AiProfileGenerator } from "./AiProfileGenerator";
 import type { GameProfile } from "@/types";
-
-// S9-02: AI Profile Generator feature flag
-const ENABLE_AI_PROFILE_GENERATOR = true;
+import { ENABLE_AI_PROFILE_GENERATOR } from "@/config/features";
 
 const TABS = [
   { id: "profiles", label: "プロファイル管理" },

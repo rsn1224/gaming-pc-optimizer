@@ -9,6 +9,7 @@ const ENABLE_HAGS_DISPLAY_OPTIMIZER = false;
 import { useAppStore, type Theme } from "@/stores/useAppStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
 import { Toggle } from "@/components/ui/toggle";
+import { toast } from "@/stores/useToastStore";
 
 // Full default list (mirrors process.rs)
 const DEFAULT_PROCESSES = [
@@ -32,6 +33,7 @@ export function Settings() {
   const [autoStart, setAutoStartLocal] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [apiKeyRiskAcknowledged, setApiKeyRiskAcknowledged] = useState(false);
   const [apiProvider, setApiProvider] = useState<"anthropic" | "openai">("anthropic");
   const [selfImproveCopied, setSelfImproveCopied] = useState(false);
   const [selfImproveError, setSelfImproveError] = useState("");
@@ -47,7 +49,7 @@ export function Settings() {
   useEffect(() => {
     invoke<boolean>("get_auto_start").then(setAutoStartLocal).catch(() => {});
     invoke<boolean>("get_auto_optimize").then(setAutoOptimize).catch(() => {});
-    invoke<string>("get_ai_api_key").then(setApiKey).catch(() => {});
+    invoke<string>("get_ai_api_key").then((k) => { setApiKey(k); if (k) setApiKeyRiskAcknowledged(true); }).catch(() => {});
     invoke<string>("get_ai_provider")
       .then((p) => setApiProvider(p === "openai" ? "openai" : "anthropic"))
       .catch(() => {});
@@ -75,7 +77,7 @@ export function Settings() {
       await invoke("set_auto_start", { enabled });
       setAutoStartLocal(enabled);
     } catch (e) {
-      alert("自動起動の設定に失敗しました: " + e);
+      toast.error("自動起動の設定に失敗しました");
     }
   };
 
@@ -84,7 +86,7 @@ export function Settings() {
       await invoke("set_auto_optimize", { enabled });
       setAutoOptimize(enabled);
     } catch (e) {
-      alert("自動最適化の設定に失敗しました: " + e);
+      toast.error("自動最適化の設定に失敗しました");
     }
   };
 
@@ -346,7 +348,7 @@ export function Settings() {
               <button
                 type="button"
                 onClick={handleSaveAndValidate}
-                disabled={connStatus.state === "checking" || !apiKey.trim()}
+                disabled={connStatus.state === "checking" || !apiKey.trim() || !apiKeyRiskAcknowledged}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 ${
                   connStatus.state === "ok"
                     ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
@@ -374,6 +376,23 @@ export function Settings() {
               {connStatus.message}
             </p>
           )}
+
+          {/* Risk disclosure */}
+          <div className="flex items-start gap-2.5 px-3 py-2.5 bg-amber-500/5 border border-amber-500/15 rounded-lg">
+            <span className="text-amber-400 text-xs shrink-0 mt-px">⚠</span>
+            <p className="text-[10px] text-amber-300/70 leading-relaxed">
+              APIキーはローカルの設定ファイルに平文で保存されます。他のユーザーと共有するPCでの使用は推奨しません。
+            </p>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={apiKeyRiskAcknowledged}
+              onChange={(e) => setApiKeyRiskAcknowledged(e.target.checked)}
+              className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-cyan-500"
+            />
+            <span className="text-[11px] text-muted-foreground/80">上記リスクを理解した上で保存します</span>
+          </label>
 
           <p className="text-[10px] text-muted-foreground/55 leading-relaxed">
             キーを保存すると接続テストを実行します。成功するとプロファイルページの「AI推薦を生成」が使えるようになります。

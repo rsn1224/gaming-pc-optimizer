@@ -9,7 +9,7 @@ use commands::{
     hardware_suggestions, hotkeys, icons, memory_cleaner, metrics, network, optimizer,
     optimizer_graph, osd, policy, power, presets, process, profile_share, profiles,
     recommendation, registry_opt, report, rollback, safety_kernel, scheduler, screenshot,
-    self_improve, startup, steam, storage, system_info, telemetry, tournament, uninstaller,
+    self_improve, startup, steam, storage, system_info, system_utils, telemetry, tournament, uninstaller,
     update_check, updates, watcher, windows_settings,
 };
 use tauri::{
@@ -377,6 +377,8 @@ pub fn run() {
             recommendation::get_recommendation_metrics,
             // Tournament Checklist (ENABLE_TOURNAMENT_MODE)
             tournament::run_tournament_checklist,
+            // System Utils
+            system_utils::relaunch_as_admin,
             // Multi-launcher: Epic / GOG / Xbox (ENABLE_MULTI_LAUNCHER)
             launcher::discover_and_create_launcher_drafts,
             // Frametime / Perf Monitor (ENABLE_FRAMETIME_OVERLAY)

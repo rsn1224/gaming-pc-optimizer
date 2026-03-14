@@ -19,6 +19,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { applyNetworkRecommendation } from "@/lib/network_apply";
 import { StatusBanner } from "@/components/ui/StatusBanner";
+import { AdminErrorBanner } from "@/components/ui/AdminErrorBanner";
 
 // ── DNS preset definitions ──────────────────────────────────────────────────
 
@@ -581,6 +582,9 @@ function DnsAutoTestSection({
                     <span>TCP/IP最適化: <span className="text-foreground font-semibold">{parsedRec.apply_network_gaming ? "あり" : "なし"}</span></span>
                   </div>
                   <StatusBanner status={applyStatus} message={applyMsg} />
+                  {applyStatus === "error" && applyMsg.includes("管理者権限") && (
+                    <AdminErrorBanner message={applyMsg} />
+                  )}
                   <button
                     type="button"
                     onClick={applyRec}
