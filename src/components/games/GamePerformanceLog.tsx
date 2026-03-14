@@ -11,7 +11,9 @@ import {
   Minus,
   CheckCircle2,
   Activity,
+  Bot,
 } from "lucide-react";
+import { PerformanceCoach } from "@/components/gamelog/PerformanceCoach";
 import { cn } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import type { GameSession, GameStats } from "@/types";
@@ -171,6 +173,8 @@ export function GamePerformanceLog() {
   const [loading, setLoading] = useState(false);
   const [filterGame, setFilterGame] = useState<string>("all");
   const [confirmClear, setConfirmClear] = useState(false);
+  // S10 coaching
+  const [coachSession, setCoachSession] = useState<GameSession | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -377,6 +381,18 @@ export function GamePerformanceLog() {
                           />
                         </div>
 
+                        {/* Coach button */}
+                        {!isActive && session.ended_at !== null && (
+                          <button
+                            type="button"
+                            onClick={() => setCoachSession(session)}
+                            className="shrink-0 text-muted-foreground/40 hover:text-amber-400 transition-colors"
+                            title="AIコーチングを見る"
+                          >
+                            <Bot size={13} />
+                          </button>
+                        )}
+
                         {/* Delete */}
                         {!isActive && (
                           <button
@@ -396,6 +412,18 @@ export function GamePerformanceLog() {
           </>
         )}
       </div>
+
+      {/* S10: PerformanceCoach modal from session row */}
+      {coachSession && (
+        <PerformanceCoach
+          sessionId={coachSession.id}
+          gameName={coachSession.game_name}
+          scoreBefore={coachSession.score_before ?? null}
+          scoreAfter={coachSession.score_after ?? undefined}
+          durationMinutes={coachSession.duration_minutes ?? null}
+          onClose={() => setCoachSession(null)}
+        />
+      )}
     </div>
   );
 }

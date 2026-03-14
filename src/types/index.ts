@@ -967,3 +967,24 @@ export interface MetricsSummary {
   rangeHours: number;
   models: ModelMetrics[];
 }
+
+// ── Tournament Checklist (ENABLE_TOURNAMENT_MODE) ─────────────────────────────
+
+export type StepStatus = "Pass" | "Warn" | "Fail";
+
+export interface TournamentStep {
+  id: string;
+  name: string;
+  status: StepStatus;
+  message: string;
+  value: string | null;
+}
+
+export interface TournamentResult {
+  steps: TournamentStep[];
+  overallReady: boolean;
+  passCount: number;
+  warnCount: number;
+  failCount: number;
+  checkedAt: string;
+}

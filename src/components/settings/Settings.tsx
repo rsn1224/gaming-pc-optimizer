@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check, Copy, FlaskConical } from "lucide-react";
+import { Settings2, Sun, Moon, Trash2, Cpu, Bot, Eye, EyeOff, Check, Copy, FlaskConical, BarChart3 } from "lucide-react";
+import { RecommendationMetricsPanel } from "@/components/recommendation/RecommendationMetricsPanel";
 import { useAppStore, type Theme } from "@/stores/useAppStore";
 import { useWatcherStore } from "@/stores/useWatcherStore";
 import { Toggle } from "@/components/ui/toggle";
@@ -209,6 +210,17 @@ export function Settings() {
               {apiKeySaved ? <><Check size={14} /> 保存済み</> : "保存"}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Recommendation Engine V2 Metrics */}
+      <div className={sectionCls}>
+        <div className={headerCls}>
+          <BarChart3 size={15} className="text-violet-400" />
+          <span className="text-sm font-semibold">推奨エンジン V2 メトリクス</span>
+        </div>
+        <div className="p-4">
+          <RecommendationMetricsPanel />
         </div>
       </div>
 

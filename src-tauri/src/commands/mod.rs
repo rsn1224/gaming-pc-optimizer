@@ -45,6 +45,7 @@ pub mod steam;
 pub mod telemetry;
 pub mod storage;
 pub mod system_info;
+pub mod tournament;
 pub mod uninstaller;
 pub mod update_check;
 pub mod updates;

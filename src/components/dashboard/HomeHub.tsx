@@ -19,7 +19,7 @@ import { listen } from "@tauri-apps/api/event";
 import {
   Zap, Cpu, Wifi, HardDrive,
   Activity, Gauge, MemoryStick, MonitorCheck, AlertTriangle, Home,
-  Bot, CheckCircle2, Circle, Flame, TrendingDown, Gamepad2, Stethoscope,
+  Bot, CheckCircle2, Circle, Flame, TrendingDown, Gamepad2, Stethoscope, Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMemory } from "@/lib/utils";
@@ -28,6 +28,7 @@ import { RollbackEntryPoint } from "@/components/ui/RollbackEntryPoint";
 import { toast } from "@/stores/useToastStore";
 import { PerformanceCoach } from "@/components/gamelog/PerformanceCoach";
 import { RecommendationCard } from "@/components/recommendation/RecommendationCard";
+import { TournamentModal } from "@/components/tournament/TournamentModal";
 import type {
   OptimizationScore, SystemInfo, GpuStatus,
   FpsEstimate, BandwidthSnapshot, DiskHealthReport, EventEntry, Policy, ScoreSnapshot,
@@ -46,6 +47,8 @@ const ENABLE_HARDWARE_SUGGESTIONS   = true;
 const ENABLE_PERFORMANCE_COACH      = true;
 // V2: Recommendation Engine (default OFF — set to true in recommendation.rs first)
 const ENABLE_RECOMMENDATION_V2_UI   = false;
+// Tournament checklist (default OFF — set to true in tournament.rs first)
+const ENABLE_TOURNAMENT_MODE_UI     = false;
 
 // ── S6-01: Score sparkline ────────────────────────────────────────────────────
 
@@ -148,6 +151,8 @@ export function HomeHub() {
   // S10-03: session ended coaching
   const [sessionEnded, setSessionEnded] = useState<SessionEndedPayload | null>(null);
   const [showCoach, setShowCoach] = useState(false);
+  // Tournament checklist
+  const [showTournament, setShowTournament] = useState(false);
   const [firstLoad, setFirstLoad] = useState(true);
 
   const fetchAll = useCallback(async () => {
@@ -265,6 +270,15 @@ export function HomeHub() {
             </div>
           )}
           <RollbackEntryPoint compact className="opacity-60 hover:opacity-100 transition-opacity" />
+          {ENABLE_TOURNAMENT_MODE_UI && (
+            <button
+              type="button"
+              onClick={() => setShowTournament(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg hover:bg-amber-500/20 transition-colors"
+            >
+              <Trophy size={11} /> 試合前チェック
+            </button>
+          )}
         </div>
       </div>
 
@@ -806,6 +820,11 @@ export function HomeHub() {
             setSessionEnded(null);
           }}
         />
+      )}
+
+      {/* ── Tournament checklist modal (ENABLE_TOURNAMENT_MODE_UI) ────── */}
+      {ENABLE_TOURNAMENT_MODE_UI && showTournament && (
+        <TournamentModal onClose={() => setShowTournament(false)} />
       )}
 
     </div>

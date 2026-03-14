@@ -8,8 +8,8 @@ use commands::{
     hardware_suggestions, hotkeys, icons, memory_cleaner, metrics, network, optimizer,
     optimizer_graph, osd, policy, power, presets, process, profile_share, profiles,
     recommendation, registry_opt, report, rollback, safety_kernel, scheduler, self_improve,
-    startup, steam, storage, system_info, telemetry, uninstaller, update_check, updates, watcher,
-    windows_settings,
+    startup, steam, storage, system_info, telemetry, tournament, uninstaller, update_check,
+    updates, watcher, windows_settings,
 };
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
@@ -358,6 +358,8 @@ pub fn run() {
             // Recommendation Engine V2 (ENABLE_RECOMMENDATION_V2)
             recommendation::generate_recommendation,
             recommendation::get_recommendation_metrics,
+            // Tournament Checklist (ENABLE_TOURNAMENT_MODE)
+            tournament::run_tournament_checklist,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
