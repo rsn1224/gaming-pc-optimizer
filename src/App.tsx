@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { listen } from "@tauri-apps/api/event";
-import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, BookMarked, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, SlidersHorizontal, Lightbulb, Bell, Gauge, Activity, Rocket, Calendar, Trash2, FileSearch, BarChart3, TrendingDown, Loader2, X, Thermometer, Zap, Bot, GitGraph, Info } from "lucide-react";
+import { LayoutDashboard, Gamepad2, Monitor, HardDrive, Wifi, Library, Settings as SettingsIcon, Shield, Cpu, ShieldCheck, Lightbulb, Activity, Calendar, TrendingDown, Loader2, X, Thermometer, Zap, Search } from "lucide-react";
 import type { AppearanceSettings, OptimizationScore, TempSnapshot, GpuPowerLimit, OptimizationSession } from "@/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
@@ -14,16 +15,20 @@ import { DashboardV2 } from "@/components/dashboard/DashboardV2";
 import { HomeHub } from "@/components/dashboard/HomeHub";
 import { GameMode } from "@/components/optimization/GameMode";
 import { Presets } from "@/components/optimization/Presets";
+import { OptimizeHub } from "@/components/optimization/OptimizeHub";
 import { ProcessManager } from "@/components/optimization/ProcessManager";
+import { ProcessStartupHub } from "@/components/optimization/ProcessStartupHub";
 import { WindowsOptimization } from "@/components/optimization/WindowsOptimization";
 import { StorageManager } from "@/components/optimization/StorageManager";
 import { NetworkHub } from "@/components/network/NetworkHub";
 import { GamesLibrary } from "@/components/games/GamesLibrary";
+import { GamesHub } from "@/components/games/GamesHub";
 import { ProfilesHub } from "@/components/profiles/ProfilesHub";
 import { GamePerformanceLog } from "@/components/games/GamePerformanceLog";
 import { GameSettingsAdvisor } from "@/components/games/GameSettingsAdvisor";
 import { GameIntegrity } from "@/components/games/GameIntegrity";
 import { HardwareHub } from "@/components/hardware/HardwareHub";
+import { HardwareBenchHub } from "@/components/hardware/HardwareBenchHub";
 import { Benchmark } from "@/components/benchmark/Benchmark";
 import { StartupManager } from "@/components/optimization/StartupManager";
 import { Scheduler } from "@/components/settings/Scheduler";
@@ -36,9 +41,14 @@ import { SettingsHub } from "@/components/settings/SettingsHub";
 import { PolicyManager } from "@/components/policies/PolicyManager";
 import { OptimizationGraphView } from "@/components/graph/OptimizationGraphView";
 import { AboutPage } from "@/components/about/AboutPage";
+import { StorageAppsHub } from "@/components/system/StorageAppsHub";
+import { RollbackLogsHub } from "@/components/system/RollbackLogsHub";
+import { SchedulerPolicyHub } from "@/components/settings/SchedulerPolicyHub";
 import { OsdOverlay } from "@/components/osd/OsdOverlay";
 import { FirstRunWizard } from "@/components/onboarding/FirstRunWizard";
 import { ToastContainer } from "@/components/ui/Toast";
+import { CommandPalette } from "@/components/ui/CommandPalette";
+import { useCommandPaletteStore } from "@/stores/useCommandPaletteStore";
 import { RiskSummary } from "@/components/ui/RiskSummary";
 import type { ActivePage } from "@/types";
 
@@ -383,100 +393,99 @@ type NavEntry =
   | { type?: "item"; id: ActivePage; icon: React.ReactNode; label: string; phase?: string };
 
 const NAV_ITEMS: NavEntry[] = [
-  { type: "section", label: "メイン" },
-  { id: "home",        icon: <LayoutDashboard size={17} />, label: "ホーム" },       // [Phase D] 司令塔（dashboard/dashboardv2 吸収）
+  { type: "section", label: "ホーム" },
+  { id: "home",             icon: <LayoutDashboard size={17} />, label: "ダッシュボード" },
 
   { type: "section", label: "最適化" },
-  { id: "optimize",   icon: <Gamepad2 size={17} />,         label: "最適化" },      // [Phase D] gamemode 吸収
-  { id: "presets",    icon: <SlidersHorizontal size={17} />, label: "プリセット" },
-  { id: "process",    icon: <Activity size={17} />,         label: "プロセス管理" },
-  { id: "windows",    icon: <Monitor size={17} />,          label: "Windows最適化" },
-  { id: "storage",    icon: <HardDrive size={17} />,        label: "ストレージ" },
-  { id: "network",    icon: <Wifi size={17} />,             label: "ネットワーク" },
+  { id: "optimize_hub",     icon: <Gamepad2 size={17} />,        label: "最適化" },
+  { id: "process_startup",  icon: <Activity size={17} />,        label: "プロセス＆起動" },
+  { id: "windows",          icon: <Monitor size={17} />,         label: "Windows" },
+  { id: "network",          icon: <Wifi size={17} />,            label: "ネットワーク" },
 
   { type: "section", label: "ゲーム" },
-  { id: "games",      icon: <Library size={17} />,          label: "Myゲーム" },
-  { id: "profiles",   icon: <BookMarked size={17} />,       label: "プロファイル" },
-  { id: "gamelog",    icon: <BarChart3 size={17} />,        label: "パフォーマンスログ" },
-  { id: "advisor",    icon: <Lightbulb size={17} />,        label: "設定アドバイザー" },
-  { id: "gameintegrity", icon: <FileSearch size={17} />,    label: "ファイル検証" },
+  { id: "games_hub",        icon: <Library size={17} />,         label: "Myゲーム" },
+  { id: "advisor",          icon: <Lightbulb size={17} />,       label: "設定アドバイザー" },
+  { id: "hardware_bench",   icon: <Cpu size={17} />,             label: "ハードウェア" },
 
-  { type: "section", label: "ハードウェア" },
-  { id: "hardware",   icon: <Cpu size={17} />,              label: "ハードウェア" },
-  { id: "benchmark",  icon: <Gauge size={17} />,            label: "ベンチマーク" },
+  { type: "section", label: "システム" },
+  { id: "storage_apps",     icon: <HardDrive size={17} />,       label: "ストレージ＆アプリ" },
+  { id: "updates",          icon: <Shield size={17} />,          label: "アップデート" },
+  { id: "rollback_logs",    icon: <ShieldCheck size={17} />,     label: "ロールバック＆ログ" },
 
-  { type: "section", label: "管理" },                        // [Phase D] システム→管理
-  { id: "rollback",   icon: <ShieldCheck size={17} />,      label: "ロールバック" }, // [Phase D] 先頭に昇格
-  { id: "policies",   icon: <Bot size={17} />,              label: "ポリシーエンジン" }, // [Sprint 3]
-  { id: "graph",      icon: <GitGraph size={17} />,         label: "最適化グラフ" },       // [Sprint 5]
-  { id: "startup",    icon: <Rocket size={17} />,           label: "スタートアップ" },
-  { id: "scheduler",  icon: <Calendar size={17} />,         label: "スケジューラー" },
-  { id: "uninstaller", icon: <Trash2 size={17} />,          label: "アプリ管理" },
-  { id: "updates",    icon: <Shield size={17} />,           label: "アップデート" },
-
-  { type: "section", label: "その他" },
-  { id: "notifications", icon: <Bell size={17} />,          label: "通知センター" },
-  { id: "settings",   icon: <SettingsIcon size={17} />,     label: "設定" },
-  { id: "about",      icon: <Info size={17} />,             label: "About" },
+  { type: "section", label: "設定" },
+  { id: "scheduler_policy", icon: <Calendar size={17} />,        label: "スケジューラー" },
+  { id: "settings",         icon: <SettingsIcon size={17} />,    label: "設定" },
 ];
 
 function PageContent({ page }: { page: ActivePage }) {
   switch (page) {
-    // ── [Phase C/D] 新規ページ（ENABLE_HOME_HUB で有効化）──────────────────
-    // flag OFF の間は既存コンポーネントにフォールバック
+    // ── 新ナビゲーション（13ページ） ────────────────────────────────────────
     case "home":
       return ENABLE_HOME_HUB ? <HomeHub /> : <DashboardV2 />;
-    case "optimize":
-      return <GameMode />;
-    // ── 既存ページ ────────────────────────────────────────────────────────
+    case "optimize_hub":
+      return <OptimizeHub />;
+    case "process_startup":
+      return <ProcessStartupHub />;
+    case "windows":
+      return <WindowsOptimization />;
+    case "network":
+      return <NetworkHub />;
+    case "games_hub":
+      return <GamesHub />;
+    case "advisor":
+      return <GameSettingsAdvisor />;
+    case "hardware_bench":
+      return <HardwareBenchHub />;
+    case "storage_apps":
+      return <StorageAppsHub />;
+    case "updates":
+      return <UpdatesHub />;
+    case "rollback_logs":
+      return <RollbackLogsHub />;
+    case "scheduler_policy":
+      return <SchedulerPolicyHub />;
+    case "settings":
+      return <SettingsHub />;
+    // ── レガシー（後方互換・直接リンク用） ──────────────────────────────────
     case "dashboard":
       return <Dashboard />;
     case "dashboardv2":
       return <DashboardV2 />;
     case "gamemode":
+    case "optimize":
       return <GameMode />;
     case "presets":
       return <Presets />;
     case "process":
       return <ProcessManager />;
-    case "windows":
-      return <WindowsOptimization />;
+    case "startup":
+      return <StartupManager />;
     case "storage":
       return <StorageManager />;
-    case "network":
-      return <NetworkHub />;
     case "games":
       return <GamesLibrary />;
     case "profiles":
       return <ProfilesHub />;
     case "gamelog":
       return <GamePerformanceLog />;
-    case "advisor":
-      return <GameSettingsAdvisor />;
     case "gameintegrity":
       return <GameIntegrity />;
     case "hardware":
       return <HardwareHub />;
     case "benchmark":
       return <Benchmark />;
-    case "startup":
-      return <StartupManager />;
     case "scheduler":
       return <Scheduler />;
     case "uninstaller":
       return <AppUninstaller />;
-    case "updates":
-      return <UpdatesHub />;
     case "rollback":
       return <RollbackCenter />;
+    case "notifications":
+      return <EventLog />;
     case "policies":
       return <PolicyManager />;
     case "graph":
       return <OptimizationGraphView />;
-    case "notifications":
-      return <EventLog />;
-    case "settings":
-      return <SettingsHub />;
     case "about":
       return <AboutPage />;
   }
@@ -490,6 +499,7 @@ export default function App() {
 
   const { activePage, setActivePage, gameModeActive, setHasApiKey } = useAppStore();
   const { activeProfileId, setActiveProfileId, setAutoOptimize } = useWatcherStore();
+  const { toggle: togglePalette } = useCommandPaletteStore();
   const [appVersion, setAppVersion] = useState("...");
 
   useEffect(() => {
@@ -510,6 +520,18 @@ export default function App() {
       .catch(() => {});
   }, [setHasApiKey]);
 
+  // Global Ctrl+K / Cmd+K → command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        togglePalette();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [togglePalette]);
+
   // Listen for Rust-side events (watcher applies/restores, tray toggle)
   useEffect(() => {
     const u1 = listen<string | null>("active_profile_changed", (e) =>
@@ -526,19 +548,20 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-56 flex flex-col shrink-0 border-r border-white/[0.06] bg-sidebar sidebar-dots relative">
+      {/* Sidebar — glass panel */}
+      <aside className="w-56 flex flex-col shrink-0 border-r border-white/[0.10] sidebar-dots sidebar-glass relative">
         {/* Top gradient accent line */}
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
 
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-[15px] relative">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/30 to-emerald-500/15 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_12px_rgba(34,211,238,0.2)]">
-            <Gamepad2 size={16} className="text-cyan-400" />
+          <div className="relative w-9 h-9 rounded-sm bg-gradient-to-br from-orange-500/20 to-transparent border border-orange-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(255,140,0,0.25)] shrink-0">
+            <Gamepad2 size={17} className="text-orange-400" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] animate-status-tick" />
           </div>
           <div>
-            <p className="text-[13px] font-bold leading-none tracking-tight text-white">Gaming</p>
-            <p className="text-[10px] text-cyan-400/60 leading-none mt-1 tracking-[0.15em] uppercase">PC Optimizer</p>
+            <p className="text-[13px] font-bold leading-none tracking-widest uppercase text-white/85">Gaming</p>
+            <p className="text-[9px] text-orange-500/50 leading-none mt-1 tracking-[0.2em] uppercase font-medium">PC Optimizer</p>
           </div>
         </div>
 
@@ -565,29 +588,34 @@ export default function App() {
                 key={item.id}
                 onClick={() => setActivePage(item.id)}
                 className={cn(
-                  "relative w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all text-left overflow-hidden",
-                  isActive
-                    ? "nav-active nav-active-bg text-cyan-200"
-                    : "text-muted-foreground hover:text-slate-200 hover:bg-white/[0.04]"
+                  "relative w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors text-left overflow-hidden",
+                  isActive ? "nav-active text-white/90" : "text-muted-foreground hover:text-white/75 hover:bg-white/[0.04]"
                 )}
               >
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-active-bg"
+                    className="absolute inset-0 rounded-xl nav-active-bg"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
                 <span className={cn(
-                  "shrink-0 transition-colors",
-                  isActive ? "text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]" : "text-muted-foreground/70"
+                  "relative z-10 shrink-0 transition-colors",
+                  isActive ? "text-orange-400 drop-shadow-[0_0_6px_rgba(255,107,0,0.7)]" : "text-muted-foreground/60"
                 )}>
                   {item.icon}
                 </span>
-                <span className="flex-1 truncate">{item.label}</span>
+                <span className="relative z-10 flex-1 truncate">{item.label}</span>
                 {item.phase && !isActive && (
-                  <span className="text-[10px] text-muted-foreground/55 bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 rounded-md">
+                  <span className="relative z-10 text-[10px] text-muted-foreground/55 bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 rounded-md">
                     {item.phase}
                   </span>
                 )}
                 {item.id === "gamemode" && gameModeActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_rgba(34,197,94,0.8)]" />
+                  <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_rgba(34,197,94,0.8)]" />
                 )}
                 {item.id === "profiles" && activeProfileId && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
+                  <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
                 )}
               </button>
             );
@@ -598,28 +626,58 @@ export default function App() {
         <div className="section-divider mx-3" />
 
         {/* Footer */}
-        <div className="px-4 py-3.5">
-          <div className="flex items-center gap-2">
-            <div className="relative w-1.5 h-1.5">
-              <span className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-60" />
-              <span className="relative w-1.5 h-1.5 rounded-full bg-cyan-400 block" />
+        <div className="px-4 py-3.5 space-y-2">
+          <button
+            type="button"
+            onClick={togglePalette}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors group"
+          >
+            <Search size={11} className="text-muted-foreground/40 group-hover:text-cyan-400 transition-colors shrink-0" />
+            <span className="text-[10px] text-muted-foreground/40 group-hover:text-muted-foreground/60 flex-1 text-left transition-colors">コマンドを検索...</span>
+            <kbd className="text-[9px] text-muted-foreground/30 bg-white/[0.04] border border-white/[0.06] px-1 py-0.5 rounded font-mono shrink-0">⌃K</kbd>
+          </button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="relative w-1.5 h-1.5">
+                <span className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-60" />
+                <span className="relative w-1.5 h-1.5 rounded-full bg-cyan-400 block" />
+              </div>
+              <p className="text-[10px] text-muted-foreground/50 tracking-widest uppercase">v{appVersion} · AI搭載</p>
             </div>
-            <p className="text-[10px] text-muted-foreground/50 tracking-widest uppercase">v{appVersion} · AI搭載</p>
+            {/* Decal text */}
+            <span className="decal-footer">SYS_OPT_V2.4</span>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden content-glow relative flex flex-col">
+      <main className="flex-1 overflow-hidden relative flex flex-col main-bg">
+        {/* Grid dot watermark */}
+        <div className="grid-watermark" />
+        {/* Top orange glow bloom */}
+        <div className="content-bloom" />
         {/* [GLOBAL_ROLLBACK_HEADER] Persistent rollback/result/risk strip */}
         {ENABLE_GLOBAL_ROLLBACK_HEADER && <GlobalRollbackHeader />}
-        <div className="flex-1 overflow-y-auto">
-          <PageContent page={activePage} />
+        <div className="flex-1 overflow-y-auto relative">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activePage}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="h-full"
+            >
+              <PageContent page={activePage} />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 
       {/* Global toast notifications */}
       <ToastContainer />
+      {/* Global command palette (Ctrl+K) */}
+      <CommandPalette />
       {/* Phase 3: Simulation / confirmation overlay */}
       <SimulationPanel />
       {/* [SCORE REGRESSION] Background watcher — only mounts when flag is ON */}

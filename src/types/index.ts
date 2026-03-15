@@ -238,19 +238,23 @@ export interface AiStorageItem {
 }
 
 export type ActivePage =
-  // ── [Phase C/D] 新規ページ（ENABLE_HOME_HUB flag で有効化） ──────────────
-  | "home"          // HomeHub（Dashboard + DashboardV2 統合、司令塔）
-  | "optimize"      // OptimizeHub（GameMode 改称）
-  // ── [Sprint 3] V2 ページ ──────────────────────────────────────────────────
-  | "policies"      // PolicyManager（ポリシーエンジン管理）
-  | "graph"         // OptimizationGraphView（DAG ビジュアライザー）
-  // ── 既存ページ（後方互換維持） ─────────────────────────────────────────────
-  | "dashboard" | "dashboardv2" | "gamemode"
-  | "presets" | "process" | "windows" | "storage" | "network"
-  | "games" | "profiles" | "gamelog" | "advisor" | "gameintegrity"
+  // ── 新ナビゲーション（13ページ構成） ────────────────────────────────────
+  | "home"
+  // 最適化 (4)
+  | "optimize_hub" | "process_startup" | "windows" | "network"
+  // ゲーム (3)
+  | "games_hub" | "advisor" | "hardware_bench"
+  // システム (3)
+  | "storage_apps" | "updates" | "rollback_logs"
+  // 設定 (2)
+  | "scheduler_policy" | "settings"
+  // ── レガシー（後方互換・直接リンク用） ──────────────────────────────────
+  | "dashboard" | "dashboardv2" | "gamemode" | "optimize"
+  | "presets" | "process" | "startup"
+  | "games" | "profiles" | "gamelog" | "gameintegrity"
   | "hardware" | "benchmark"
-  | "startup" | "scheduler" | "uninstaller" | "updates" | "rollback"
-  | "notifications" | "settings" | "about";
+  | "storage" | "scheduler" | "uninstaller" | "rollback"
+  | "notifications" | "policies" | "graph" | "about";
 
 /**
  * ActionStatus — UI アクション状態の統一型

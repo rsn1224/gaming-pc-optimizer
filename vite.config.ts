@@ -23,6 +23,9 @@ export default defineConfig(async () => ({
       },
     },
   },
+  esbuild: {
+    drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
+  },
   server: {
     port: 1420,
     strictPort: true,
