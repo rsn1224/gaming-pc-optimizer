@@ -1,11 +1,11 @@
 {
-  "version": "2.0.0",
-  "notes": "## v2.0.0\n\n### 新機能\n- Epic Games / GOG / Xbox ランチャー対応\n- ベンチマーク履歴（SQLite 永続化）\n- HAGS・ディスプレイHz・Defender 除外管理\n- フレームタイムオーバーレイ\n- AMD / Intel GPU 基本サポート\n\n### 改善\n- ロールバックセッション ID を UUID v4 に変更（衝突防止）\n- 電源プラン復元バグ修正\n- powercfg ロケール耐性対応\n- recharts 未使用依存を削除、CSP を有効化\n- CI: cargo test --lib で 162 件のユニットテストを確実に実行",
+  "version": "3.0.0",
+  "notes": "## v3.0.0\n\n### UI 全面刷新（FM26スタイル）\n- 全13ページをFM26データ視認スタイルに統一\n- ダッシュボード: HeroMetric / MetricRow / Card プリミティブ導入\n- 全ページにFM26ページヘッダー（オレンジアイコン＋大文字タイトル）追加\n- タブバー・Insightパネルをオレンジアクセントに統一\n- Division 2 UIデザインシステム（Case B）: #0A0A0A / #FF8C00 / #F5F5F5\n\n### 品質・安全性改善\n- 本番ビルドで console.log / debugger を自動除去\n- ErrorBoundary追加: クラッシュ時にFM26スタイルエラー画面を表示\n- アイコン整備: 32/128/256/512px PNG + マルチサイズ .ico\n- NISISインストーラーで管理者権限（perMachine）を取得",
   "pub_date": "2026-03-15T00:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRODhZclhSN0o3c2hIZjFWSmFjNVdlSGlWclVMajFNaFc4L3NBWkRwQ0QrSTBrY2syVlZGRldLK0wxMDVsbFdoMTMzK3ovTEwwUGx4MWZrMVBuR04zYllyT2tjaGI3MGdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczNTI3MTc5CWZpbGU6R2FtaW5nIFBDIE9wdGltaXplcl8yLjAuMF94NjQtc2V0dXAuZXhlCkhDNUV0aTdyWUFaMVFmUHh3Z29EdHhKSEhqSjVabkVOVUM3bFV0S2xRMUNhL29pVjhYZk80WUU1djFvdGpISjh2ajU1eFk0QUlqOFhPUmpJY3Z2SEFnPT0K",
-      "url": "https://github.com/rsn1224/gaming-pc-optimizer/releases/download/v2.0.0/Gaming.PC.Optimizer_2.0.0_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRODhZclhSN0o3c3MyUUhBbk45QnRubmMwZ0NFeFZpWi9wWDNzNVppTU5WQnU5NnZIL2lyYXFoRkxScnM4MXVjU1ZaN1B1UE9aYmJtZEJkMGZmVGcrdXJuZ3V1V2Y2TWdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczNTQwOTYzCWZpbGU6R2FtaW5nIFBDIE9wdGltaXplcl8zLjAuMF94NjQtc2V0dXAuZXhlCmMwcjNJYUwvQi8wNVZpUnFnK1hQY1U5NU5yNmxDOHBwN0IvZG14QzBRZnBPTkR2bFRvOUFvNkREbnJ3SHp3S3hFQWxGZUVTcFh1bDJnWGhQNHBGQ0JnPT0K",
+      "url": "https://github.com/rsn1224/gaming-pc-optimizer/releases/download/v3.0.0/Gaming.PC.Optimizer_3.0.0_x64-setup.exe"
     }
   }
 }
